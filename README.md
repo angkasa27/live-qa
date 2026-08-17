@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Live Event Q&A
 
-## Getting Started
+Audience send questions to a speaker from their phone, named or anonymous. The speaker reads
+them full-screen one at a time. An admin types in what the speaker answered, which then shows
+publicly under the question.
 
-First, run the development server:
+**This is the UI/UX phase — there is no backend.** Everything runs off a seeded in-memory store,
+so a page reload resets any question you submit. Client-side nav keeps it.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
+node --experimental-strip-types lib/mock.check.ts   # paginate self-check
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Screens
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | Who | What |
+|---|---|---|
+| `/` | audience | Pick a session |
+| `/events/[id]` | audience | Submit a question (anonymous by default) |
+| `/events/[id]/questions` | audience | All questions + answers, manual Refresh, Load more |
+| `/events/[id]/speaker` | speaker | Full-screen swipe deck, extends as you near the end |
+| `/events/[id]/admin` | organiser | Type in the answers |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Backend phase
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `lib/store.tsx` is the only file that changes — replace the five function bodies with real
+  requests. Nothing that consumes the context needs to move.
+- `lib/mock.ts` holds the types and the seed; `paginate` shows the cursor contract the API
+  should match (`{ items, nextCursor }`).
+- Body validation currently lives only in `components/SubmitForm.tsx`. It must be duplicated
+  server-side — that is the actual trust boundary.
+- **`/events/[id]/speaker` and `/events/[id]/admin` are unguarded.** They are the two routes
+  that get the auth middleware.

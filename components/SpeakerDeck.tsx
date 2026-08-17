@@ -1,0 +1,170 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Question } from "@/lib/mock";
+import { useQa } from "@/lib/store";
+
+/** Body length → font size. Long questions shrink so they still fit one screen. */
+function bodyClass(len: number) {
+  if (len > 260) return "text-[clamp(1.05rem,3.6vw,1.9rem)]";
+  if (len > 120) return "text-[clamp(1.35rem,5vw,2.6rem)]";
+  return "text-[clamp(1.75rem,7vw,3.75rem)]";
+}
+
+export default function SpeakerDeck({ eventId }: { eventId: string }) {
+  const { fetchPage } = useQa();
+  const [items, setItems] = useState<Question[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [current, setCurrent] = useState(0);
+  const [ready, setReady] = useState(false);
+
+  const scroller = useRef<HTMLDivElement>(null);
+  // Refs, not state: loadMore can be called again before a re-render lands, and it must see
+  // the cursor the previous fetch produced rather than the one from its closure.
+  const loading = useRef(false);
+  const cursorRef = useRef<string | null>(null);
+  const applyCursor = useCallback((c: string | null) => {
+    cursorRef.current = c;
+    setCursor(c);
+  }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loading.current || !cursorRef.current) return;
+    loading.current = true;
+    try {
+      const page = await fetchPage(eventId, cursorRef.current);
+      setItems((prev) => [...prev, ...page.items]);
+      applyCursor(page.nextCursor);
+    } finally {
+      loading.current = false;
+    }
+  }, [eventId, fetchPage, applyCursor]);
+
+  useEffect(() => {
+    let live = true;
+    fetchPage(eventId, null).then((page) => {
+      if (!live) return;
+      setItems(page.items);
+      applyCursor(page.nextCursor);
+      setReady(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [eventId, fetchPage, applyCursor]);
+
+  // Extend once the speaker is within 3 cards of the end, so the next batch is already there
+  // when they swipe onto it. Driven by scroll position rather than an IntersectionObserver on
+  // a sentinel card: a fast fling or a jump straight to the end skips right past a sentinel
+  // without ever intersecting it, which strands the deck short of the real last question.
+  useEffect(() => {
+    if (items.length > 0 && current >= items.length - 3) loadMore();
+  }, [current, items.length, loadMore]);
+
+  const go = useCallback((delta: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollBy({ left: delta * el.clientWidth, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+        e.preventDefault();
+        go(1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        go(-1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go]);
+
+  function onScroll() {
+    const el = scroller.current;
+    if (!el) return;
+    setCurrent(Math.round(el.scrollLeft / el.clientWidth));
+  }
+
+  if (ready && items.length === 0) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100">
+        <p className="text-2xl font-medium">No questions yet.</p>
+        <Link href={`/events/${eventId}`} className="text-zinc-400 underline underline-offset-4">
+          Back to the event
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-dvh bg-zinc-950 text-zinc-50 [overscroll-behavior:contain]">
+      <div
+        ref={scroller}
+        onScroll={onScroll}
+        tabIndex={0}
+        aria-label="Question deck — swipe or use arrow keys"
+        className="flex h-dvh snap-x snap-mandatory overflow-x-auto overflow-y-hidden outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {items.map((q) => (
+          <section
+            key={q.id}
+            className="flex h-dvh w-dvw shrink-0 snap-center flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] py-20"
+          >
+            <div className="mx-auto flex w-full max-w-5xl flex-col">
+              <p className={`${bodyClass(q.body.length)} font-semibold leading-tight tracking-tight`}>
+                {q.body}
+              </p>
+              <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-zinc-400">
+                {q.author ?? "Anonymous"}
+              </p>
+              {q.answer && (
+                <div className="mt-8 border-l-4 border-indigo-400 pl-4">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Answered</p>
+                  <p className="mt-1.5 text-[clamp(0.95rem,2.2vw,1.5rem)] leading-snug text-zinc-300">
+                    {q.answer}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
+        <Link
+          href={`/events/${eventId}`}
+          className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-zinc-500 transition-colors hover:text-zinc-200"
+        >
+          Exit
+        </Link>
+        <span className="text-sm tabular-nums text-zinc-500">
+          {Math.min(current + 1, items.length)} / {items.length}
+          {cursor ? "+" : ""}
+        </span>
+      </div>
+
+      {/* Pointer-based devices get buttons; on touch the swipe is the gesture. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden items-center justify-center gap-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] [@media(pointer:fine)]:flex">
+        <button
+          onClick={() => go(-1)}
+          disabled={current === 0}
+          className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
+          aria-label="Previous question"
+        >
+          ←
+        </button>
+        <button
+          onClick={() => go(1)}
+          disabled={current >= items.length - 1 && !cursor}
+          className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
+          aria-label="Next question"
+        >
+          →
+        </button>
+      </div>
+    </div>
+  );
+}
