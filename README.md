@@ -7,6 +7,9 @@ publicly under the question.
 **This is the UI/UX phase — there is no backend.** Everything runs off a seeded in-memory store,
 so a page reload resets any question you submit. Client-side nav keeps it.
 
+See [ROADMAP.md](ROADMAP.md) for the product notes: what's built and why, and the backend,
+auto-triage, and transcript-ingestion phases ahead.
+
 ```bash
 npm install
 npm run dev          # http://localhost:3000
@@ -18,7 +21,7 @@ node --experimental-strip-types lib/mock.check.ts   # paginate self-check
 | Route | Who | What |
 |---|---|---|
 | `/` | audience | Pick a session |
-| `/events/[id]` | audience | Submit a question (anonymous by default) |
+| `/events/[id]` | audience | Live: submit a question (anonymous by default). Recorded: player + extracted Q&A, no form |
 | `/events/[id]/questions` | audience | All questions + answers, manual Refresh, Load more |
 | `/events/[id]/speaker` | speaker | Full-screen swipe deck, extends as you near the end |
 | `/events/[id]/admin` | organiser | Type in the answers |

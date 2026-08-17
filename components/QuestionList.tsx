@@ -7,7 +7,16 @@ import { relativeTime } from "@/lib/relativeTime";
 import type { Question } from "@/lib/mock";
 import { useQa } from "@/lib/store";
 
-export default function QuestionList({ eventId }: { eventId: string }) {
+export default function QuestionList({
+  eventId,
+  youtubeId,
+  canAsk = false,
+}: {
+  eventId: string;
+  youtubeId?: string;
+  /** Live events point an empty list at the form; a recorded archive has nowhere to send you. */
+  canAsk?: boolean;
+}) {
   const { fetchPage } = useQa();
   const [items, setItems] = useState<Question[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -71,19 +80,23 @@ export default function QuestionList({ eventId }: { eventId: string }) {
 
       {items.length === 0 && loading === null ? (
         <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
-          <p className="text-muted">No questions yet.</p>
-          <Link
-            href={`/events/${eventId}`}
-            className="mt-2 inline-block font-medium text-accent underline underline-offset-4"
-          >
-            Be the first to ask →
-          </Link>
+          <p className="text-muted">
+            {canAsk ? "No questions yet." : "Nothing was extracted from this recording."}
+          </p>
+          {canAsk && (
+            <Link
+              href={`/events/${eventId}`}
+              className="mt-2 inline-block font-medium text-accent underline underline-offset-4"
+            >
+              Be the first to ask →
+            </Link>
+          )}
         </div>
       ) : (
         <ul className="space-y-3">
           {items.map((q) => (
             <li key={q.id}>
-              <QuestionCard q={q} />
+              <QuestionCard q={q} youtubeId={youtubeId} />
             </li>
           ))}
         </ul>

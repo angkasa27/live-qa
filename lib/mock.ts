@@ -7,7 +7,18 @@ export type Event = {
   startsAt: string;
   venue: string;
   speaker: string;
+  /** "live" takes questions in the room; "recorded" is an old talk pulled into the system. */
+  mode: "live" | "recorded";
+  /** Optional cover. Falls back to the YouTube thumbnail when a recording is attached. */
+  image?: string;
+  /** Optional recording. Present → the detail page embeds the player. */
+  youtubeId?: string;
 };
+
+/** List thumbnail: explicit cover wins, otherwise YouTube's own still, otherwise nothing. */
+export function coverFor(e: Event) {
+  return e.image ?? (e.youtubeId ? `https://i.ytimg.com/vi/${e.youtubeId}/hqdefault.jpg` : null);
+}
 
 export type Question = {
   id: string;
@@ -16,22 +27,58 @@ export type Question = {
   author: string | null; // null = anonymous
   answer: string | null;
   createdAt: string;
+  /** Present when the pair was extracted from a recording rather than asked live. */
+  source?: "transcript";
+  /** Seconds into the recording where the answer starts — the replay anchor. */
+  videoStart?: number;
 };
 
+/** 2760 → "46:00". Hours only appear when the recording is long enough to need them. */
+export function timecode(s: number) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const mm = h ? String(m).padStart(2, "0") : String(m);
+  return `${h ? `${h}:` : ""}${mm}:${String(sec).padStart(2, "0")}`;
+}
+
+// The two recorded events are real videos whose questions were ingested from their own
+// auto-generated captions (see TRANSCRIPT / TRANSCRIPT_2). Everything marked "live" is
+// fictional demo data for the submit-and-answer flow.
 export const events: Event[] = [
+  {
+    id: "tanya-ustadz-24-jun",
+    name: "Talkshow Tanya Ustadz — 24 Juni 2026",
+    startsAt: "2026-06-24T20:00:00+07:00",
+    venue: "Khalid Basalamah Official",
+    speaker: "Khalid Basalamah",
+    mode: "recorded",
+    youtubeId: "71z6vw_c5JE",
+  },
+  {
+    id: "tanya-jawab-yazid",
+    name: "Tanya Jawab: Masalah-Masalah Penting",
+    startsAt: "2026-05-12T19:30:00+07:00",
+    venue: "Moslem Nearer",
+    speaker: "Ustadz Yazid bin Abdul Qadir Jawas",
+    mode: "recorded",
+    youtubeId: "1mycTmtS5_4",
+  },
   {
     id: "devfest-25",
     name: "DevFest Jakarta 2026: Building for the Next Billion",
     startsAt: "2026-08-17T09:30:00+07:00",
     venue: "Main Hall, Ciputra Artpreneur",
     speaker: "Rani Wijaya",
-    },
+    mode: "live",
+  },
   {
     id: "ai-townhall",
     name: "AI Town Hall",
     startsAt: "2026-08-17T13:00:00+07:00",
     venue: "Studio B",
     speaker: "Danu Prasetyo",
+    mode: "live",
   },
   {
     id: "design-systems",
@@ -39,6 +86,7 @@ export const events: Event[] = [
     startsAt: "2026-08-18T10:00:00+07:00",
     venue: "Workshop Room 3",
     speaker: "Mira Halim",
+    mode: "live",
   },
   {
     id: "infra-night",
@@ -46,6 +94,7 @@ export const events: Event[] = [
     startsAt: "2026-08-18T19:00:00+07:00",
     venue: "Rooftop Deck",
     speaker: "Chris Tanuwijaya",
+    mode: "live",
   },
 ];
 
@@ -147,9 +196,10 @@ const BODIES: [string, string | null, string | null][] = [
 // Deterministic timestamps so nothing depends on Date.now() at module scope.
 const BASE = Date.parse("2026-08-17T09:40:00+07:00");
 
-// Deliberately lopsided: the first event needs more than one page so "Load more" and the
+// Deliberately lopsided: the first demo event needs more than one page so "Load more" and the
 // speaker deck's prefetch are exercised without submitting anything first.
-const eventFor = (i: number) => (i < 22 ? events[0].id : events[1 + (i % 3)].id);
+const DEMO = ["devfest-25", "ai-townhall", "design-systems", "infra-night"];
+const eventFor = (i: number) => (i < 22 ? DEMO[0] : DEMO[1 + (i % 3)]);
 
 export const questions: Question[] = BODIES.map(([body, author, answer], i) => ({
   id: `q${i + 1}`,
@@ -159,6 +209,136 @@ export const questions: Question[] = BODIES.map(([body, author, answer], i) => (
   answer,
   createdAt: new Date(BASE + i * 97_000).toISOString(),
 }));
+
+// ---------------------------------------------------------------------------
+// Extracted from the auto-generated Indonesian captions of youtu.be/71z6vw_c5JE.
+// `videoStart` is the second the ustadz begins answering, so the replay link lands on the
+// answer rather than the host reading the question. Questions are tidied from the caption text
+// — see ROADMAP.md §6, "rewrite, don't transcribe".
+// ---------------------------------------------------------------------------
+
+const TRANSCRIPT: [number, string, string | null, string][] = [
+  [
+    221,
+    "Apa itu puasa Tasu'a dan puasa Asyura, apa keutamaan masing-masing, dan bolehkah kalau kita hanya berpuasa Asyura saja?",
+    null,
+    "Tasu'a dari kata tisa'ah, yaitu 9 Muharram; Asyura dari asyarah, yaitu 10 Muharram. Nabi ﷺ tiba di Madinah dan mendapati orang Yahudi berpuasa di hari Asyura sebagai syukur atas selamatnya Musa dari kejaran Fir'aun. Beliau bersabda, \"Kami lebih berhak untuk memuliakan Musa daripada kalian,\" lalu memerintahkan sahabat berpuasa. Ketika disebut bahwa itu menyerupai orang Yahudi, beliau bersabda, \"Kalau saya masih hidup tahun depan, saya akan ikutkan yang ke-10 dengan yang ke-9.\" Maka keluarlah puasa Tasu'a dan Asyura. Kalau seseorang hanya puasa Asyura saja tidak masalah, walaupun Imam Nawawi dan ulama lain menganjurkan keduanya.",
+  ],
+  [
+    636,
+    "Di tengah euforia Piala Dunia, banyak muslim mengidolakan pemain bola sampai berlebihan — memasang foto mereka, memakai jersey bernama mereka, meniru gaya hidup mereka. Bolehkah seperti itu? Dan bolehkah kita meniatkan bangun tengah malam menonton bola sembari melaksanakan salat tahajud?",
+    "Tim Tanya Ustadz",
+    "Olahraga hukumnya mubah dalam Islam, bahkan bisa menjadi sunah. Kata Syekh Abu Bakar Jazairi rahimahullah, perkara mubah bisa berubah menjadi sunah kalau diniatkan untuk memberikan hak jasad — sebagaimana makan, minum, tidur, dan mandi. Sabda Nabi ﷺ, \"Wa inna lijasadika alaika haqqo,\" jasadmu punya hak atasmu. Tapi olahraga juga bisa berubah menjadi makruh bahkan haram, yaitu ketika masuk ke ranah judi atau pelanggaran-pelanggaran agama lainnya.",
+  ],
+  [
+    905,
+    "Bagaimana pendapat Ustaz mengenai desas-desus yang beredar tentang manusia reptil? Dan mungkinkah ada jin atau setan yang menyerupai manusia?",
+    null,
+    "Tidak usah dipercaya dan tidak usah diyakini. Ini mirip dengan Darwin yang mengatakan manusia berasal dari kera. Kita sebagai orang beriman sudah tahu kita dari Adam, dan Adam dari tanah — sabda Nabi ﷺ, \"Kalian semua dari Adam dan Adam dari tanah.\" Dalam hadis lain, tidak ada perbedaan antara Arab dan ajam kecuali dengan ketakwaan.",
+  ],
+  [
+    1105,
+    "Belakangan ada beberapa kasus kekerasan berat dalam hubungan sepasang kekasih, sampai menimbulkan cacat permanen pada pihak perempuan. Bagaimana Islam memandang kezaliman seperti ini, dan apa batasan yang Allah tetapkan dalam interaksi suami istri?",
+    "Tim Tanya Ustadz",
+    "Kekasih yang bukan suami istri sendiri sudah haram. Adapun suami istri, KDRT itu tidak ada dan tidak boleh dalam Islam — Allah menjadikan di antara kalian mawaddah wa rahmah. Dalam surah An-Nisa tentang istri yang nusyuz pun urutannya jelas: ingatkan dulu, lalu boikot di ranjang, baru wadribuhunna. Dan kata ulama tafsir itu darbatun ghairu mubarrih, pukulan yang tidak boleh berbekas; dalam hadis dirincikan tidak boleh memukul wajah dan tidak boleh menghina. Kalau mereka sudah taat, jangan cari-cari kesalahannya.",
+  ],
+  [
+    1397,
+    "Terkadang ada kebijakan pemimpin yang tidak disukai sebagian masyarakat. Bagaimana tuntunan syariat dalam menyampaikan kritik? Apakah seorang muslim dibenarkan menggunakan kata kasar, celaan, atau perumpamaan yang merendahkan?",
+    "Tim Tanya Ustadz",
+    "Pemimpin itu simbol masyarakatnya. Kalau pemimpin jujur, berarti banyak yang jujur di antara kita; kalau pemimpin pendusta, berarti banyak pendustanya. Ketika orang Khawarij bertanya kepada Ali radhiallahu anhu kenapa di masa Abu Bakar dan Umar tidak pernah terjadi kericuhan seperti di masanya, Ali menjawab: karena di masa mereka masyarakatnya seperti saya, sedangkan di masa ini masyarakatnya seperti kamu. Ali juga menegaskan satu komunitas harus punya pemimpin — mukmin ataupun fasik — karena dengan adanya pemimpin stabilitas keamanan negara tetap terjaga.",
+  ],
+  [
+    2334,
+    "Suami saya sudah lelah dan menyerahkan buku nikah kepada saya, lalu menyuruh saya mengurus perceraian ke pengadilan, tapi ia tidak mau mengucapkan kata talak. Saya tanya \"jadi kita cerai?\" dan ia menjawab \"iya\". Bagaimana statusnya, apakah saya sah berpisah?",
+    "Hamba Allah · perempuan, 25 · Sumatera",
+    "Justru ibu yang bertanya ini harus bertanya pada diri sendiri dulu: kenapa suaminya jenuh? Umumnya perubahan sikap seorang suami muncul setelah muamalah yang tidak baik dari pasangannya. Dan justru karena suami tidak mau mengucapkan kalimat talak, berarti masih ada rasa sayang — sebenarnya ia tidak ingin bercerai.",
+  ],
+  [
+    2760,
+    "Apa hukumnya orang tua melarang anak perempuannya menikah dengan lelaki pilihannya karena ingin anaknya menikah dengan orang kaya, padahal selama ini anaknya selalu memenuhi kebutuhan rumah? Dan apa hukumnya menikah tanpa restu orang tua?",
+    "Hamba Allah · perempuan, 29 · Jakarta Pusat",
+    "Tidak boleh. Tidak ada orang tua yang membenci anaknya kecuali dia tidak waras. Kalau pilihan si anak beragama tapi miskin dan pilihan orang tua beragama serta berkecukupan, orang tua tidak salah memilih yang kedua — karena yang nanti menikmati harta suaminya adalah anaknya sendiri, orang tua sudah berlepas. Kecuali kalau orang tua justru mendorong anaknya menikah dengan orang yang jelas buruk, barulah boleh ditolak.",
+  ],
+];
+
+// Second recording: youtu.be/1mycTmtS5_4 — a rapid-fire session where the ustadz reads each
+// question aloud himself, so there is no host cue to segment on. Transitions were found by
+// reading for the interrogative, which is a harder signal to automate than "Selanjutnya…".
+const TRANSCRIPT_2: [number, string, string | null, string][] = [
+  [
+    8,
+    "Sebagian dari ibu-ibu yang baru mengaji merasa malas datang karena ibu-ibu yang memakai cadar tidak ramah kepada mereka. Bagaimana ini?",
+    null,
+    "Sudah saya ingatkan di awal: cadar itu dibuka, kecuali di hadapan laki-laki. Hukum cadar sendiri sunah — itu yang rajih dari dua pendapat ulama. Dan sambutlah yang datang, karena yang mengaji tidak semuanya orang yang sudah lama; banyak yang baru ikut. Kalau pakaiannya belum sempurna tidak ada masalah, dia mau mendengarkan kebaikan — kita harus sedikit demi sedikit.",
+  ],
+  [
+    818,
+    "Apakah ada uzur bagi orang jahil yang melakukan syirik dan bidah?",
+    null,
+    "Masih ada uzur, kalau di tempat itu tidak ada kajian apa-apa dan tidak ada yang mengingatkan dia tentang tauhid dan syirik. Tapi kalau kajian sudah menyebar, dakwah sudah disampaikan, buku-buku sudah disebarkan, dan dia masih tidak mau belajar — itu salah dia, tidak ada uzur baginya. Maka di tempat yang mengajarkan tauhid, tidak ada uzur.",
+  ],
+  [
+    869,
+    "Dalam hadis disebutkan al-Khawarij kilabun nar — orang Khawarij adalah anjing-anjing neraka. Apakah mereka nanti benar-benar diserupakan dengan anjing?",
+    null,
+    "Wallahu a'lam. Kalau melihat lafaznya, lafaznya memang demikian; tapi penjelasan yang lebih luas mesti kita cari lagi. Yang pasti, orang yang masih ada iman seberat zarrah di hatinya tidak akan kekal dalam neraka — itu i'tikad Ahlus Sunnah wal Jamaah.",
+  ],
+  [
+    1057,
+    "Apakah ahlul bidah itu sebatas penyimpangan dalam akidah seperti Syiah, Khawarij, Muktazilah, dan Murjiah — sementara amalan seperti tahlilan dan semacamnya tidak termasuk?",
+    null,
+    "Masuk. Dan umumnya mereka yang sudah melakukan seperti ini pasti juga berkaitan dengan perbuatan syirik — beribadah ke kuburan dan yang lainnya. Ini berbeda dengan ulama yang berijtihad: kalau berijtihad lalu keliru mereka dapat satu ganjaran, kalau benar dua. Tapi ketika ulama itu salah, kita tidak boleh ikut — dan kita juga tidak pernah menyesatkan ulama.",
+  ],
+  [
+    1433,
+    "Ziarah kubur itu sudah jelas diperbolehkan. Lalu mengapa Ustaz Yazid tidak memperbolehkan ziarah kubur, sedangkan Nabi memperbolehkan?",
+    null,
+    "Jangan salah paham — saya tidak melarang orang ziarah kubur. Ziarah kubur boleh dan syar'i. Yang saya larang adalah minta-minta di kubur, kepada selain Allah: kuburan wali, kuburan habib, kuburan kiai, atau yang lainnya. Itu syirik. Tujuan ziarah kubur yang pertama mengucapkan salam kepada penghuni kubur, yang kedua mendoakan mereka — bukan meminta doa dari mereka.",
+  ],
+  [
+    1678,
+    "Kalau ada orang melakukan perbuatan-perbuatan syirik, apakah langsung divonis musyrik dan keluar dari Islam?",
+    null,
+    "Tidak boleh memvonis begitu. Perbuatannya syirik, belum tentu orangnya langsung dikatakan musyrik — hujah harus sampai dulu kepadanya: apakah dia tahu, apakah dia paham. Bahkan orang yang menyembah kubur pun tidak langsung dikatakan musyrik. Pernah ada sahabat sujud kepada Nabi ﷺ — itu kufur, tapi Nabi tidak mengatakan dia kafir dan tidak menyuruhnya mengucapkan dua kalimat syahadat, karena hujah belum sampai kepadanya. Jadi hati-hati, jangan gampang mengatakan orang itu musyrik.",
+  ],
+  [
+    1818,
+    "Bolehkah seseorang yang sudah bertobat menceritakan masa lalunya yang penuh maksiat?",
+    null,
+    "Tidak boleh. Allah sudah menutupi dia ketika berbuat maksiat, jadi jangan diceritakan lagi kepada orang lain. Kalau dia sudah bertobat kepada Allah, sudah — masa lalunya tutup. Jangan ceritakan apa-apa yang sudah Allah tutup. Nanti orang justru ingin berusaha melakukannya.",
+  ],
+  [
+    1859,
+    "Bolehkah kita berguru kepada siapa saja, diambil baiknya dan ditinggalkan jeleknya?",
+    null,
+    "Belajar kepada seseorang itu harus tahu dulu akidahnya benar atau tidak, manhajnya benar atau tidak, bagaimana ibadah dan salatnya — setelah semuanya jelas, baru belajar. Bukan seperti sekarang, baru dengar ceramahnya di YouTube langsung dipanggil, tidak tahu siapa yang ceramah itu. Itu justru menunjukkan kebodohan; harus tahu dulu siapa.",
+  ],
+];
+
+function ingest(
+  eventId: string,
+  startsAt: string,
+  pairs: [number, string, string | null, string][],
+  prefix: string,
+): Question[] {
+  const base = Date.parse(startsAt);
+  return pairs.map(([videoStart, body, author, answer], i) => ({
+    id: `${prefix}${i + 1}`,
+    eventId,
+    body,
+    author,
+    answer,
+    source: "transcript" as const,
+    videoStart,
+    createdAt: new Date(base + videoStart * 1000).toISOString(),
+  }));
+}
+
+questions.push(
+  ...ingest("tanya-ustadz-24-jun", "2026-06-24T20:00:00+07:00", TRANSCRIPT, "t"),
+  ...ingest("tanya-jawab-yazid", "2026-05-12T19:30:00+07:00", TRANSCRIPT_2, "y"),
+);
 
 export type Page<T> = { items: T[]; nextCursor: string | null };
 

@@ -20,11 +20,13 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const PAGE_SIZE = 10;
 export const MAX_BODY = 500;
 
-/** Newest first, matching what a real `order by created_at desc` would hand back. */
-const INITIAL: Question[] = [...SEED].reverse();
+// Oldest first — `order by created_at asc`. For a recorded event that means the replay
+// timestamps run start → end down the page; for a live one it's the order they were asked, which
+// is the order the speaker works through them.
+const INITIAL: Question[] = SEED;
 
 type Ctx = {
-  /** Every question the client currently knows about, newest first. */
+  /** Every question the client currently knows about, oldest first. */
   all: Question[];
   addQuestion: (input: { eventId: string; body: string; author: string | null }) => Promise<void>;
   setAnswer: (id: string, answer: string) => Promise<void>;
@@ -56,7 +58,7 @@ export function QaProvider({ children }: { children: ReactNode }) {
         answer: null,
         createdAt: new Date().toISOString(),
       };
-      commit([q, ...dbRef.current]);
+      commit([...dbRef.current, q]);
     },
     [commit],
   );

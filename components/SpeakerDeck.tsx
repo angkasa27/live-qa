@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Question } from "@/lib/mock";
+import { timecode, type Question } from "@/lib/mock";
 import { useQa } from "@/lib/store";
 
 /** Body length → font size. Long questions shrink so they still fit one screen. */
@@ -122,7 +122,12 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
               </p>
               {q.answer && (
                 <div className="mt-8 border-l-4 border-indigo-400 pl-4">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Answered</p>
+                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
+                    Answered
+                    {q.videoStart != null && (
+                      <span className="tabular-nums text-zinc-500">{timecode(q.videoStart)}</span>
+                    )}
+                  </p>
                   <p className="mt-1.5 text-[clamp(0.95rem,2.2vw,1.5rem)] leading-snug text-zinc-300">
                     {q.answer}
                   </p>
