@@ -14,7 +14,12 @@ auto-triage, and transcript-ingestion phases ahead.
 npm install
 npm run dev          # http://localhost:3000
 node --experimental-strip-types lib/mock.check.ts   # paginate self-check
+
+npm run ingest -- "https://youtu.be/VIDEO_ID"       # add a recorded event
 ```
+
+To add another recorded sample, see [INGESTION.md](INGESTION.md) — it covers the script and the
+prompt to hand an agent for the extraction step.
 
 ## Screens
 

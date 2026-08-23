@@ -169,6 +169,11 @@ Both full timestamped transcripts are checked in under [`data/`](data/) as
 the fragile step (see below), so the good copies are worth version-controlling. They're also the
 raw material for extracting more pairs than the ones seeded.
 
+`scripts/ingest-youtube.mjs` now automates the mechanical half — fetch, dedupe, timestamp, save,
+and report candidate boundaries (`npm run ingest -- <url>`). It reproduces both hand-made
+transcripts byte-for-byte. The judgement half stays with an agent; [INGESTION.md](INGESTION.md)
+carries the prompt.
+
 ### What the manual passes taught us
 
 - **The captions are gettable, but not straightforwardly.** YouTube's `timedtext` endpoint

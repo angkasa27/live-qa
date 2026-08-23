@@ -6,7 +6,7 @@
  "lang": "id",
  "kind": "asr",
  "durationSeconds": 3370,
- "note": "Auto-generated Indonesian captions via yt-dlp. t = seconds from start.",
+ "note": "Auto-generated captions via yt-dlp. t = seconds from start.",
  "segments": [
   {
    "t": 0,
