@@ -1,5 +1,11 @@
 # Adding a recorded event
 
+> **Parked — see [ROADMAP.md §7](ROADMAP.md#7-transcript-ingestion--frozen).** Ingestion is
+> deliberately manual and off the critical path: the archive is a byproduct of live sessions that
+> already produce clean data. This process still works and is worth keeping, but **don't build a
+> self-serve ingest button** until the republishing question below has an answer. The `Event` and
+> `Question` shapes it writes predate the roadmap's §4 model.
+
 Two steps. The script does the mechanical half; an agent does the judgement half.
 
 ## 1. Run the script
@@ -81,4 +87,5 @@ should seek the embedded player rather than leaving for YouTube.
 - **Transcripts are committed on purpose.** Re-fetching is the fragile step, so the good copy is
   worth version-controlling — and it's the raw material for extracting more pairs later.
 - **Republishing someone else's talk as text** is a different act from linking to it. Fine for
-  these samples; worth settling properly before ingestion becomes a self-serve button.
+  these samples; the open question in [ROADMAP.md §8](ROADMAP.md#8-open-questions) is what blocks
+  this becoming a self-serve button.
