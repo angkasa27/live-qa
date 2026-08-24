@@ -1,58 +1,45 @@
-// ponytail: in-memory seed data for the UI phase. When the backend lands, replace the bodies
-// of the helpers in lib/store.tsx with real fetches — this file's types are what stays.
+// Seed data for a fresh database — the demo majelis plus the two hand-extracted recordings.
+// Loaded by db/seed.mjs. This is not application code: nothing in app/ or lib/ imports it.
+//
+// The "live"/"scheduled" events are fictional demo data for the submit-and-answer flow. The two
+// archived ones are real videos whose Q&A was pulled from their own captions (ROADMAP.md §7).
 
-export type Event = {
+type SeedEvent = {
   id: string;
   name: string;
   startsAt: string;
   venue: string;
   speaker: string;
-  /** "live" takes questions in the room; "recorded" is an old talk pulled into the system. */
-  mode: "live" | "recorded";
-  /** Optional cover. Falls back to the YouTube thumbnail when a recording is attached. */
+  status: "scheduled" | "live" | "archived";
+  moderation?: "auto" | "manual";
+  publicArchive?: boolean;
   image?: string;
-  /** Optional recording. Present → the detail page embeds the player. */
   youtubeId?: string;
 };
 
-/** List thumbnail: explicit cover wins, otherwise YouTube's own still, otherwise nothing. */
-export function coverFor(e: Event) {
-  return e.image ?? (e.youtubeId ? `https://i.ytimg.com/vi/${e.youtubeId}/hqdefault.jpg` : null);
-}
-
-export type Question = {
+type SeedQuestion = {
   id: string;
   eventId: string;
   body: string;
-  author: string | null; // null = anonymous
+  author: string | null;
   answer: string | null;
   createdAt: string;
-  /** Present when the pair was extracted from a recording rather than asked live. */
   source?: "transcript";
-  /** Seconds into the recording where the answer starts — the replay anchor. */
   videoStart?: number;
 };
-
-/** 2760 → "46:00". Hours only appear when the recording is long enough to need them. */
-export function timecode(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const mm = h ? String(m).padStart(2, "0") : String(m);
-  return `${h ? `${h}:` : ""}${mm}:${String(sec).padStart(2, "0")}`;
-}
 
 // The two recorded events are real videos whose questions were ingested from their own
 // auto-generated captions (see TRANSCRIPT / TRANSCRIPT_2). Everything marked "live" is
 // fictional demo data for the submit-and-answer flow.
-export const events: Event[] = [
+export const events: SeedEvent[] = [
   {
     id: "tanya-ustadz-24-jun",
     name: "Talkshow Tanya Ustadz — 24 Juni 2026",
     startsAt: "2026-06-24T20:00:00+07:00",
     venue: "Khalid Basalamah Official",
     speaker: "Khalid Basalamah",
-    mode: "recorded",
+    status: "archived",
+    publicArchive: true,
     youtubeId: "71z6vw_c5JE",
   },
   {
@@ -61,7 +48,8 @@ export const events: Event[] = [
     startsAt: "2026-05-12T19:30:00+07:00",
     venue: "Moslem Nearer",
     speaker: "Ustadz Yazid bin Abdul Qadir Jawas",
-    mode: "recorded",
+    status: "archived",
+    publicArchive: true,
     youtubeId: "1mycTmtS5_4",
   },
   {
@@ -70,7 +58,7 @@ export const events: Event[] = [
     startsAt: "2026-08-17T09:30:00+07:00",
     venue: "Main Hall, Ciputra Artpreneur",
     speaker: "Rani Wijaya",
-    mode: "live",
+    status: "live",
   },
   {
     id: "ai-townhall",
@@ -78,7 +66,8 @@ export const events: Event[] = [
     startsAt: "2026-08-17T13:00:00+07:00",
     venue: "Studio B",
     speaker: "Danu Prasetyo",
-    mode: "live",
+    status: "live",
+    moderation: "manual",
   },
   {
     id: "design-systems",
@@ -86,7 +75,7 @@ export const events: Event[] = [
     startsAt: "2026-08-18T10:00:00+07:00",
     venue: "Workshop Room 3",
     speaker: "Mira Halim",
-    mode: "live",
+    status: "scheduled",
   },
   {
     id: "infra-night",
@@ -94,7 +83,7 @@ export const events: Event[] = [
     startsAt: "2026-08-18T19:00:00+07:00",
     venue: "Rooftop Deck",
     speaker: "Chris Tanuwijaya",
-    mode: "live",
+    status: "scheduled",
   },
 ];
 
@@ -201,7 +190,7 @@ const BASE = Date.parse("2026-08-17T09:40:00+07:00");
 const DEMO = ["devfest-25", "ai-townhall", "design-systems", "infra-night"];
 const eventFor = (i: number) => (i < 22 ? DEMO[0] : DEMO[1 + (i % 3)]);
 
-export const questions: Question[] = BODIES.map(([body, author, answer], i) => ({
+export const questions: SeedQuestion[] = BODIES.map(([body, author, answer], i) => ({
   id: `q${i + 1}`,
   eventId: eventFor(i),
   body,
@@ -321,7 +310,7 @@ function ingest(
   startsAt: string,
   pairs: [number, string, string | null, string][],
   prefix: string,
-): Question[] {
+): SeedQuestion[] {
   const base = Date.parse(startsAt);
   return pairs.map(([videoStart, body, author, answer], i) => ({
     id: `${prefix}${i + 1}`,
@@ -339,20 +328,3 @@ questions.push(
   ...ingest("tanya-ustadz-24-jun", "2026-06-24T20:00:00+07:00", TRANSCRIPT, "t"),
   ...ingest("tanya-jawab-yazid", "2026-05-12T19:30:00+07:00", TRANSCRIPT_2, "y"),
 );
-
-export type Page<T> = { items: T[]; nextCursor: string | null };
-
-/** Cursor-paginate by id. `cursor` is the id of the last item already seen. */
-export function paginate<T extends { id: string }>(
-  list: T[],
-  cursor?: string | null,
-  limit = 10,
-): Page<T> {
-  const start = cursor ? list.findIndex((x) => x.id === cursor) + 1 : 0;
-  // An unknown cursor yields findIndex === -1 → start 0, which would silently replay page one.
-  if (cursor && start === 0) return { items: [], nextCursor: null };
-  const items = list.slice(start, start + limit);
-  const last = items.at(-1);
-  const more = last ? list.findIndex((x) => x.id === last.id) < list.length - 1 : false;
-  return { items, nextCursor: more && last ? last.id : null };
-}

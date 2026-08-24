@@ -9,9 +9,9 @@ from home, with the student told when it lands.
 | | |
 |---|---|
 | Stack | Next.js 16 · Tailwind v4 |
-| Added deps | 0 so far |
-| Screens built | 5 (UI phase) |
-| Backend | Not yet — next |
+| Added deps | 3 — `better-auth`, `pg`, `server-only` |
+| Screens built | 7 |
+| Backend | Postgres, live. Step 1 of §5 done. |
 | Target | Majelis in Indonesia. Indonesian UI. |
 
 ---
@@ -90,14 +90,17 @@ intersecting it, so the fetch never fires and the last questions become unreacha
 the card index we already track handles flings, jumps, and keyboard identically — and deleted
 the observer.
 
-**One file is the backend seam.**
-`lib/store.tsx` holds five functions over an in-memory array. Every screen talks to those and
-nothing else. Swapping to real endpoints means replacing five function bodies; no consumer moves.
-`paginate()` in `lib/mock.ts` defines the cursor contract the API should honour:
-`{ items, nextCursor }`.
+**The backend seam held, then deleted itself.**
+`lib/store.tsx` was five functions over an in-memory array behind a React context, and the bet was
+that swapping to real endpoints would mean replacing five bodies with no consumer moving. The bet
+paid, and then went one better: with a real backend the context held no state at all, so the whole
+file went and components call the server actions in `lib/actions.ts` directly. The seam did its
+job by disappearing. `paginate()` went with it — keyset pagination belongs in SQL.
 
 **Questions are ordered oldest first.**
-`order by created_at asc` — the order they were asked is the order the syaikh works through them.
+`order by (created_at, id)` — the order they were asked is the order the syaikh works through them.
+The id is in the key because two questions submitted in the same millisecond would otherwise page
+non-deterministically, dropping or repeating one.
 The cost: a newly submitted question lands at the *end* of the public list, so on a busy event the
 person who asked it may need to page to find it. `/pertanyaan-saya` is the answer to that.
 
@@ -123,6 +126,12 @@ each answer first; that queue will not survive contact with a syaikh who doesn't
 thing to tap. So: publish directly, keep every edit in history, make `retracted` a state that
 shows the question with the answer withdrawn. Nothing is ever deleted. The fix path has to be as
 fast as the write path — one tap from the public list.
+
+**Rate limits key on the browser, not the IP.**
+A majelis puts hundreds of phones behind one mosque wifi NAT, sharing a single address. An IP limit
+tight enough to stop one spammer locks out the entire room. So the real per-person limit is on the
+browser token (3 per 10 minutes) and the IP counter is only a loose backstop against a script
+(60 per 10 minutes), set high enough that a shared NAT never trips it.
 
 **Anonymity is display, not identity.**
 Contact detail and public attribution are different fields. A student can give an email for the
@@ -169,23 +178,29 @@ status value, which loses whether the question was ever approved and makes it im
 something after it's been answered.
 
 Auth is [better-auth](https://better-auth.com): email and password for now, Google and magic link
-later — both configuration rather than a migration. Events belong to an **organisation**, not an
-individual: a dauroh is run by a lembaga with several people helping, and per-individual accounts
-break the first time someone else has to open the admin screen.
+later — both configuration rather than a migration. **Sign-up is closed.** An account is an admin
+account, and a public sign-up endpoint on an admin-only system is a hole; the only way in is
+`npm run admin:create`. A student is not an account at all — they're an opaque token in a cookie.
+
+Events are meant to belong to an **organisation**, not an individual: a dauroh is run by a lembaga
+with several people helping, and per-individual accounts break the first time someone else opens
+the admin screen. **That is not built yet** — step 1 shipped `events.created_by` and nothing more,
+because there is no event-creation screen for an owner to be assigned by. Orgs land with
+`/admin/events/new` in step 2, which is the first code that needs them.
 
 ## 5. v1
 
 In build order. Step 1 is the only one that makes the app real; everything after decorates a
 working thing.
 
-| # | Step | What |
-|---|---|---|
-| 1 | Backend + auth | Postgres, better-auth, the five `store.tsx` bodies, server-side validation, rate limiting, the status model |
-| 2 | Admin | Approval queue, moderation toggle, answer editing with history, speaker view under `/admin` with polling |
-| 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` off localStorage |
-| 4 | Email | Notify on answer |
-| 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF |
-| 6 | Archive | Public toggle, `noindex`, disclaimer |
+| # | Step | What | |
+|---|---|---|---|
+| 1 | Backend + auth | Postgres, better-auth, real queries, server-side validation, rate limiting, the status model | **done** |
+| 2 | Admin | `/admin` home and event creation (with orgs), the moderation toggle as a control rather than a seeded column, routes moved under `/admin` | |
+| 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` | **done** |
+| 4 | Email | Notify on answer. The address is already collected and stored. | |
+| 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF | |
+| 6 | Archive | Public toggle, `noindex`, disclaimer | `noindex` and the disclaimer done |
 
 **Out of v1, deliberately:** auto-triage, voice-to-text, WhatsApp notifications, Google and
 magic-link sign-in, ingestion automation, a syaikh-facing answer screen, websockets.

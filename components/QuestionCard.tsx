@@ -1,7 +1,7 @@
 "use client";
 
 import { relativeTime } from "@/lib/relativeTime";
-import { timecode, type Question } from "@/lib/mock";
+import { timecode, type Question } from "@/lib/types";
 import { useSeek } from "@/components/Player";
 import { useSyncExternalStore } from "react";
 
@@ -22,7 +22,7 @@ export function Attribution({ author }: { author: string | null }) {
   return author ? (
     <span className="font-medium text-foreground">{author}</span>
   ) : (
-    <span className="italic">Anonymous</span>
+    <span className="italic">Anonim</span>
   );
 }
 
@@ -44,7 +44,7 @@ function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
       <button type="button" onClick={() => seek(at)} className={PILL}>
         <PlayIcon />
         {timecode(at)}
-        <span className="sr-only">Jump the video to this answer</span>
+        <span className="sr-only">Putar video di jawaban ini</span>
       </button>
     );
   }
@@ -58,7 +58,7 @@ function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
     >
       <PlayIcon />
       {timecode(at)}
-      <span className="sr-only">Watch the answer on YouTube</span>
+      <span className="sr-only">Tonton jawabannya di YouTube</span>
     </a>
   );
 }
@@ -73,7 +73,7 @@ export function AnswerBlock({
   return (
     <div className="mt-3 rounded-lg border-l-4 border-accent bg-accent-soft px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-accent">Answer</p>
+        <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-accent">Jawaban</p>
         {replay && <ReplayControl {...replay} />}
       </div>
       <p className="mt-1 whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{answer}</p>
@@ -93,10 +93,18 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
         <span aria-hidden>·</span>
         {q.source === "transcript" ? (
           <span className="rounded-full border border-border px-2 py-0.5 text-xs">
-            from the recording
+            dari rekaman
           </span>
         ) : (
           <Timestamp iso={q.createdAt} />
+        )}
+        {/* Only ever set on questions this browser submitted — see lib/queries.ts. A student
+            who submits into a moderation queue and sees nothing assumes it failed and submits
+            again, so their own pending question stays visible to them alone. */}
+        {q.status === "submitted" && (
+          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
+            menunggu review
+          </span>
         )}
       </p>
       {q.answer && <AnswerBlock answer={q.answer} replay={replay} />}

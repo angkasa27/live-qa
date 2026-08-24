@@ -1,19 +1,29 @@
 import { notFound } from "next/navigation";
 import AdminBoard from "@/components/AdminBoard";
 import EventHeader from "@/components/EventHeader";
-import { events } from "@/lib/mock";
+import { getEvent } from "@/lib/queries";
+import { requireSession } from "@/lib/guard";
 
-// TODO(auth): this route and /speaker are the two that get the auth middleware.
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage({ params }: PageProps<"/events/[id]/admin">) {
   const { id } = await params;
-  const event = events.find((e) => e.id === id);
+  await requireSession(`/events/${id}/admin`);
+
+  const event = await getEvent(id);
   if (!event) notFound();
 
   return (
     <>
-      <EventHeader name={event.name} backHref={`/events/${event.id}`} backLabel="Back to the event" />
+      <EventHeader name={event.name} backHref={`/events/${event.id}`} backLabel="Kembali ke sesi" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16 pt-5 sm:px-6">
-        <h2 className="mb-4 text-xl font-semibold sm:text-2xl">Answers</h2>
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-xl font-semibold sm:text-2xl">Jawaban</h2>
+          <p className="text-sm text-muted">
+            {event.acceptingQuestions ? "Menerima pertanyaan" : "Tidak menerima pertanyaan"} ·
+            review {event.moderation === "manual" ? "manual" : "otomatis"}
+          </p>
+        </div>
         <AdminBoard eventId={event.id} />
       </main>
     </>

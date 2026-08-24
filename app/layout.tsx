@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { QaProvider } from "@/lib/store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ask — Live Event Q&A",
-  description: "Send your question to the speaker, named or anonymous.",
+  title: "Ask — Tanya Jawab Majelis",
+  description: "Kirim pertanyaan Anda ke pemateri, dengan nama atau anonim.",
 };
 
 export const viewport: Viewport = {
@@ -19,9 +18,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang="id" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <QaProvider>{children}</QaProvider>
+        {children}
       </body>
     </html>
   );

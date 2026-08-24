@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { timecode, type Question } from "@/lib/mock";
-import { useQa } from "@/lib/store";
+import { fetchApproved } from "@/lib/actions";
+import { timecode, type Question } from "@/lib/types";
 
 /** Body length → font size. Long questions shrink so they still fit one screen. */
 function bodyClass(len: number) {
@@ -13,7 +13,6 @@ function bodyClass(len: number) {
 }
 
 export default function SpeakerDeck({ eventId }: { eventId: string }) {
-  const { fetchPage } = useQa();
   const [items, setItems] = useState<Question[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
@@ -33,17 +32,17 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
     if (loading.current || !cursorRef.current) return;
     loading.current = true;
     try {
-      const page = await fetchPage(eventId, cursorRef.current);
+      const page = await fetchApproved(eventId, cursorRef.current);
       setItems((prev) => [...prev, ...page.items]);
       applyCursor(page.nextCursor);
     } finally {
       loading.current = false;
     }
-  }, [eventId, fetchPage, applyCursor]);
+  }, [eventId, applyCursor]);
 
   useEffect(() => {
     let live = true;
-    fetchPage(eventId, null).then((page) => {
+    fetchApproved(eventId, null).then((page) => {
       if (!live) return;
       setItems(page.items);
       applyCursor(page.nextCursor);
@@ -52,7 +51,26 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
     return () => {
       live = false;
     };
-  }, [eventId, fetchPage, applyCursor]);
+  }, [eventId, applyCursor]);
+
+  // The syaikh is on stage and cannot be asked to pull-to-refresh. This is one of the two or
+  // three devices per event that poll; the audience keeps a manual Refresh button, which is what
+  // keeps 5000 phones off the server entirely. See ROADMAP.md §3.
+  useEffect(() => {
+    const id = setInterval(async () => {
+      if (loading.current) return;
+      const first = await fetchApproved(eventId, null);
+      setItems((prev) => {
+        const known = new Set(prev.map((q) => q.id));
+        const fresh = first.items.filter((q) => !known.has(q.id));
+        if (!fresh.length) return prev;
+        // Only page one is re-read, so anything new is merged into what we already hold and the
+        // deck re-sorts by created_at — the order the syaikh works through them.
+        return [...prev, ...fresh].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [eventId]);
 
   // Extend once the speaker is within 3 cards of the end, so the next batch is already there
   // when they swipe onto it. Driven by scroll position rather than an IntersectionObserver on
@@ -91,9 +109,9 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
   if (ready && items.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100">
-        <p className="text-2xl font-medium">No questions yet.</p>
+        <p className="text-2xl font-medium">Belum ada pertanyaan.</p>
         <Link href={`/events/${eventId}`} className="text-zinc-400 underline underline-offset-4">
-          Back to the event
+          Kembali ke sesi
         </Link>
       </div>
     );
@@ -105,7 +123,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
         ref={scroller}
         onScroll={onScroll}
         tabIndex={0}
-        aria-label="Question deck — swipe or use arrow keys"
+        aria-label="Daftar pertanyaan — geser atau gunakan tombol panah"
         className="flex h-dvh snap-x snap-mandatory overflow-x-auto overflow-y-hidden outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((q) => (
@@ -118,12 +136,12 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
                 {q.body}
               </p>
               <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-zinc-400">
-                {q.author ?? "Anonymous"}
+                {q.author ?? "Anonim"}
               </p>
               {q.answer && (
                 <div className="mt-8 border-l-4 border-indigo-400 pl-4">
                   <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
-                    Answered
+                    Dijawab
                     {q.videoStart != null && (
                       <span className="tabular-nums text-zinc-500">{timecode(q.videoStart)}</span>
                     )}
@@ -143,7 +161,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
           href={`/events/${eventId}`}
           className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-zinc-500 transition-colors hover:text-zinc-200"
         >
-          Exit
+          Keluar
         </Link>
         <span className="text-sm tabular-nums text-zinc-500">
           {Math.min(current + 1, items.length)} / {items.length}
@@ -157,7 +175,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
           onClick={() => go(-1)}
           disabled={current === 0}
           className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
-          aria-label="Previous question"
+          aria-label="Pertanyaan sebelumnya"
         >
           ←
         </button>
@@ -165,7 +183,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
           onClick={() => go(1)}
           disabled={current >= items.length - 1 && !cursor}
           className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
-          aria-label="Next question"
+          aria-label="Pertanyaan berikutnya"
         >
           →
         </button>

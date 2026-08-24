@@ -7,16 +7,25 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest": "node scripts/ingest-youtube.mjs"
+    "ingest": "node scripts/ingest-youtube.mjs",
+    "db:schema": "psql $DATABASE_URL -v ON_ERROR_STOP=1 -f db/schema.sql",
+    "db:seed": "node --experimental-strip-types db/seed.mts",
+    "auth:migrate": "node --experimental-strip-types db/auth-migrate.mts",
+    "admin:create": "node --experimental-strip-types db/create-admin.mts",
+    "check": "node --experimental-strip-types --conditions=react-server db/queries.check.mts"
   },
   "dependencies": {
+    "better-auth": "^1.7.1",
     "next": "16.3.1",
+    "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "20.19.43",
+    "@types/pg": "^8.23.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",

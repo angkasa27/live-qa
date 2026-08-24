@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import SpeakerDeck from "@/components/SpeakerDeck";
-import { events } from "@/lib/mock";
+import { getEvent } from "@/lib/queries";
+import { requireSession } from "@/lib/guard";
 
-// TODO(auth): this route and /admin are the two that get the auth middleware.
+export const dynamic = "force-dynamic";
+
+// The syaikh signs in with an admin account — there is no separate speaker account. ROADMAP §2.
 export default async function SpeakerPage({ params }: PageProps<"/events/[id]/speaker">) {
   const { id } = await params;
-  if (!events.some((e) => e.id === id)) notFound();
+  await requireSession(`/events/${id}/speaker`);
+  if (!(await getEvent(id))) notFound();
   return <SpeakerDeck eventId={id} />;
 }

@@ -1,0 +1,180 @@
+"use server";
+
+import { headers } from "next/headers";
+import { auth } from "./auth.ts";
+import { one, query } from "./db.ts";
+import { askerToken, ensureAskerToken, ipHash } from "./asker.ts";
+import { fetchPage as readPage, getEvent, getQuestion, listAllQuestions } from "./queries.ts";
+import { MAX_BODY, type Page, type Question, type QuestionStatus } from "./types.ts";
+
+export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string };
+
+const fail = (error: string): Result<never> => ({ ok: false, error });
+const done = <T>(data: T): Result<T> => ({ ok: true, data });
+
+async function requireAdmin() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+  return session.user;
+}
+
+// --- rate limiting -----------------------------------------------------------------------
+//
+// Two counters, and the split matters. A majelis puts hundreds of phones behind one mosque
+// wifi NAT, so they share a single address — an IP limit tight enough to stop one spammer would
+// lock out the whole room. The real per-person limit is on the browser token; the IP counter is
+// only a backstop against a script, set loose enough that a shared NAT never trips it.
+//
+// ponytail: counts rows in `questions`, so it only limits successful inserts — a flood of
+// rejects isn't throttled. Add a proper counter table if that ever shows up in the logs.
+const PER_ASKER = { max: 3, minutes: 10 };
+const PER_IP = { max: 60, minutes: 10 };
+
+async function rateLimited(token: string, hash: string) {
+  const row = await one<{ by_asker: string; by_ip: string }>(
+    `select
+       count(*) filter (where asker_token = $1
+                          and created_at > now() - make_interval(mins => $3::int)) as by_asker,
+       count(*) filter (where ip_hash = $2
+                          and created_at > now() - make_interval(mins => $4::int)) as by_ip
+     from questions
+     where created_at > now() - make_interval(mins => greatest($3::int, $4::int))`,
+    [token, hash, PER_ASKER.minutes, PER_IP.minutes],
+  );
+  if (!row) return null;
+  if (Number(row.by_asker) >= PER_ASKER.max)
+    return `Anda baru saja mengirim pertanyaan. Coba lagi beberapa menit lagi.`;
+  if (Number(row.by_ip) >= PER_IP.max) return `Terlalu banyak pertanyaan dari jaringan ini.`;
+  return null;
+}
+
+// --- student ------------------------------------------------------------------------------
+
+export async function addQuestion(input: {
+  eventId: string;
+  body: string;
+  author: string | null;
+  contact?: string | null;
+}): Promise<Result<Question>> {
+  const body = input.body.trim();
+
+  // The same rules SubmitForm shows, enforced where it counts. The DB has its own CHECK under
+  // this — these two exist to give a usable message, not to be the boundary.
+  if (!body) return fail("Tulis pertanyaan Anda dulu.");
+  if (body.length > MAX_BODY) return fail(`Maksimal ${MAX_BODY} karakter.`);
+
+  const contact = input.contact?.trim() || null;
+  if (contact && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact)) return fail("Alamat email tidak valid.");
+
+  const event = await getEvent(input.eventId);
+  if (!event) return fail("Sesi tidak ditemukan.");
+  if (!event.acceptingQuestions) return fail("Sesi ini sedang tidak menerima pertanyaan.");
+
+  const token = await ensureAskerToken();
+  const hash = await ipHash();
+  const limited = await rateLimited(token, hash);
+  if (limited) return fail(limited);
+
+  const author = input.author?.trim() || null;
+  const status: QuestionStatus = event.moderation === "manual" ? "submitted" : "approved";
+
+  const [row] = await query<{ id: string; created_at: Date }>(
+    `insert into questions
+       (event_id, body, status, is_anonymous, author, contact, asker_token, ip_hash)
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
+     returning id, created_at`,
+    [input.eventId, body, status, author === null, author, contact, token, hash],
+  );
+
+  return done({
+    id: row.id,
+    eventId: input.eventId,
+    body,
+    status,
+    answer: null,
+    retracted: false,
+    author,
+    createdAt: row.created_at.toISOString(),
+    mine: true,
+  });
+}
+
+export async function fetchPage(eventId: string, cursor: string | null): Promise<Page> {
+  return readPage(eventId, cursor, await askerToken());
+}
+
+/**
+ * The speaker deck. Approved only — deliberately NOT widened by the caller's own asker token
+ * the way fetchPage is. The tablet on stage may well have submitted a question itself (an admin
+ * testing the form, or the syaikh asking something), and a question awaiting review must never
+ * reach the screen the room is looking at. That is the entire point of moderation.
+ */
+export async function fetchApproved(eventId: string, cursor: string | null): Promise<Page> {
+  await requireAdmin();
+  return readPage(eventId, cursor, null);
+}
+
+// --- admin --------------------------------------------------------------------------------
+
+export async function adminList(eventId: string): Promise<Question[]> {
+  await requireAdmin();
+  return listAllQuestions(eventId);
+}
+
+/** Publishes directly and keeps every prior version. Empty string retracts. */
+export async function setAnswer(id: string, answer: string): Promise<Result<Question>> {
+  const user = await requireAdmin();
+  const text = answer.trim();
+  const retracted = text.length === 0;
+
+  const row = await one<{ id: string }>(
+    `update questions
+        set answer = $2, retracted = $3, answered_at = case when $3 then answered_at else now() end
+      where id = $1::uuid
+      returning id`,
+    [id, text || null, retracted],
+  );
+  if (!row) return fail("Pertanyaan tidak ditemukan.");
+
+  await query(
+    `insert into answer_revisions (question_id, answer, retracted, edited_by)
+     values ($1::uuid, $2, $3, $4)`,
+    [id, text || null, retracted, user.id],
+  );
+
+  const updated = await getQuestion(id);
+  return updated ? done(updated) : fail("Pertanyaan tidak ditemukan.");
+}
+
+export async function setQuestionStatus(id: string, status: QuestionStatus): Promise<Result> {
+  await requireAdmin();
+  const row = await one<{ id: string }>(
+    `update questions set status = $2 where id = $1::uuid returning id`,
+    [id, status],
+  );
+  return row ? done(undefined) : fail("Pertanyaan tidak ditemukan.");
+}
+
+export async function setEventFlags(
+  eventId: string,
+  patch: { status?: string; acceptingQuestions?: boolean | null; moderation?: string; publicArchive?: boolean },
+): Promise<Result> {
+  await requireAdmin();
+  await query(
+    `update events set
+       status              = coalesce($2, status),
+       accepting_questions = case when $3 then $4 else accepting_questions end,
+       moderation          = coalesce($5, moderation),
+       public_archive      = coalesce($6, public_archive)
+     where id = $1`,
+    [
+      eventId,
+      patch.status ?? null,
+      "acceptingQuestions" in patch,
+      patch.acceptingQuestions ?? null,
+      patch.moderation ?? null,
+      patch.publicArchive ?? null,
+    ],
+  );
+  return done(undefined);
+}

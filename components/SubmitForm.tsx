@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MAX_BODY, useQa } from "@/lib/store";
+import { addQuestion } from "@/lib/actions";
+import { MAX_BODY } from "@/lib/types";
 
-export default function SubmitForm({ eventId }: { eventId: string }) {
-  const { addQuestion } = useQa();
+export default function SubmitForm({
+  eventId,
+  moderated = false,
+}: {
+  eventId: string;
+  /** Manual moderation: say so up front rather than letting the question seem to vanish. */
+  moderated?: boolean;
+}) {
   const [body, setBody] = useState("");
   const [anonymous, setAnonymous] = useState(true);
   const [author, setAuthor] = useState("");
+  const [contact, setContact] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -19,21 +27,24 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!trimmed) return setError("Write your question first.");
-    if (over) return setError(`Keep it under ${MAX_BODY} characters.`);
+    if (!trimmed) return setError("Tulis pertanyaan Anda dulu.");
+    if (over) return setError(`Maksimal ${MAX_BODY} karakter.`);
 
     setError(null);
     setBusy(true);
     try {
-      await addQuestion({
+      // The server re-checks all of this. What's above is only there to save a round trip.
+      const res = await addQuestion({
         eventId,
         body: trimmed,
         author: anonymous ? null : author.trim() || null,
+        contact: contact.trim() || null,
       });
+      if (!res.ok) return setError(res.error);
       setBody("");
       setSent(true);
     } catch {
-      setError("Couldn't send that. Try again.");
+      setError("Gagal mengirim. Coba lagi.");
     } finally {
       setBusy(false);
     }
@@ -47,7 +58,7 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
       <div className="flex-1 space-y-5">
         <div>
           <label htmlFor="body" className="block text-sm font-medium">
-            Your question
+            Pertanyaan Anda
           </label>
           <textarea
             id="body"
@@ -58,7 +69,7 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
               setBody(e.target.value);
               if (sent) setSent(false);
             }}
-            placeholder="What would you like to ask?"
+            placeholder="Apa yang ingin Anda tanyakan?"
             className="mt-2 w-full resize-none rounded-xl border border-border bg-surface p-3.5 leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent"
           />
           <p className={`mt-1.5 text-right text-xs tabular-nums ${counterTone}`}>
@@ -68,7 +79,7 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
 
         <div className="rounded-xl border border-border bg-surface">
           <label className="flex min-h-[3.25rem] cursor-pointer items-center justify-between gap-3 px-4">
-            <span className="text-[0.9375rem] font-medium">Ask anonymously</span>
+            <span className="text-[0.9375rem] font-medium">Tanya secara anonim</span>
             <input
               type="checkbox"
               checked={anonymous}
@@ -79,27 +90,46 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
           {!anonymous && (
             <div className="border-t border-border px-4 py-3">
               <label htmlFor="author" className="block text-sm font-medium">
-                Your name
+                Nama Anda
               </label>
               <input
                 id="author"
                 value={author}
                 autoComplete="name"
                 onChange={(e) => setAuthor(e.target.value)}
-                placeholder="e.g. Rani"
+                placeholder="mis. Rani"
                 className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted focus:border-accent"
               />
             </div>
           )}
         </div>
 
+        <div className="rounded-xl border border-border bg-surface px-4 py-3">
+          <label htmlFor="contact" className="block text-sm font-medium">
+            Email <span className="font-normal text-muted">(opsional)</span>
+          </label>
+          <p className="mt-1 text-xs text-muted">
+            Untuk dikabari kalau pertanyaan Anda dijawab, termasuk setelah sesi selesai. Tidak
+            pernah ditampilkan — Anda tetap anonim.
+          </p>
+          <input
+            id="contact"
+            type="email"
+            value={contact}
+            autoComplete="email"
+            onChange={(e) => setContact(e.target.value)}
+            placeholder="nama@contoh.com"
+            className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted focus:border-accent"
+          />
+        </div>
+
         <div aria-live="polite" className="min-h-[1.5rem]">
           {error && <p className="text-sm font-medium text-red-500">{error}</p>}
           {sent && !error && (
             <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium text-accent">
-              Sent to the speaker.
-              <Link href={`/events/${eventId}/questions`} className="underline underline-offset-4">
-                See all questions →
+              {moderated ? "Terkirim, menunggu review admin." : "Terkirim ke pemateri."}
+              <Link href="/pertanyaan-saya" className="underline underline-offset-4">
+                Pertanyaan saya →
               </Link>
             </p>
           )}
@@ -112,7 +142,7 @@ export default function SubmitForm({ eventId }: { eventId: string }) {
           disabled={!canSend}
           className="min-h-[3rem] w-full rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {busy ? "Sending…" : "Send question"}
+          {busy ? "Mengirim…" : "Kirim pertanyaan"}
         </button>
       </div>
     </form>
