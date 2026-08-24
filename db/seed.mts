@@ -2,14 +2,9 @@
 // leaves anything submitted through the app alone (seeded ids are prefixed, real ones are uuids).
 //
 //   npm run db:seed
-import { readFileSync } from "node:fs";
+import "./env.mts";
 import { Pool } from "pg";
 import { events, questions } from "./seed-data.ts";
-
-for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")) {
-  const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
-  if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 

@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "ingest": "node scripts/ingest-youtube.mjs",
-    "db:schema": "psql $DATABASE_URL -v ON_ERROR_STOP=1 -f db/schema.sql",
+    "db:schema": "node --experimental-strip-types db/schema.mts",
     "db:seed": "node --experimental-strip-types db/seed.mts",
     "auth:migrate": "node --experimental-strip-types db/auth-migrate.mts",
     "admin:create": "node --experimental-strip-types db/create-admin.mts",
-    "check": "node --experimental-strip-types --conditions=react-server db/queries.check.mts"
+    "check": "node --experimental-strip-types --conditions=react-server db/queries.check.mts",
+    "setup": "node --experimental-strip-types db/setup.mts"
   },
   "dependencies": {
     "better-auth": "^1.7.1",

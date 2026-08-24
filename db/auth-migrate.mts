@@ -6,12 +6,7 @@
 // `npx @better-auth/cli`. The published CLI is deprecated and stalled several minors behind the
 // library, and running the two together silently produces an `account` table missing columns the
 // library expects. This can't drift: it is the same version as the app.
-import { readFileSync } from "node:fs";
-
-for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")) {
-  const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
-  if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-}
+import "./env.mts";
 
 const { getMigrations } = await import("better-auth/db/migration");
 const { authOptions } = await import("../lib/auth.ts");

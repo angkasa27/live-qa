@@ -2,12 +2,7 @@
 // is the only way in — including for a forgotten password, until email lands in step 4.
 //
 //   npm run admin:create -- "Nama" email@example.com "password-min-12-chars"
-import { readFileSync } from "node:fs";
-
-for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n")) {
-  const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
-  if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-}
+import "./env.mts";
 
 const [name, email, password] = process.argv.slice(2);
 if (!name || !email || !password) {

@@ -12,29 +12,51 @@ model, and what v1 is.
 
 ## Running it
 
-Needs Postgres 14+ (anything that speaks the wire protocol — local, Neon, or the Postgres in a
-Coolify/Dokploy stack; nothing here is host-specific).
+Needs Postgres 14+ and Node 22+. Any Postgres that speaks the wire protocol works — local, Neon,
+or the one in a Coolify/Dokploy stack; nothing here is host-specific.
 
 ```bash
 npm install
-cp .env.example .env.local        # then fill in DATABASE_URL and BETTER_AUTH_SECRET
-
-npm run db:schema                 # application tables
-npm run auth:migrate              # better-auth's own tables
-npm run db:seed                   # demo majelis + the two archived recordings
+cp .env.example .env.local        # fill in DATABASE_URL and BETTER_AUTH_SECRET
+npm run setup                     # schema + auth tables + demo data
 npm run admin:create -- "Nama" you@example.com "password-min-12-chars"
-
 npm run dev
-npm run check                     # pagination, visibility and rate-limit self-check
 ```
 
-`BETTER_AUTH_URL` is deliberately left unset in development — better-auth infers it from the
-request, and `next dev` moves off port 3000 whenever it's taken. A hardcoded port that stops
-matching surfaces as a 403 on sign-in, which reads like a wrong password. **Set it in production**;
-it's what the origin check compares against.
+`npm run check` runs the self-check for the parts that aren't obvious by reading: keyset
+pagination, who can see a question awaiting review, and the rate-limit window. It creates and
+removes its own scaffold event, including when an assertion fails.
 
-There is no sign-up page. An account is an admin account, so `admin:create` is the only way in —
-including for a forgotten password, until email lands in step 4.
+Individual steps, if you need them: `db:schema`, `auth:migrate`, `db:seed`.
+
+**`BETTER_AUTH_URL` is deliberately unset in development.** better-auth infers it from the
+request, and `next dev` moves off port 3000 whenever it's taken; a hardcoded port that stops
+matching surfaces as a 403 on sign-in, which reads like a wrong password. **Set it in
+production** — it's what the origin check compares against.
+
+**There is no sign-up page.** An account is an admin account, so `admin:create` is the only way
+in, including for a forgotten password until email lands in step 4.
+
+Every script reads `.env.local` itself and refuses to run without `DATABASE_URL`. That matters
+more than it sounds: `psql $DATABASE_URL` with the variable unset connects to whatever default
+database the local socket offers and creates the entire schema there, silently.
+
+### What to try
+
+The seed gives you six sessions covering all three states.
+
+| Try | Where |
+|---|---|
+| Submit a question, anonymously or named | `/events/devfest-25` — live, auto-approve, so it publishes immediately |
+| Watch moderation hold one back | `/events/ai-townhall` — live, **manual** review. Yours shows "menunggu review" to you and to nobody else |
+| Find your own questions again | `/pertanyaan-saya` — no login; the browser holds an opaque cookie |
+| Approve, hide, answer | `/events/ai-townhall/admin` — sign in first |
+| The stage view | `/events/ai-townhall/speaker` — approve something in another tab and it appears within ~4s |
+| A finished session | `/events/tanya-ustadz-24-jun` — archived, no form, replay buttons seek the embed |
+| The rate limit | Submit four questions inside ten minutes; the fourth is refused |
+
+An archived session is `noindex` and carries a disclaimer that the answer is an admin's summary
+and the recording is the authority.
 
 ## Screens
 
