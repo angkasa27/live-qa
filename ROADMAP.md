@@ -128,6 +128,14 @@ thing to tap. So: publish directly, keep every edit in history, make `retracted`
 shows the question with the answer withdrawn. Nothing is ever deleted. The fix path has to be as
 fast as the write path — one tap from the public list.
 
+**The speaker view opens from the event board, not from a shared link.**
+`/admin/events/[id]` carries a "Layar pemateri" button; the admin opens the majelis and hands the
+tablet over. An earlier draft had the syaikh open a signed unguessable URL so he'd never see a
+login — that's reversed: he signs in on a shared admin account (§2), so the deck is just another
+admin screen and there's no second auth path to keep working. If a syaikh ever needs the tablet
+to go straight to the deck, the cheap version is a direct link per row on `/admin`, not a new
+kind of credential.
+
 **Rate limits key on the browser, not the IP.**
 A majelis puts hundreds of phones behind one mosque wifi NAT, sharing a single address. An IP limit
 tight enough to stop one spammer locks out the entire room. So the real per-person limit is on the
@@ -208,7 +216,26 @@ working thing.
 | 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` | **done** |
 | 4 | Email | Notify on answer. The address is already collected and stored. | |
 | 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF | |
-| 6 | Archive | Public toggle, `noindex`, disclaimer | `noindex` and the disclaimer done |
+| 6 | Archive | Public toggle, `noindex`, disclaimer | only the toggle left |
+
+### What each of the three still needs
+
+**4 — Email.** `questions.contact` is already collected, validated and stored server-side, and
+`/pertanyaan-saya` already answers "was it answered?" for anyone who comes back on their own.
+Email is what closes the loop for anyone who doesn't. Send over plain SMTP rather than a provider
+SDK: it works identically on Vercel and on a self-hosted VPS, which keeps the Coolify/Dokploy move
+a Dockerfile (§3). Needs one decision from the organisers — which mailbox it sends from.
+
+**5 — Print.** One `@media print` stylesheet on the existing question list, and an admin button
+that calls `window.print()`. No PDF service and no dependency; the browser already does this. It
+prints whatever is on screen, so the same route covers both timings — the finished Q&A afterwards,
+and (once triage exists) the queue at the start. Hide the app chrome, keep question, attribution
+and answer.
+
+**6 — Archive.** `events.public_archive` exists as a column and is seeded, but there is no control
+for it. That's the whole remaining task: one more toggle in `components/EventControls.tsx`.
+`noindex` and the "this is an admin's summary, the recording is the authority" disclaimer already
+ship. Do not open archived sessions to search engines — see §8.
 
 **Out of v1, deliberately:** auto-triage, voice-to-text, WhatsApp notifications, Google and
 magic-link sign-in, ingestion automation, a syaikh-facing answer screen, websockets.
