@@ -101,6 +101,58 @@ retracts rather than deletes — the row and its history stay. See ROADMAP §3.
 Steps 4–6 in [§5](ROADMAP.md#5-v1): email on answer, the print stylesheet, and the archive
 visibility toggle.
 
+## Deploying to Vercel + Neon
+
+The app talks plain Postgres over `pg`, so nothing here is Neon-specific beyond the two
+connection strings. Same steps work against any managed Postgres.
+
+**1. Create the database.** A Neon project gives you two connection strings for it. The pooled
+one (`-pooler` in the hostname) is what the app runs on; the direct one is what migrations need.
+
+**2. Point a local `.env.local` at it and migrate from your machine.** Don't migrate during the
+Vercel build — a build that mutates the schema runs again on every rollback and every preview
+deploy.
+
+```bash
+DATABASE_URL=<pooled>  DATABASE_URL_UNPOOLED=<direct>  npm run setup
+npm run admin:create -- "Nama" you@example.com "password-min-12-chars"
+```
+
+`db/env.mts` swaps in `DATABASE_URL_UNPOOLED` automatically for those scripts, and refuses to run
+if you hand it a pooled host with no direct one set.
+
+**3. Set these in Vercel** (all environments you intend to use):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon **pooled** connection string |
+| `DATABASE_URL_UNPOOLED` | Neon **direct** connection string |
+| `BETTER_AUTH_SECRET` | 32 random bytes — `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
+| `BETTER_AUTH_URL` | Your deployed origin, e.g. `https://ask.example.com`. **Required in production** |
+| `IP_HASH_SALT` | 16 random bytes, same generator |
+
+`BETTER_AUTH_URL` is the one that will bite you: unset, better-auth infers the origin per request
+and sign-in fails with a 403 that reads like a wrong password. It must match the origin the
+browser actually uses, so set it to your custom domain rather than the `*.vercel.app` alias if you
+have one.
+
+**4. Deploy.** No build configuration needed — `next build` is the default and there's no
+`vercel.json`.
+
+Notes specific to serverless:
+
+- `lib/db.ts` keeps the pool at `DB_POOL_MAX` (default 5) and registers it with
+  `attachDatabasePool` from `@vercel/functions`, so Fluid compute drains it when an instance
+  suspends rather than stranding connections. Raise `DB_POOL_MAX` only if you move to a single
+  long-lived server.
+- Neon computes scale to zero after idling. The first request after that pays a cold start of a
+  few hundred ms. That's fine for this app — nobody is watching an empty majelis — but it means
+  the very first question of a session may feel slow. Disable scale-to-zero on a paid plan if it
+  ever matters during a dauroh.
+- `lib/asker.ts` reads `x-forwarded-for` for the rate-limit hash, which Vercel sets correctly. It
+  falls back to `x-real-ip`, then to a constant — so behind a proxy that strips both, the IP
+  backstop degrades to one shared bucket. The per-browser limit still holds.
+
 ## Transcript ingestion
 
 Parked, and deliberately manual — see [§7](ROADMAP.md#7-transcript-ingestion--frozen). The two

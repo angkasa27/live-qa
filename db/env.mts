@@ -23,3 +23,23 @@ if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL is not set in .env.local.");
   process.exit(1);
 }
+
+/**
+ * Schema changes must not go through a transaction-mode connection pooler. On Neon that means
+ * the host *without* the `-pooler` suffix: PgBouncer drops session state between statements, and
+ * the failures don't mention pooling — a `SET search_path` that silently doesn't persist, or a
+ * write landing in a backend that inherited a read-only transaction.
+ *
+ * So every script here runs against DATABASE_URL_UNPOOLED when it's set, and the app keeps the
+ * pooled one. Locally there's no pooler and the two are the same, so this does nothing.
+ */
+if (process.env.DATABASE_URL_UNPOOLED) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED;
+} else if (process.env.DATABASE_URL.includes("-pooler.")) {
+  console.error(
+    "DATABASE_URL points at a pooled host and DATABASE_URL_UNPOOLED is not set.\n" +
+      "Schema migrations need a direct connection — set DATABASE_URL_UNPOOLED to the same\n" +
+      "connection string with the `-pooler` suffix removed from the host.",
+  );
+  process.exit(1);
+}
