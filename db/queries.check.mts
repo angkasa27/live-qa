@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import "./env.mts";
 
 const { pool, query } = await import("../lib/db.ts");
-const { fetchPage } = await import("../lib/queries.ts");
+const { fetchPage, listEvents, listEventsForAdmin } = await import("../lib/queries.ts");
 
 const EVENT = `check-${randomUUID().slice(0, 8)}`;
 const MINE = randomUUID();
@@ -77,6 +77,22 @@ try {
   const [kept] = await query<{ answer: string }>(
     `select answer from questions where event_id = $1 and body = 'retracted'`, [EVENT]);
   assert.equal(kept.answer, "was wrong", "retracted answer was destroyed, not withheld");
+
+  // --- the list queries actually execute ---
+  // These join and aggregate, which the type checker cannot see into: an unqualified column or a
+  // bad group-by is a runtime error only, and it takes out the whole page when it fires.
+  const admin = await listEventsForAdmin();
+  const row = admin.find((e) => e.id === EVENT);
+  assert.ok(row, "the admin list dropped an event that exists");
+  assert.equal(row.total, 28, "admin total count is wrong");
+  assert.equal(row.pending, 2, "admin pending count is wrong");
+  // 25 approved with no answer + 2 pending; the retracted one has an answer row, so it is not
+  // unanswered, and hidden questions are excluded.
+  assert.equal(row.unanswered, 27, "admin unanswered count is wrong");
+
+  const pub = (await listEvents()).find((e) => e.id === EVENT);
+  assert.ok(pub, "the public list dropped an event that exists");
+  assert.equal(pub.questionCount, 26, "public count should be approved only");
 
   // --- rate limit: the window actually excludes what falls outside it ---
   // The 25 approved rows were backdated ~16 minutes; the 3 others went in at now(). A counter that

@@ -1,11 +1,26 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { auth } from "./auth.ts";
 import { one, query } from "./db.ts";
 import { askerToken, ensureAskerToken, ipHash } from "./asker.ts";
-import { fetchPage as readPage, getEvent, getQuestion, listAllQuestions } from "./queries.ts";
-import { MAX_BODY, type Page, type Question, type QuestionStatus } from "./types.ts";
+import {
+  fetchPage as readPage,
+  getEvent,
+  getQuestion,
+  listAllQuestions,
+  listEventsForAdmin,
+} from "./queries.ts";
+import {
+  MAX_BODY,
+  parseVideoId,
+  slugify,
+  type EventStatus,
+  type Page,
+  type Question,
+  type QuestionStatus,
+} from "./types.ts";
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -155,18 +170,38 @@ export async function setQuestionStatus(id: string, status: QuestionStatus): Pro
   return row ? done(undefined) : fail("Pertanyaan tidak ditemukan.");
 }
 
-export async function setEventFlags(
+export async function adminEvents() {
+  await requireAdmin();
+  return listEventsForAdmin();
+}
+
+const STATUSES: EventStatus[] = ["scheduled", "live", "archived"];
+
+/**
+ * `acceptingQuestions: null` hands the decision back to the status (open only while live).
+ * true/false pin it either way — that's what keeps an archived session taking questions when
+ * the organiser wants that. Undefined means "don't touch".
+ */
+export async function updateEvent(
   eventId: string,
-  patch: { status?: string; acceptingQuestions?: boolean | null; moderation?: string; publicArchive?: boolean },
+  patch: {
+    status?: EventStatus;
+    acceptingQuestions?: boolean | null;
+    moderation?: "auto" | "manual";
+    publicArchive?: boolean;
+  },
 ): Promise<Result> {
   await requireAdmin();
-  await query(
+  if (patch.status && !STATUSES.includes(patch.status)) return fail("Status tidak dikenal.");
+
+  const row = await one<{ id: string }>(
     `update events set
        status              = coalesce($2, status),
        accepting_questions = case when $3 then $4 else accepting_questions end,
        moderation          = coalesce($5, moderation),
        public_archive      = coalesce($6, public_archive)
-     where id = $1`,
+     where id = $1
+     returning id`,
     [
       eventId,
       patch.status ?? null,
@@ -176,5 +211,52 @@ export async function setEventFlags(
       patch.publicArchive ?? null,
     ],
   );
+  if (!row) return fail("Sesi tidak ditemukan.");
+  revalidatePath("/admin");
+  revalidatePath(`/events/${eventId}`);
   return done(undefined);
+}
+
+export async function createEvent(input: {
+  name: string;
+  startsAt: string;
+  venue: string;
+  speaker: string;
+  status: EventStatus;
+  moderation: "auto" | "manual";
+  video?: string;
+  image?: string;
+}): Promise<Result<{ id: string }>> {
+  const user = await requireAdmin();
+
+  const name = input.name.trim();
+  const venue = input.venue.trim();
+  const speaker = input.speaker.trim();
+  if (!name) return fail("Nama majelis wajib diisi.");
+  if (!venue) return fail("Tempat wajib diisi.");
+  if (!speaker) return fail("Nama pemateri wajib diisi.");
+  if (!STATUSES.includes(input.status)) return fail("Status tidak dikenal.");
+  if (Number.isNaN(Date.parse(input.startsAt))) return fail("Waktu mulai tidak valid.");
+
+  const video = input.video?.trim();
+  const youtubeId = video ? parseVideoId(video) : null;
+  if (video && !youtubeId) return fail("Tautan YouTube tidak dikenali.");
+
+  const base = slugify(name) || "majelis";
+  // Two majelis can legitimately share a name across terms, so the id gets a suffix rather than
+  // the creation failing on a collision the organiser can do nothing about.
+  const [{ id }] = await query<{ id: string }>(
+    `insert into events (id, name, starts_at, venue, speaker, status, moderation, youtube_id, image, created_by)
+     select case when exists (select 1 from events where id = $1)
+                 then $1 || '-' || substr(md5(random()::text), 1, 4)
+                 else $1 end,
+            $2, $3, $4, $5, $6, $7, $8, $9, $10
+     returning id`,
+    [base, name, input.startsAt, venue, speaker, input.status, input.moderation,
+     youtubeId, input.image?.trim() || null, user.id],
+  );
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return done({ id });
 }

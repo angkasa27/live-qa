@@ -110,7 +110,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100">
         <p className="text-2xl font-medium">Belum ada pertanyaan.</p>
-        <Link href={`/events/${eventId}`} className="text-zinc-400 underline underline-offset-4">
+        <Link href={`/admin/events/${eventId}`} className="text-zinc-400 underline underline-offset-4">
           Kembali ke sesi
         </Link>
       </div>
@@ -158,7 +158,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
         <Link
-          href={`/events/${eventId}`}
+          href={`/admin/events/${eventId}`}
           className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-zinc-500 transition-colors hover:text-zinc-200"
         >
           Keluar

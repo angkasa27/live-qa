@@ -68,13 +68,14 @@ from home, build for it then.
 | Route | Who | What it does | State |
 |---|---|---|---|
 | `/` | Student | Pick a session. Cover, status badge, question count. | Built |
-| `/events/[id]` | Student | Submit a question, anonymous by default. Player when there's a stream. | Built, needs rework |
+| `/events/[id]` | Student | Submit a question, anonymous by default. Player when there's a stream. | Built |
 | `/events/[id]/questions` | Student | Everything asked, answers underneath. Manual refresh, cursor-paged. | Built |
-| `/pertanyaan-saya` | Student | Your own questions and whether they've been answered. | **Next** |
-| `/admin` | Admin | Sessions you run. | **Next** |
-| `/admin/events/new` | Admin | Create a session. | **Next** |
-| `/admin/events/[id]` | Admin | Approval queue, type in answers, print. | Built as `/events/[id]/admin`, needs rework |
-| `/admin/events/[id]/speaker` | Syaikh | Full-screen deck, one question per card, swipe to advance. | Built as `/events/[id]/speaker` |
+| `/pertanyaan-saya` | Student | Your own questions and whether they've been answered. | Built |
+| `/masuk` | Admin | Sign in. No sign-up — see §4. | Built |
+| `/admin` | Admin | Sessions you run, with pending and unanswered counts. | Built |
+| `/admin/events/new` | Admin | Create a session. | Built |
+| `/admin/events/[id]` | Admin | Status and moderation controls, approval queue, type in answers. Print next. | Built |
+| `/admin/events/[id]/speaker` | Syaikh | Full-screen deck, one question per card, swipe to advance. | Built |
 
 ## 3. Decisions worth remembering
 
@@ -182,11 +183,18 @@ later — both configuration rather than a migration. **Sign-up is closed.** An 
 account, and a public sign-up endpoint on an admin-only system is a hole; the only way in is
 `npm run admin:create`. A student is not an account at all — they're an opaque token in a cookie.
 
-Events are meant to belong to an **organisation**, not an individual: a dauroh is run by a lembaga
-with several people helping, and per-individual accounts break the first time someone else opens
-the admin screen. **That is not built yet** — step 1 shipped `events.created_by` and nothing more,
-because there is no event-creation screen for an owner to be assigned by. Orgs land with
-`/admin/events/new` in step 2, which is the first code that needs them.
+Events carry `created_by` and nothing else. **Every admin sees every majelis.**
+
+§5 originally put organisation ownership in step 2, alongside event creation. Building it there
+turned out to be scaffolding: the syaikh already signs in on a shared admin account, so accounts
+are shared by design, and with one lembaga on the deployment an org filter would return the same
+list every time. The rationale for orgs — "per-individual accounts break the first time someone
+else opens the admin screen" — is already answered by the accounts being shared.
+
+The trigger for building it is a real one, not a guess: **a second lembaga on the same
+deployment.** At that point `events.org_id`, a members table, and a filter on the admin list are
+an additive migration, and better-auth's organization plugin does most of it. Until then it is a
+join nobody needs.
 
 ## 5. v1
 
@@ -196,7 +204,7 @@ working thing.
 | # | Step | What | |
 |---|---|---|---|
 | 1 | Backend + auth | Postgres, better-auth, real queries, server-side validation, rate limiting, the status model | **done** |
-| 2 | Admin | `/admin` home and event creation (with orgs), the moderation toggle as a control rather than a seeded column, routes moved under `/admin` | |
+| 2 | Admin | `/admin` home, event creation, status and moderation as controls, routes moved under `/admin` | **done** — orgs deferred, see §4 |
 | 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` | **done** |
 | 4 | Email | Notify on answer. The address is already collected and stored. | |
 | 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF | |

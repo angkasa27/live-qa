@@ -55,5 +55,31 @@ export function timecode(s: number) {
   return `${h ? `${h}:` : ""}${mm}:${String(sec).padStart(2, "0")}`;
 }
 
+/** Accepts a watch URL, a youtu.be link, or a bare id. Returns null when there's nothing there. */
+export function parseVideoId(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^[\w-]{11}$/.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    const id = url.hostname.endsWith("youtu.be")
+      ? url.pathname.slice(1)
+      : (url.searchParams.get("v") ?? url.pathname.split("/").pop() ?? "");
+    return /^[\w-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "Kajian Ahad Pagi" → "kajian-ahad-pagi". Ids are in URLs, so they stay readable. */
+export function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
 export const MAX_BODY = 500;
 export const PAGE_SIZE = 10;

@@ -44,10 +44,12 @@ function toQuestion(r: QuestionRow): Question {
   };
 }
 
+// Always qualified with the `e` alias: the admin list joins questions, and an unqualified `id`
+// is ambiguous the moment it does. Every reader below selects `from events e`.
 const EVENT_COLS = `
-  id, name, starts_at, venue, speaker, status,
-  coalesce(accepting_questions, status = 'live') as accepting_questions,
-  moderation, public_archive, image, youtube_id
+  e.id, e.name, e.starts_at, e.venue, e.speaker, e.status,
+  coalesce(e.accepting_questions, e.status = 'live') as accepting_questions,
+  e.moderation, e.public_archive, e.image, e.youtube_id
 `;
 
 type EventRow = {
@@ -81,7 +83,7 @@ function toEvent(r: EventRow): Event {
 }
 
 export async function getEvent(id: string) {
-  const row = await one<EventRow>(`select ${EVENT_COLS} from events where id = $1`, [id]);
+  const row = await one<EventRow>(`select ${EVENT_COLS} from events e where e.id = $1`, [id]);
   return row && toEvent(row);
 }
 
@@ -90,9 +92,9 @@ export async function listEvents() {
   const rows = await query<EventRow & { question_count: string }>(
     `select ${EVENT_COLS},
             (select count(*) from questions q
-              where q.event_id = events.id and q.status = 'approved') as question_count
-       from events
-      order by starts_at desc`,
+              where q.event_id = e.id and q.status = 'approved') as question_count
+       from events e
+      order by e.starts_at desc`,
   );
   return rows.map((r) => ({ ...toEvent(r), questionCount: Number(r.question_count) }));
 }
@@ -132,6 +134,30 @@ export async function fetchPage(
   // turns out to be empty.
   const items = rows.slice(0, limit).map(toQuestion);
   return { items, nextCursor: rows.length > limit ? items[items.length - 1].id : null };
+}
+
+/** The admin session list: every event, with the counts an operator actually triages on. */
+export async function listEventsForAdmin() {
+  const rows = await query<EventRow & { total: string; pending: string; unanswered: string }>(
+    `select ${EVENT_COLS},
+            count(q.id)                                       as total,
+            count(q.id) filter (where q.status = 'submitted')  as pending,
+            count(q.id) filter (where q.answer is null
+                                  and q.status <> 'hidden')    as unanswered
+       from events e
+       left join questions q on q.event_id = e.id
+      group by e.id
+      order by
+        -- Live sessions first: during a dauroh that is the only row anyone wants.
+        case e.status when 'live' then 0 when 'scheduled' then 1 else 2 end,
+        e.starts_at desc`,
+  );
+  return rows.map((r) => ({
+    ...toEvent(r),
+    total: Number(r.total),
+    pending: Number(r.pending),
+    unanswered: Number(r.unanswered),
+  }));
 }
 
 /** A single question, mapped. Used by the admin write paths to return fresh state. */

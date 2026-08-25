@@ -50,8 +50,11 @@ The seed gives you six sessions covering all three states.
 | Submit a question, anonymously or named | `/events/devfest-25` — live, auto-approve, so it publishes immediately |
 | Watch moderation hold one back | `/events/ai-townhall` — live, **manual** review. Yours shows "menunggu review" to you and to nobody else |
 | Find your own questions again | `/pertanyaan-saya` — no login; the browser holds an opaque cookie |
-| Approve, hide, answer | `/events/ai-townhall/admin` — sign in first |
-| The stage view | `/events/ai-townhall/speaker` — approve something in another tab and it appears within ~4s |
+| Run a session | `/admin` — pending and unanswered counts per majelis, live ones first |
+| Create one | `/admin/events/new` — paste a YouTube link and it echoes back the id it parsed |
+| Approve, hide, answer | `/admin/events/ai-townhall` |
+| Close questions on a live session | Same page → **Menerima pertanyaan → Tutup**. "Ikut status" puts it back on automatic |
+| The stage view | `/admin/events/ai-townhall/speaker` — approve something in another tab and it appears within ~4s |
 | A finished session | `/events/tanya-ustadz-24-jun` — archived, no form, replay buttons seek the embed |
 | The rate limit | Submit four questions inside ten minutes; the fourth is refused |
 
@@ -67,12 +70,17 @@ and the recording is the authority.
 | `/events/[id]/questions` | student | All questions + answers, manual Refresh, Load more |
 | `/pertanyaan-saya` | student | Your own questions and whether they've been answered |
 | `/masuk` | admin | Sign in |
-| `/events/[id]/admin` | admin | Approve, hide, type in the answers |
-| `/events/[id]/speaker` | syaikh | Full-screen swipe deck, extends as you near the end |
+| `/admin` | admin | Sessions, with pending and unanswered counts |
+| `/admin/events/new` | admin | Create a session |
+| `/admin/events/[id]` | admin | Status and moderation controls, approve, hide, answer |
+| `/admin/events/[id]/speaker` | syaikh | Full-screen swipe deck, extends as you near the end |
 
-The two admin routes are guarded twice: `proxy.ts` does a cheap cookie-presence redirect, and
+Everything under `/admin` is guarded twice: `proxy.ts` does a cheap cookie-presence redirect, and
 every protected page calls `requireSession()` in `lib/guard.ts`. Only the second is a real
 authorization boundary — Next's own docs are explicit that Proxy isn't one.
+
+Every admin sees every majelis. Organisation ownership is deferred until a second lembaga shares
+a deployment — see [§4](ROADMAP.md#4-data-model).
 
 ## How it fits together
 
@@ -90,8 +98,8 @@ retracts rather than deletes — the row and its history stay. See ROADMAP §3.
 
 ## Next
 
-Step 2 in [§5](ROADMAP.md#5-v1): an `/admin` home, event creation, organisation ownership, and
-moving the two admin routes under `/admin`. Then email, print, and the archive toggle.
+Steps 4–6 in [§5](ROADMAP.md#5-v1): email on answer, the print stylesheet, and the archive
+visibility toggle.
 
 ## Transcript ingestion
 

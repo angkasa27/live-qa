@@ -16,5 +16,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/events/:id/admin", "/events/:id/speaker"],
+  matcher: ["/admin/:path*"],
 };
