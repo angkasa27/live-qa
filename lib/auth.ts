@@ -20,8 +20,9 @@ export function authOptions({ allowSignUp = false } = {}) {
     emailAndPassword: {
       enabled: true,
       disableSignUp: !allowSignUp,
-      // Email is step 4. Until then a forgotten password is one `npm run admin:create` away.
-      minPasswordLength: 12,
+      // This only ever gates `npm run admin:create` — sign-up is closed, so there is no public
+      // form for it to protect. Kept as a floor against a genuinely careless operator password.
+      minPasswordLength: 8,
     },
   };
 }

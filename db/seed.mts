@@ -1,16 +1,31 @@
 // Load the demo data into a fresh database. Idempotent: re-running replaces the seeded rows and
-// leaves anything submitted through the app alone (seeded ids are prefixed, real ones are uuids).
+// leaves anything submitted through the app alone (real questions carry an asker_token).
 //
-//   npm run db:seed
+//   npm run db:seed                        everything
+//   npm run db:seed -- --status archived   only the two real recorded majelis
+//
+// The filter exists because the live/scheduled seed events are fictional demo data, and a real
+// deployment wants the archived recordings without "DevFest Jakarta 2026" alongside them.
 import "./env.mts";
 import { Pool } from "pg";
 import { events, questions } from "./seed-data.ts";
+
+const flag = process.argv.indexOf("--status");
+const only = flag === -1 ? null : process.argv[flag + 1];
+if (flag !== -1 && !["scheduled", "live", "archived"].includes(only ?? "")) {
+  console.error("--status must be one of: scheduled, live, archived");
+  process.exit(1);
+}
+
+const wanted = only ? events.filter((e) => e.status === only) : events;
+const wantedIds = new Set(wanted.map((e) => e.id));
+const wantedQuestions = questions.filter((q) => wantedIds.has(q.eventId));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 await pool.query("begin");
 try {
-  for (const e of events) {
+  for (const e of wanted) {
     await pool.query(
       `insert into events (id, name, starts_at, venue, speaker, status, moderation, public_archive, image, youtube_id)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
@@ -24,11 +39,16 @@ try {
     );
   }
 
-  // Seeded questions are wiped and rewritten wholesale; they carry no asker_token, so they can
-  // never be mistaken for something a real student submitted.
-  await pool.query(`delete from questions where asker_token is null and ip_hash is null`);
+  // Seeded questions are rewritten wholesale, but only for the events being seeded — a filtered
+  // run must not clear another event's rows. Anything a real student submitted carries an
+  // asker_token and is never touched.
+  await pool.query(
+    `delete from questions
+      where event_id = any($1) and asker_token is null and ip_hash is null`,
+    [[...wantedIds]],
+  );
 
-  for (const q of questions) {
+  for (const q of wantedQuestions) {
     await pool.query(
       `insert into questions (event_id, body, status, answer, answered_at, is_anonymous, author, source, video_start, created_at)
        values ($1,$2,'approved',$3,$4,$5,$6,$7,$8,$9)`,
