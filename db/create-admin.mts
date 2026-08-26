@@ -1,5 +1,5 @@
 // Create an admin account. Sign-up is closed on the running app by design (lib/auth.ts), so this
-// is the only way in — including for a forgotten password, until email lands in step 4.
+// is the only way in, including for a forgotten password, until email lands in step 4.
 //
 //   npm run admin:create -- "Nama" email@example.com "password-min-12-chars"
 import "./env.mts";

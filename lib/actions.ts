@@ -45,7 +45,7 @@ export async function addQuestion(input: {
   const body = input.body.trim();
 
   // The same rules SubmitForm shows, enforced where it counts. The DB has its own CHECK under
-  // this — these two exist to give a usable message, not to be the boundary.
+  // this; these two exist to give a usable message, not to be the boundary.
   if (!body) return fail("Tulis pertanyaan Anda dulu.");
   if (body.length > MAX_BODY) return fail(`Maksimal ${MAX_BODY} karakter.`);
 
@@ -90,7 +90,7 @@ export async function fetchPage(eventId: string, cursor: string | null): Promise
 }
 
 /**
- * The speaker deck. Approved only — deliberately NOT widened by the caller's own asker token
+ * The speaker deck. Approved only, deliberately NOT widened by the caller's own asker token
  * the way fetchPage is. The tablet on stage may well have submitted a question itself (an admin
  * testing the form, or the syaikh asking something), and a question awaiting review must never
  * reach the screen the room is looking at. That is the entire point of moderation.
@@ -150,7 +150,7 @@ const STATUSES: EventStatus[] = ["scheduled", "live", "archived"];
 
 /**
  * `acceptingQuestions: null` hands the decision back to the status (open only while live).
- * true/false pin it either way — that's what keeps an archived session taking questions when
+ * true/false pin it either way; that's what keeps an archived session taking questions when
  * the organiser wants that. Undefined means "don't touch".
  */
 export async function updateEvent(

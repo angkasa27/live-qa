@@ -59,7 +59,7 @@ export default function NewEventForm() {
       <div>
         <label htmlFor="name" className="block text-sm font-medium">Nama majelis</label>
         <input id="name" required value={name} onChange={(e) => setName(e.target.value)}
-          placeholder="mis. Kajian Ahad Pagi — Kitab Tauhid" className={INPUT} />
+          placeholder="mis. Kajian Ahad Pagi Kitab Tauhid" className={INPUT} />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">

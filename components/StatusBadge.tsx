@@ -1,6 +1,6 @@
 import type { EventStatus } from "@/lib/types";
 
-/** Where the session is in its life. Says nothing about whether it has video — see ROADMAP §2. */
+/** Where the session is in its life. Says nothing about whether it has video; see ROADMAP §2. */
 export default function StatusBadge({ status }: { status: EventStatus }) {
   if (status === "live") {
     return (

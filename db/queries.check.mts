@@ -106,9 +106,9 @@ try {
   assert.equal(Number(recent), 3, "window is counting rows that fell out of it");
   assert.equal(Number(old), 25, "window is dropping rows that are still inside it");
 } finally {
-  // Runs even when an assertion throws — otherwise a failed check leaves its scaffold
+  // Runs even when an assertion throws; otherwise a failed check leaves its scaffold
   // event behind and it turns up in the app as a stray session.
   await query(`delete from events where id = $1`, [EVENT]); // cascades to questions
   await pool.end();
 }
-console.log("queries ok — 26 rows over 3 pages, visibility and retraction hold");
+console.log("queries ok: 26 rows over 3 pages, visibility and retraction hold");

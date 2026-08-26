@@ -110,7 +110,7 @@ export default function SubmitForm({
           </label>
           <p className="mt-1 text-xs text-muted">
             Untuk dikabari kalau pertanyaan Anda dijawab, termasuk setelah sesi selesai. Tidak
-            pernah ditampilkan — Anda tetap anonim.
+            pernah ditampilkan, Anda tetap anonim.
           </p>
           <input
             id="contact"

@@ -1,6 +1,6 @@
 # Adding a recorded event
 
-> **Parked — see [ROADMAP.md §7](ROADMAP.md#7-transcript-ingestion--frozen).** Ingestion is
+> **Parked, see [ROADMAP.md §7](ROADMAP.md#7-transcript-ingestion-frozen).** Ingestion is
 > deliberately manual and off the critical path: the archive is a byproduct of live sessions that
 > already produce clean data. This process still works and is worth keeping, but **don't build a
 > self-serve ingest button** until the republishing question below has an answer. The `Event` and
@@ -17,12 +17,12 @@ npm run ingest -- "https://youtu.be/VIDEO_ID" --lang en
 
 Requires `yt-dlp` (`pip install -U yt-dlp`). It will:
 
-- write `data/<id>.transcript.json` — every caption line as `{ t, text }`, `t` in seconds
+- write `data/<id>.transcript.json`, every caption line as `{ t, text }`, `t` in seconds
 - print a ready-to-paste `Event` object for `lib/mock.ts`
 - print candidate question boundaries, tagged `[cue]` (a host announced it) or `[ask]` (just an
   interrogative in the text)
 
-**Read the cue/ask split in the summary line — it tells you how hard step 2 will be.** A video
+**Read the cue/ask split in the summary line; it tells you how hard step 2 will be.** A video
 where most candidates are `[cue]` has a host introducing each question and is close to
 mechanical. A video where they're nearly all `[ask]` has the speaker reading questions aloud
 mid-flow, and you'll be relying on the model to find the seams. The two seeded videos differ
@@ -51,11 +51,11 @@ Paste this, filling in the two blanks:
 >   turn in the conversation, not by pattern-matching one phrase. In some sessions a host
 >   announces every question; in others the speaker reads them aloud himself with no cue.
 > - `videoStart` is the second the **answer** begins, not the second the question is read. That's
->   the replay anchor — landing on the question means the viewer sits through it again.
+>   the replay anchor. Landing on the question means the viewer sits through it again.
 > - **Rewrite, don't transcribe.** Auto-captions carry filler, false starts, and mis-heard words.
 >   Write each question as a clean sentence that says what was actually asked. Same for answers:
 >   they run several minutes with digressions, so write a faithful summary of the ruling or point
->   made — the replay link carries anyone who wants the full thing.
+>   made; the replay link carries anyone who wants the full thing.
 > - Keep the transcript's own language. Don't translate.
 > - `author` is whatever attribution the recording gives ("Hamba Allah · perempuan, 29 · Jakarta
 >   Pusat"), or `null` if none is stated. Don't invent one.
@@ -85,7 +85,7 @@ should seek the embedded player rather than leaving for YouTube.
 - **Not every video has captions** in the language you asked for. The script says so and exits
   rather than writing an empty transcript.
 - **Transcripts are committed on purpose.** Re-fetching is the fragile step, so the good copy is
-  worth version-controlling — and it's the raw material for extracting more pairs later.
+  worth version-controlling, and it's the raw material for extracting more pairs later.
 - **Republishing someone else's talk as text** is a different act from linking to it. Fine for
   these samples; the open question in [ROADMAP.md §8](ROADMAP.md#8-open-questions) is what blocks
   this becoming a self-serve button.

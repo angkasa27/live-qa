@@ -61,7 +61,7 @@ function Row({ q, onChange }: { q: Question; onChange: (next: Question) => void 
           )}
         </p>
 
-        {/* Hiding is a human click and it is reversible. Nothing here deletes — ROADMAP.md §6. */}
+        {/* Hiding is a human click and it is reversible. Nothing here deletes. See ROADMAP.md §6. */}
         <div className="mt-3 flex flex-wrap gap-2">
           {q.status !== "approved" && (
             <button

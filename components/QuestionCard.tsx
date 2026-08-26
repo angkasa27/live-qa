@@ -7,7 +7,7 @@ import { useSyncExternalStore } from "react";
 
 const noop = () => () => {};
 
-/** Blank on the server pass, relative once hydrated — "2 minutes ago" computed on the server
+/** Blank on the server pass, relative once hydrated; "2 minutes ago" computed on the server
  *  would never match the value the client computes a moment later. */
 function Timestamp({ iso }: { iso: string }) {
   const label = useSyncExternalStore(
@@ -98,7 +98,7 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
         ) : (
           <Timestamp iso={q.createdAt} />
         )}
-        {/* Only ever set on questions this browser submitted — see lib/queries.ts. A student
+        {/* Only ever set on questions this browser submitted; see lib/queries.ts. A student
             who submits into a moderation queue and sees nothing assumes it failed and submits
             again, so their own pending question stays visible to them alone. */}
         {q.status === "submitted" && (

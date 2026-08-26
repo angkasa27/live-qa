@@ -65,7 +65,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
         const fresh = first.items.filter((q) => !known.has(q.id));
         if (!fresh.length) return prev;
         // Only page one is re-read, so anything new is merged into what we already hold and the
-        // deck re-sorts by created_at — the order the syaikh works through them.
+        // deck re-sorts by created_at, the order the syaikh works through them.
         return [...prev, ...fresh].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
       });
     }, 4000);
@@ -123,7 +123,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
         ref={scroller}
         onScroll={onScroll}
         tabIndex={0}
-        aria-label="Daftar pertanyaan — geser atau gunakan tombol panah"
+        aria-label="Daftar pertanyaan: geser atau gunakan tombol panah"
         className="flex h-dvh snap-x snap-mandatory overflow-x-auto overflow-y-hidden outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((q) => (

@@ -1,4 +1,4 @@
-// Seed data for a fresh database — the demo majelis plus the two hand-extracted recordings.
+// Seed data for a fresh database: the demo majelis plus the two hand-extracted recordings.
 // Loaded by db/seed.mjs. This is not application code: nothing in app/ or lib/ imports it.
 //
 // The "live"/"scheduled" events are fictional demo data for the submit-and-answer flow. The two
@@ -202,8 +202,8 @@ export const questions: SeedQuestion[] = BODIES.map(([body, author, answer], i) 
 // ---------------------------------------------------------------------------
 // Extracted from the auto-generated Indonesian captions of youtu.be/71z6vw_c5JE.
 // `videoStart` is the second the ustadz begins answering, so the replay link lands on the
-// answer rather than the host reading the question. Questions are tidied from the caption text
-// — see ROADMAP.md §6, "rewrite, don't transcribe".
+// answer rather than the host reading the question. Questions are tidied from the caption text;
+// see ROADMAP.md §6, "rewrite, don't transcribe".
 // ---------------------------------------------------------------------------
 
 const TRANSCRIPT: [number, string, string | null, string][] = [
@@ -251,7 +251,7 @@ const TRANSCRIPT: [number, string, string | null, string][] = [
   ],
 ];
 
-// Second recording: youtu.be/1mycTmtS5_4 — a rapid-fire session where the ustadz reads each
+// Second recording: youtu.be/1mycTmtS5_4, a rapid-fire session where the ustadz reads each
 // question aloud himself, so there is no host cue to segment on. Transitions were found by
 // reading for the interrogative, which is a harder signal to automate than "Selanjutnya…".
 const TRANSCRIPT_2: [number, string, string | null, string][] = [

@@ -38,7 +38,7 @@ export default function EventControls({ event }: { event: Event }) {
       ...(patch.moderation ? { moderation: patch.moderation } : {}),
       ...(patch.publicArchive != null ? { publicArchive: patch.publicArchive } : {}),
       // null means "go back to following the status", so the effective value has to be read
-      // off the status this patch lands on — the one being set, or the current one.
+      // off the status this patch lands on: the one being set, or the current one.
       ...("acceptingQuestions" in patch
         ? {
             acceptingQuestions:
@@ -85,7 +85,7 @@ export default function EventControls({ event }: { event: Event }) {
         label="Menerima pertanyaan"
         hint={
           overridden
-            ? "Diatur manual — tidak mengikuti status."
+            ? "Diatur manual, tidak mengikuti status."
             : `Mengikuti status: ${openByStatus ? "terbuka selama berlangsung" : "tertutup"}.`
         }
       >

@@ -10,7 +10,7 @@ const YEAR = 60 * 60 * 24 * 365;
  * "Pertanyaan saya" work with no login, no phone number, and no PII.
  *
  * Ceiling: clearing the browser or switching device loses the thread. That's the accepted cost
- * of asking for nothing — the upgrade path is contact detail at submit time (step 4), not a
+ * of asking for nothing; the upgrade path is contact detail at submit time (step 4), not a
  * student account.
  */
 export async function askerToken() {

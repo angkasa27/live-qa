@@ -4,7 +4,7 @@
 //   node scripts/ingest-youtube.mjs <url-or-id> [--lang id]
 //
 // This does the mechanical half only: fetch, dedupe, timestamp, save. Splitting the transcript
-// into question-answer pairs is a judgement call that needs a model — see INGESTION.md for the
+// into question-answer pairs is a judgement call that needs a model; see INGESTION.md for the
 // prompt to hand an agent once this has run.
 
 import { execFileSync } from "node:child_process";
@@ -74,7 +74,7 @@ function findCandidates(segments) {
     const cue = CUES.some((re) => re.test(s.text));
     const ask = INTERROGATIVES.test(s.text);
     if (!cue && !ask) continue;
-    // Collapse runs — one boundary per ~20s neighbourhood.
+    // Collapse runs: one boundary per ~20s neighbourhood.
     if (hits.at(-1) && s.t - hits.at(-1).t < 20) continue;
     hits.push({ t: s.t, kind: cue ? "cue" : "ask", text: segments.slice(i, i + 4).map((x) => x.text).join(" ") });
   }

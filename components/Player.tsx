@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useRef, type ReactNode } from "react";
 
 // The YouTube embed accepts commands over postMessage when the src carries `enablejsapi=1`.
-// That's the whole integration — no iframe_api script, no player object, no external load.
+// That's the whole integration: no iframe_api script, no player object, no external load.
 const EMBED_ORIGIN = "https://www.youtube-nocookie.com";
 
 type Seek = (seconds: number) => void;

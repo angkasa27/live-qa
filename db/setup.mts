@@ -20,7 +20,7 @@ for (const [label, script] of steps) {
     { stdio: "inherit", cwd: new URL("..", import.meta.url).pathname },
   );
   if (status !== 0) {
-    console.error(`\n${label} failed — stopping.`);
+    console.error(`\n${label} failed, stopping.`);
     process.exit(status ?? 1);
   }
 }

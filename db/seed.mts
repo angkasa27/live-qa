@@ -39,7 +39,7 @@ try {
     );
   }
 
-  // Seeded questions are rewritten wholesale, but only for the events being seeded — a filtered
+  // Seeded questions are rewritten wholesale, but only for the events being seeded; a filtered
   // run must not clear another event's rows. Anything a real student submitted carries an
   // asker_token and is never touched.
   await pool.query(

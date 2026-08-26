@@ -1,8 +1,8 @@
--- Sual — application schema. See ROADMAP.md §4.
+-- Sual: application schema. See ROADMAP.md §4.
 --
 -- better-auth owns its own tables ("user", session, account, verification) and creates them
 -- itself: `npm run auth:migrate`. Nothing here references them by foreign key except
--- events.created_by, which is deliberately ON DELETE SET NULL — deleting an admin must never
+-- events.created_by, which is deliberately ON DELETE SET NULL; deleting an admin must never
 -- cascade into deleting a majelis.
 
 create table if not exists events (
@@ -18,7 +18,7 @@ create table if not exists events (
 
   -- NULL = follow status (open only while live). true/false = admin override, which is what
   -- keeps an archived session taking questions when the organiser wants that. Read it as
-  -- `coalesce(accepting_questions, status = 'live')` — see accepting_questions() below.
+  -- `coalesce(accepting_questions, status = 'live')`, see accepting_questions() below.
   accepting_questions boolean,
 
   moderation          text not null default 'auto' check (moderation in ('auto', 'manual')),

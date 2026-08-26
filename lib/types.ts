@@ -1,4 +1,4 @@
-// Shared shapes. See ROADMAP.md §4 — these mirror db/schema.sql and are what crosses the
+// Shared shapes. See ROADMAP.md §4; these mirror db/schema.sql and are what crosses the
 // server/client boundary, which is why `contact`, `askerToken` and `ipHash` are absent: they
 // exist in the table and never leave the server.
 
@@ -28,12 +28,12 @@ export type Question = {
   status: QuestionStatus;
   answer: string | null;
   retracted: boolean;
-  /** null = anonymous. Display attribution only — it says nothing about who actually asked. */
+  /** null = anonymous. Display attribution only; it says nothing about who actually asked. */
   author: string | null;
   createdAt: string;
   /** Present when the pair was extracted from a recording rather than asked live. */
   source?: "transcript";
-  /** Seconds into the recording where the answer starts — the replay anchor. */
+  /** Seconds into the recording where the answer starts, the replay anchor. */
   videoStart?: number;
   /** Only ever true on questions returned to the browser that submitted them. */
   mine?: boolean;

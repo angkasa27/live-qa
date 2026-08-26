@@ -7,7 +7,7 @@ import { listMine } from "@/lib/queries";
 export const dynamic = "force-dynamic";
 
 /**
- * The answer to "did anyone ever answer my question?" — which is the whole reason the app
+ * The answer to "did anyone ever answer my question?", which is the whole reason the app
  * outlives the session. No account: the browser holds an opaque token and nothing else.
  */
 export default async function MyQuestionsPage() {

@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { pool } from "./db.ts";
 
 /**
- * Accounts are admins. There is no student account — a student is identified by an opaque token
+ * Accounts are admins. There is no student account; a student is identified by an opaque token
  * in their own browser (lib/asker.ts), which is why sign-up is closed by default: a public
  * sign-up endpoint on an admin-only system is a hole, not a feature.
  *
@@ -15,12 +15,12 @@ export function authOptions({ allowSignUp = false } = {}) {
     // Unset in development on purpose: better-auth infers it from the request, and `next dev`
     // moves to another port whenever 3000 is taken. A hardcoded port that no longer matches
     // fails as a 403 on sign-in, which reads like a wrong password rather than a config error.
-    // In production it must be set — that's what the origin check has to compare against.
+    // In production it must be set; that's what the origin check has to compare against.
     baseURL: process.env.BETTER_AUTH_URL || undefined,
     emailAndPassword: {
       enabled: true,
       disableSignUp: !allowSignUp,
-      // This only ever gates `npm run admin:create` — sign-up is closed, so there is no public
+      // This only ever gates `npm run admin:create`; sign-up is closed, so there is no public
       // form for it to protect. Kept as a floor against a genuinely careless operator password.
       minPasswordLength: 8,
     },

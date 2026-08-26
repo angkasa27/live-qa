@@ -9,7 +9,7 @@ function createPool() {
   const p = new Pool({
     connectionString: process.env.DATABASE_URL,
     // Every serverless instance opens its own pool, and there can be a lot of instances. Keep
-    // this small and let the connection pooler on the other end do the fan-in — on Neon that
+    // this small and let the connection pooler on the other end do the fan-in; on Neon that
     // means the `-pooler` host, which is what DATABASE_URL should point at in production.
     max: Number(process.env.DB_POOL_MAX ?? 5),
     // A suspended Neon compute takes a few hundred ms to wake; the default 0 (no timeout) would

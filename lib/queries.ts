@@ -4,7 +4,7 @@ import type { Event, Page, Question, QuestionStatus } from "./types.ts";
 import { PAGE_SIZE } from "./types.ts";
 
 // Columns that may cross to the browser. `contact`, `asker_token` and `ip_hash` are deliberately
-// not in this list and must never be added to it — see ROADMAP.md §3, "Anonymity is display, not
+// not in this list and must never be added to it; see ROADMAP.md §3, "Anonymity is display, not
 // identity". `mine` is computed per-request from the caller's own token.
 const PUBLIC_COLS = `
   q.id, q.event_id, q.body, q.status, q.answer, q.retracted, q.author,
@@ -102,11 +102,11 @@ export async function listEvents() {
 // --- rate limiting -----------------------------------------------------------------------
 //
 // Two counters, and the split matters. A majelis puts hundreds of phones behind one mosque
-// wifi NAT, so they share a single address — an IP limit tight enough to stop one spammer would
+// wifi NAT, so they share a single address; an IP limit tight enough to stop one spammer would
 // lock out the whole room. The real per-person limit is on the browser token; the IP counter is
 // only a backstop against a script, set loose enough that a shared NAT never trips it.
 //
-// ponytail: counts rows in `questions`, so it only limits successful inserts — a flood of
+// ponytail: counts rows in `questions`, so it only limits successful inserts; a flood of
 // rejects isn't throttled. Add a proper counter table if that ever shows up in the logs.
 export const PER_ASKER = { max: 3, minutes: 10 };
 export const PER_IP = { max: 60, minutes: 10 };
@@ -200,7 +200,7 @@ export async function getQuestion(id: string) {
   return row && toQuestion(row);
 }
 
-/** Admin board: every question on the event. No paging — sessions run 2–50 questions. */
+/** Admin board: every question on the event. No paging; sessions run 2–50 questions. */
 export async function listAllQuestions(eventId: string) {
   const rows = await query<QuestionRow>(
     `select ${PUBLIC_COLS.replace("$TOKEN", "null")}
