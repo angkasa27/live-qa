@@ -2,7 +2,7 @@ import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
 import { listEvents } from "@/lib/queries";
 import { coverFor } from "@/lib/types";
-import { eventDate } from "@/lib/relativeTime";
+import LocalTime from "@/components/LocalTime";
 
 // Reads the database on every request. The list has to show what's live *now*, and a session
 // going live is exactly the moment a stale cache would be worst.
@@ -49,7 +49,7 @@ export default async function EventListPage() {
                       <h2 className="text-lg font-semibold leading-snug">{e.name}</h2>
                       <StatusBadge status={e.status} />
                     </div>
-                    <p className="mt-2 text-sm text-muted">{eventDate(e.startsAt)}</p>
+                    <p className="mt-2 text-sm text-muted"><LocalTime iso={e.startsAt} /></p>
                     <p className="text-sm text-muted">{e.venue}</p>
                     <p className="mt-3 flex items-center justify-between gap-3 text-sm">
                       <span className="text-muted">{e.speaker}</span>

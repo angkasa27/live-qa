@@ -3,7 +3,7 @@ import SignOutButton from "@/components/SignOutButton";
 import StatusBadge from "@/components/StatusBadge";
 import { listEventsForAdmin } from "@/lib/queries";
 import { requireSession } from "@/lib/guard";
-import { eventDate } from "@/lib/relativeTime";
+import LocalTime from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +45,7 @@ export default async function AdminHome() {
                   <StatusBadge status={e.status} />
                 </div>
                 <p className="mt-1.5 text-sm text-muted">
-                  {e.speaker} · {eventDate(e.startsAt)} · {e.venue}
+                  {e.speaker} · <LocalTime iso={e.startsAt} /> · {e.venue}
                 </p>
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {/* Pending first and loudest: during a live session it's the only number

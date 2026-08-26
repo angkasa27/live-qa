@@ -6,7 +6,7 @@ import Player from "@/components/Player";
 import QuestionList from "@/components/QuestionList";
 import SubmitForm from "@/components/SubmitForm";
 import { getEvent } from "@/lib/queries";
-import { eventDate } from "@/lib/relativeTime";
+import LocalTime from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +63,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
               <StatusBadge status={event.status} />
             </div>
             <p className="mt-1.5 text-sm text-muted">
-              {event.speaker} · {eventDate(event.startsAt)} · {event.venue}
+              {event.speaker} · <LocalTime iso={event.startsAt} /> · {event.venue}
             </p>
           </div>
 
