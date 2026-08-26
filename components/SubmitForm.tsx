@@ -16,7 +16,6 @@ export default function SubmitForm({
   const [body, setBody] = useState("");
   const [anonymous, setAnonymous] = useState(true);
   const [author, setAuthor] = useState("");
-  const [contact, setContact] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,7 +37,6 @@ export default function SubmitForm({
         eventId,
         body: trimmed,
         author: anonymous ? null : author.trim() || null,
-        contact: contact.trim() || null,
       });
       if (!res.ok) return setError(res.error);
       setBody("");
@@ -102,25 +100,6 @@ export default function SubmitForm({
               />
             </div>
           )}
-        </div>
-
-        <div className="rounded-xl border border-border bg-surface px-4 py-3">
-          <label htmlFor="contact" className="block text-sm font-medium">
-            Email <span className="font-normal text-muted">(opsional)</span>
-          </label>
-          <p className="mt-1 text-xs text-muted">
-            Untuk dikabari kalau pertanyaan Anda dijawab, termasuk setelah sesi selesai. Tidak
-            pernah ditampilkan, Anda tetap anonim.
-          </p>
-          <input
-            id="contact"
-            type="email"
-            value={contact}
-            autoComplete="email"
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="nama@contoh.com"
-            className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted focus:border-accent"
-          />
         </div>
 
         <div aria-live="polite" className="min-h-[1.5rem]">
