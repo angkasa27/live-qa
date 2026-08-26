@@ -1,4 +1,4 @@
--- Ask — application schema. See ROADMAP.md §4.
+-- Sual — application schema. See ROADMAP.md §4.
 --
 -- better-auth owns its own tables ("user", session, account, verification) and creates them
 -- itself: `npm run auth:migrate`. Nothing here references them by foreign key except

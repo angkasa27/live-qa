@@ -1,6 +1,6 @@
-# Ask — product notes
+# Sual — product notes
 
-**Ask replaces the pen and paper in a majelis.**
+**Sual replaces the pen and paper in a majelis.**
 
 Students send questions from their phones. The syaikh reads them one at a time on stage. An admin
 types in what was answered. Questions the session ran out of time for stay open — answered later,

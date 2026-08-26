@@ -1,4 +1,4 @@
-# Ask — Q&A for majelis ta'lim
+# Sual — Q&A for majelis ta'lim
 
 Students send questions to the syaikh from their phones instead of passing paper forward. The
 syaikh reads them full-screen, one at a time. An admin types in what was answered, which then
@@ -128,13 +128,13 @@ if you hand it a pooled host with no direct one set.
 | `DATABASE_URL` | Neon **pooled** connection string |
 | `DATABASE_URL_UNPOOLED` | Neon **direct** connection string |
 | `BETTER_AUTH_SECRET` | 32 random bytes — `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
-| `BETTER_AUTH_URL` | Your deployed origin, e.g. `https://ask.example.com`. **Required in production** |
+| `BETTER_AUTH_URL` | Your deployed origin, e.g. `https://sual.online`. **Required in production** |
 | `IP_HASH_SALT` | 16 random bytes, same generator |
 
 `BETTER_AUTH_URL` is the one that will bite you: unset, better-auth infers the origin per request
 and sign-in fails with a 403 that reads like a wrong password. It must match the origin the
 browser actually uses, so set it to your custom domain rather than the `*.vercel.app` alias if you
-have one.
+have one — currently `https://sual.online`; update it when the domain moves to `sual.id`.
 
 **4. Deploy.** No build configuration needed — `next build` is the default and there's no
 `vercel.json`.
