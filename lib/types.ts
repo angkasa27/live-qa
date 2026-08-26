@@ -55,16 +55,21 @@ export function timecode(s: number) {
   return `${h ? `${h}:` : ""}${mm}:${String(sec).padStart(2, "0")}`;
 }
 
-/** Accepts a watch URL, a youtu.be link, or a bare id. Returns null when there's nothing there. */
+/** Only YouTube counts: a bare id, a youtu.be link, or youtube.com's /watch?v= or /live/<id>. */
 export function parseVideoId(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
   if (/^[\w-]{11}$/.test(trimmed)) return trimmed;
   try {
     const url = new URL(trimmed);
-    const id = url.hostname.endsWith("youtu.be")
-      ? url.pathname.slice(1)
-      : (url.searchParams.get("v") ?? url.pathname.split("/").pop() ?? "");
+    const host = url.hostname.replace(/^(www|m|music)\./, "");
+    if (host !== "youtube.com" && host !== "youtu.be") return null;
+    const id =
+      host === "youtu.be"
+        ? url.pathname.slice(1)
+        : url.pathname.startsWith("/live/")
+          ? url.pathname.slice("/live/".length)
+          : (url.searchParams.get("v") ?? "");
     return /^[\w-]{11}$/.test(id) ? id : null;
   } catch {
     return null;

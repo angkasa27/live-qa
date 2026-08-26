@@ -99,6 +99,37 @@ export async function listEvents() {
   return rows.map((r) => ({ ...toEvent(r), questionCount: Number(r.question_count) }));
 }
 
+// --- rate limiting -----------------------------------------------------------------------
+//
+// Two counters, and the split matters. A majelis puts hundreds of phones behind one mosque
+// wifi NAT, so they share a single address — an IP limit tight enough to stop one spammer would
+// lock out the whole room. The real per-person limit is on the browser token; the IP counter is
+// only a backstop against a script, set loose enough that a shared NAT never trips it.
+//
+// ponytail: counts rows in `questions`, so it only limits successful inserts — a flood of
+// rejects isn't throttled. Add a proper counter table if that ever shows up in the logs.
+export const PER_ASKER = { max: 3, minutes: 10 };
+export const PER_IP = { max: 60, minutes: 10 };
+
+/** Returns a user-facing message when the caller has hit a limit, null otherwise. */
+export async function rateLimited(token: string, hash: string) {
+  const row = await one<{ by_asker: string; by_ip: string }>(
+    `select
+       count(*) filter (where asker_token = $1
+                          and created_at > now() - make_interval(mins => $3::int)) as by_asker,
+       count(*) filter (where ip_hash = $2
+                          and created_at > now() - make_interval(mins => $4::int)) as by_ip
+     from questions
+     where created_at > now() - make_interval(mins => greatest($3::int, $4::int))`,
+    [token, hash, PER_ASKER.minutes, PER_IP.minutes],
+  );
+  if (!row) return null;
+  if (Number(row.by_asker) >= PER_ASKER.max)
+    return `Anda baru saja mengirim pertanyaan. Coba lagi beberapa menit lagi.`;
+  if (Number(row.by_ip) >= PER_IP.max) return `Terlalu banyak pertanyaan dari jaringan ini.`;
+  return null;
+}
+
 /**
  * One page of questions, oldest first, keyset-paged on (created_at, id).
  *
