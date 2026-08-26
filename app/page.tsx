@@ -14,9 +14,9 @@ export default async function EventListPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Majelis</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Sual</h1>
         <p className="mt-1.5 text-[0.9375rem] text-muted">
-          Pilih sesi untuk mengirim pertanyaan kepada pemateri.
+          Pilih sesi untuk mengirim pertanyaan kepada pemateri
         </p>
       </header>
 
