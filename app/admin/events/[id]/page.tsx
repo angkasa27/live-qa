@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminBoard from "@/components/AdminBoard";
+import AdminShell from "@/components/admin/Shell";
 import EventControls from "@/components/EventControls";
-import EventHeader from "@/components/EventHeader";
+import LocalTime from "@/components/LocalTime";
 import { getEvent } from "@/lib/queries";
 import { requireSession } from "@/lib/guard";
 
@@ -16,25 +17,27 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
   if (!event) notFound();
 
   return (
-    <>
-      <EventHeader
-        name={event.name}
-        backHref="/admin"
-        backLabel="Semua majelis"
-        action={
-          <Link
-            href={`/admin/events/${event.id}/speaker`}
-            className="flex min-h-[2.75rem] shrink-0 items-center rounded-lg bg-accent px-3.5 text-sm font-semibold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            Layar pemateri
-          </Link>
-        }
-      />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16 pt-5 sm:px-6">
-        <EventControls event={event} />
-        <h2 className="mb-4 mt-6 text-xl font-semibold sm:text-2xl">Pertanyaan</h2>
-        <AdminBoard eventId={event.id} />
-      </main>
-    </>
+    <AdminShell
+      wide
+      back={{ href: "/admin", label: "Semua majelis" }}
+      title={event.name}
+      subtitle={
+        <>
+          {event.speaker} · <LocalTime iso={event.startsAt} /> · {event.venue}
+        </>
+      }
+      action={
+        <Link
+          href={`/admin/events/${event.id}/speaker`}
+          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-accent px-5 font-semibold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto"
+        >
+          Layar pemateri
+        </Link>
+      }
+    >
+      <EventControls event={event} />
+      <h2 className="mb-3 mt-6 text-lg font-semibold">Pertanyaan</h2>
+      <AdminBoard eventId={event.id} />
+    </AdminShell>
   );
 }

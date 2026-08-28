@@ -1,30 +1,31 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Segmented from "@/components/admin/Segmented";
 import { updateEvent } from "@/lib/actions";
 import type { Event, EventStatus } from "@/lib/types";
 
-const STATUS_LABEL: Record<EventStatus, string> = {
-  scheduled: "Akan datang",
-  live: "Berlangsung",
-  archived: "Arsip",
-};
+const STATUS = [
+  ["scheduled", "Akan datang"],
+  ["live", "Berlangsung"],
+  ["archived", "Arsip"],
+] as const satisfies readonly (readonly [EventStatus, string])[];
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Setting({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
-      <div className="min-w-0">
-        <p className="text-[0.9375rem] font-medium">{label}</p>
-        {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
-      </div>
-      <div className="shrink-0">{children}</div>
+    <div>
+      <p className="text-[0.9375rem] font-medium">{label}</p>
+      <p className="mb-2 mt-0.5 text-xs text-muted">{hint}</p>
+      {children}
     </div>
   );
 }
 
-const SEGMENT =
-  "min-h-[2.25rem] px-3 text-sm font-medium transition-colors first:rounded-l-lg last:rounded-r-lg border border-border -ml-px first:ml-0";
-
+/**
+ * Settings live behind a summary line rather than above the questions: during a session the
+ * operator is reading questions, not flipping switches. The summary is driven by the same
+ * optimistic copy as the controls, so it never disagrees with them.
+ */
 export default function EventControls({ event }: { event: Event }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -61,84 +62,89 @@ export default function EventControls({ event }: { event: Event }) {
   // reads "off" while the event is in fact open.
   const openByStatus = local.status === "live";
   const overridden = local.acceptingQuestions !== openByStatus;
+  const summary = [
+    STATUS.find(([s]) => s === local.status)![1],
+    local.acceptingQuestions ? "terbuka" : "tertutup",
+    local.moderation === "manual" ? "review manual" : "review otomatis",
+  ].join(" · ");
 
   return (
-    <section className="divide-y divide-border rounded-xl border border-border bg-surface" aria-busy={pending}>
-      <Field label="Status">
-        <div className="flex">
-          {(Object.keys(STATUS_LABEL) as EventStatus[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => apply({ status: s })}
-              aria-pressed={local.status === s}
-              className={`${SEGMENT} ${
-                local.status === s ? "border-accent bg-accent text-accent-fg" : "text-muted hover:text-foreground"
-              }`}
-            >
-              {STATUS_LABEL[s]}
-            </button>
-          ))}
-        </div>
-      </Field>
+    <details className="group rounded-xl border border-border bg-surface" aria-busy={pending}>
+      <summary className="flex min-h-[3.25rem] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
+          <span className="block truncate text-xs text-muted">{summary}</span>
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5 shrink-0 text-muted transition-transform group-open:rotate-180"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden
+        >
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </summary>
 
-      <Field
-        label="Menerima pertanyaan"
-        hint={
-          overridden
-            ? "Diatur manual, tidak mengikuti status."
-            : `Mengikuti status: ${openByStatus ? "terbuka selama berlangsung" : "tertutup"}.`
-        }
-      >
-        <div className="flex">
-          <button
-            onClick={() => apply({ acceptingQuestions: true })}
-            aria-pressed={local.acceptingQuestions}
-            className={`${SEGMENT} ${local.acceptingQuestions ? "border-accent bg-accent text-accent-fg" : "text-muted"}`}
-          >
-            Buka
-          </button>
-          <button
-            onClick={() => apply({ acceptingQuestions: false })}
-            aria-pressed={!local.acceptingQuestions}
-            className={`${SEGMENT} ${!local.acceptingQuestions ? "border-accent bg-accent text-accent-fg" : "text-muted"}`}
-          >
-            Tutup
-          </button>
+      <div className="space-y-5 border-t border-border p-4">
+        <Setting label="Status" hint="Menentukan bagaimana majelis tampil untuk jamaah.">
+          <Segmented
+            label="Status majelis"
+            value={local.status}
+            options={STATUS}
+            onChange={(status) => apply({ status })}
+          />
+        </Setting>
+
+        <Setting
+          label="Menerima pertanyaan"
+          hint={
+            overridden
+              ? "Diatur manual, tidak mengikuti status."
+              : `Mengikuti status: ${openByStatus ? "terbuka selama berlangsung" : "tertutup"}.`
+          }
+        >
+          <Segmented
+            label="Menerima pertanyaan"
+            value={local.acceptingQuestions ? "open" : "closed"}
+            options={[
+              ["open", "Buka"],
+              ["closed", "Tutup"],
+            ]}
+            onChange={(v) => apply({ acceptingQuestions: v === "open" })}
+          />
           {overridden && (
-            <button onClick={() => apply({ acceptingQuestions: null })} className={`${SEGMENT} text-muted`}>
-              Ikut status
+            <button
+              onClick={() => apply({ acceptingQuestions: null })}
+              className="mt-2 min-h-[2.25rem] text-sm font-medium text-accent underline underline-offset-4"
+            >
+              Ikuti status lagi
             </button>
           )}
-        </div>
-      </Field>
+        </Setting>
 
-      <Field
-        label="Review pertanyaan"
-        hint={
-          local.moderation === "manual"
-            ? "Pertanyaan baru menunggu persetujuan sebelum tampil."
-            : "Pertanyaan baru langsung tampil."
-        }
-      >
-        <div className="flex">
-          <button
-            onClick={() => apply({ moderation: "auto" })}
-            aria-pressed={local.moderation === "auto"}
-            className={`${SEGMENT} ${local.moderation === "auto" ? "border-accent bg-accent text-accent-fg" : "text-muted"}`}
-          >
-            Otomatis
-          </button>
-          <button
-            onClick={() => apply({ moderation: "manual" })}
-            aria-pressed={local.moderation === "manual"}
-            className={`${SEGMENT} ${local.moderation === "manual" ? "border-accent bg-accent text-accent-fg" : "text-muted"}`}
-          >
-            Manual
-          </button>
-        </div>
-      </Field>
+        <Setting
+          label="Review pertanyaan"
+          hint={
+            local.moderation === "manual"
+              ? "Pertanyaan baru menunggu persetujuan sebelum tampil."
+              : "Pertanyaan baru langsung tampil."
+          }
+        >
+          <Segmented
+            label="Review pertanyaan"
+            value={local.moderation}
+            options={[
+              ["auto", "Otomatis"],
+              ["manual", "Manual"],
+            ]}
+            onChange={(moderation) => apply({ moderation })}
+          />
+        </Setting>
 
-      {error && <p className="px-4 py-3 text-sm font-medium text-red-500">{error}</p>}
-    </section>
+        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+      </div>
+    </details>
   );
 }
