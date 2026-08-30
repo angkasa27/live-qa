@@ -66,14 +66,21 @@ function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
 export function AnswerBlock({
   answer,
   replay,
+  edited,
 }: {
   answer: string;
   replay?: { youtubeId: string; at: number };
+  /** The answer has been rewritten since it was first published. A flag only: the previous
+   *  wording is an admin screen, not something a student reads. See ROADMAP.md §3. */
+  edited?: boolean;
 }) {
   return (
     <div className="mt-3 rounded-lg border-l-4 border-accent bg-accent-soft px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-accent">Jawaban</p>
+        <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-accent">
+          Jawaban
+          {edited && <span className="font-medium normal-case tracking-normal text-muted">diedit</span>}
+        </p>
         {replay && <ReplayControl {...replay} />}
       </div>
       <p className="mt-1 whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{answer}</p>
@@ -107,7 +114,7 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
           </span>
         )}
       </p>
-      {q.answer && <AnswerBlock answer={q.answer} replay={replay} />}
+      {q.answer && <AnswerBlock answer={q.answer} replay={replay} edited={q.edited} />}
     </article>
   );
 }

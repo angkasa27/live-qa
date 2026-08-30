@@ -12,6 +12,7 @@ import {
   getQuestion,
   listAllQuestions,
   listEventsForAdmin,
+  listRevisions,
   rateLimited,
 } from "./queries.ts";
 import {
@@ -23,6 +24,7 @@ import {
   type Proposal,
   type Question,
   type QuestionStatus,
+  type Revision,
 } from "./types.ts";
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string };
@@ -194,6 +196,53 @@ export async function adminEvents() {
 
 const STATUSES: EventStatus[] = ["scheduled", "live", "archived"];
 
+/** The descriptive fields, as the two forms send them. Status and moderation are not here. */
+export type EventDetails = {
+  name: string;
+  startsAt: string;
+  venue: string;
+  speaker: string;
+  video?: string;
+  image?: string;
+};
+
+type CleanDetails = {
+  name: string;
+  startsAt: string;
+  venue: string;
+  speaker: string;
+  youtubeId: string | null;
+  image: string | null;
+};
+
+/**
+ * Trims and checks what both createEvent and updateEvent write. One copy, because a rule that
+ * holds on create and not on edit is not a rule. The DB has its own CHECKs under this; these
+ * exist to give a usable Indonesian message.
+ */
+function validateDetails(input: EventDetails): Result<CleanDetails> {
+  const name = input.name.trim();
+  const venue = input.venue.trim();
+  const speaker = input.speaker.trim();
+  if (!name) return fail("Nama majelis wajib diisi.");
+  if (!venue) return fail("Tempat wajib diisi.");
+  if (!speaker) return fail("Nama pemateri wajib diisi.");
+  if (Number.isNaN(Date.parse(input.startsAt))) return fail("Waktu mulai tidak valid.");
+
+  const video = input.video?.trim();
+  const youtubeId = video ? parseVideoId(video) : null;
+  if (video && !youtubeId) return fail("Tautan YouTube tidak dikenali.");
+
+  return done({
+    name,
+    startsAt: input.startsAt,
+    venue,
+    speaker,
+    youtubeId,
+    image: input.image?.trim() || null,
+  });
+}
+
 /**
  * `acceptingQuestions: null` hands the decision back to the status (open only while live).
  * true/false pin it either way; that's what keeps an archived session taking questions when
@@ -206,17 +255,39 @@ export async function updateEvent(
     acceptingQuestions?: boolean | null;
     moderation?: "auto" | "manual";
     publicArchive?: boolean;
+    /**
+     * The edit form's fields, all of them, every time. Absent means "leave the details alone",
+     * which is what the settings panel sends. Present and empty means clear: an admin removing
+     * a wrong YouTube link has to be able to end up with no link at all.
+     */
+    details?: EventDetails;
   },
 ): Promise<Result> {
   await requireAdmin();
   if (patch.status && !STATUSES.includes(patch.status)) return fail("Status tidak dikenal.");
 
+  let clean: CleanDetails | null = null;
+  if (patch.details) {
+    const checked = validateDetails(patch.details);
+    if (!checked.ok) return checked;
+    clean = checked.data;
+  }
+
+  // The id is deliberately absent from this statement. It is the slug, and it is in every public
+  // URL, every share link and every student's history; renaming a majelis must not break them.
   const row = await one<{ id: string }>(
     `update events set
        status              = coalesce($2, status),
        accepting_questions = case when $3 then $4 else accepting_questions end,
        moderation          = coalesce($5, moderation),
-       public_archive      = coalesce($6, public_archive)
+       public_archive      = coalesce($6, public_archive),
+       name                = coalesce($8, name),
+       starts_at           = coalesce($9::timestamptz, starts_at),
+       venue               = coalesce($10, venue),
+       speaker             = coalesce($11, speaker),
+       -- Gated rather than coalesced: null here means "clear it", not "keep it".
+       youtube_id          = case when $7 then $12 else youtube_id end,
+       image               = case when $7 then $13 else image end
      where id = $1
      returning id`,
     [
@@ -226,38 +297,56 @@ export async function updateEvent(
       patch.acceptingQuestions ?? null,
       patch.moderation ?? null,
       patch.publicArchive ?? null,
+      clean !== null,
+      clean?.name ?? null,
+      clean?.startsAt ?? null,
+      clean?.venue ?? null,
+      clean?.speaker ?? null,
+      clean?.youtubeId ?? null,
+      clean?.image ?? null,
     ],
   );
   if (!row) return fail("Sesi tidak ditemukan.");
   revalidatePath("/admin");
   revalidatePath(`/events/${eventId}`);
+  revalidatePath("/"); // name and cover feed the public list
   return done(undefined);
 }
 
-export async function createEvent(input: {
-  name: string;
-  startsAt: string;
-  venue: string;
-  speaker: string;
-  status: EventStatus;
-  moderation: "auto" | "manual";
-  video?: string;
-  image?: string;
-}): Promise<Result<{ id: string }>> {
+/**
+ * Removes a majelis and everything hanging off it. `questions.event_id` cascades, and
+ * `answer_revisions.question_id` cascades off questions, so this one statement is the whole
+ * delete.
+ *
+ * This is the one place in the app that destroys anything. ROADMAP.md §3's "nothing is ever
+ * deleted" is a rule about *answers*: a published ruling gets retracted, never erased. An event
+ * created by mistake is a different thing, and the alternative to a delete is an organiser
+ * staring at a test majelis forever. The confirmation lives in the UI, not here.
+ */
+export async function deleteEvent(eventId: string): Promise<Result> {
+  await requireAdmin();
+  const row = await one<{ id: string }>(`delete from events where id = $1 returning id`, [eventId]);
+  if (!row) return fail("Sesi tidak ditemukan.");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return done(undefined);
+}
+
+/** Every version an answer has had. Admin only; this never reaches a student's browser. */
+export async function answerHistory(questionId: string): Promise<Revision[]> {
+  await requireAdmin();
+  return listRevisions(questionId);
+}
+
+export async function createEvent(
+  input: EventDetails & { status: EventStatus; moderation: "auto" | "manual" },
+): Promise<Result<{ id: string }>> {
   const user = await requireAdmin();
 
-  const name = input.name.trim();
-  const venue = input.venue.trim();
-  const speaker = input.speaker.trim();
-  if (!name) return fail("Nama majelis wajib diisi.");
-  if (!venue) return fail("Tempat wajib diisi.");
-  if (!speaker) return fail("Nama pemateri wajib diisi.");
   if (!STATUSES.includes(input.status)) return fail("Status tidak dikenal.");
-  if (Number.isNaN(Date.parse(input.startsAt))) return fail("Waktu mulai tidak valid.");
-
-  const video = input.video?.trim();
-  const youtubeId = video ? parseVideoId(video) : null;
-  if (video && !youtubeId) return fail("Tautan YouTube tidak dikenali.");
+  const checked = validateDetails(input);
+  if (!checked.ok) return checked;
+  const { name, venue, speaker, youtubeId, image } = checked.data;
 
   const base = slugify(name) || "majelis";
   // Two majelis can legitimately share a name across terms, so the id gets a suffix rather than
@@ -270,7 +359,7 @@ export async function createEvent(input: {
             $2, $3, $4, $5, $6, $7, $8, $9, $10
      returning id`,
     [base, name, input.startsAt, venue, speaker, input.status, input.moderation,
-     youtubeId, input.image?.trim() || null, user.id],
+     youtubeId, image, user.id],
   );
 
   revalidatePath("/admin");

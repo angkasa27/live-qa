@@ -39,7 +39,7 @@ export default async function MyQuestionsPage() {
                   </Link>
                   <p className="mt-2 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
                   {q.answer ? (
-                    <AnswerBlock answer={q.answer} />
+                    <AnswerBlock answer={q.answer} edited={q.edited} />
                   ) : (
                     <p className="mt-3 text-sm text-muted">
                       {q.status === "submitted" ? "Menunggu review admin." : "Belum dijawab."}

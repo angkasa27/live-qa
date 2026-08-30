@@ -1,14 +1,18 @@
 import "server-only";
 import { query, one } from "./db.ts";
-import type { Event, Page, Question, QuestionStatus } from "./types.ts";
+import type { Event, Page, Question, QuestionStatus, Revision } from "./types.ts";
 import { PAGE_SIZE } from "./types.ts";
 
 // Columns that may cross to the browser. `contact`, `asker_token` and `ip_hash` are deliberately
 // not in this list and must never be added to it; see ROADMAP.md §3, "Anonymity is display, not
 // identity". `mine` is computed per-request from the caller's own token.
+// `edited` is a count, never the revisions: what crosses to the browser is that the answer moved,
+// not what it used to say. The history is an admin screen; see listRevisions below.
+// The first save writes revision #1, so "> 1" is what makes this an edit rather than an answer.
 const PUBLIC_COLS = `
   q.id, q.event_id, q.body, q.status, q.answer, q.retracted, q.author,
   q.created_at, q.source, q.video_start,
+  (select count(*) > 1 from answer_revisions r where r.question_id = q.id) as edited,
   (q.asker_token is not null and q.asker_token = $TOKEN) as mine
 `;
 
@@ -23,6 +27,7 @@ type QuestionRow = {
   created_at: Date;
   source: "transcript" | null;
   video_start: number | null;
+  edited: boolean | null;
   mine: boolean | null;
 };
 
@@ -40,6 +45,7 @@ function toQuestion(r: QuestionRow): Question {
     createdAt: r.created_at.toISOString(),
     ...(r.source ? { source: r.source } : {}),
     ...(r.video_start != null ? { videoStart: r.video_start } : {}),
+    ...(r.edited ? { edited: true } : {}),
     ...(r.mine ? { mine: true } : {}),
   };
 }
@@ -208,6 +214,41 @@ export async function listAllQuestions(eventId: string) {
     [eventId],
   );
   return rows.map(toQuestion);
+}
+
+/** How many questions an event carries, for the delete confirmation to state what it destroys. */
+export async function countQuestions(eventId: string) {
+  const row = await one<{ n: string }>(
+    `select count(*) as n from questions where event_id = $1`,
+    [eventId],
+  );
+  return Number(row?.n ?? 0);
+}
+
+/**
+ * Every version an answer has ever had, newest first. Admin only, and deliberately not part of
+ * PUBLIC_COLS: the public is told an answer was edited, never what it previously said. A wrong
+ * ruling withdrawn from display must not stay readable through a side door. See ROADMAP.md §3.
+ */
+export async function listRevisions(questionId: string): Promise<Revision[]> {
+  const rows = await query<{
+    answer: string | null;
+    retracted: boolean;
+    edited_by: string | null;
+    created_at: Date;
+  }>(
+    `select answer, retracted, edited_by, created_at
+       from answer_revisions
+      where question_id = $1::uuid
+      order by created_at desc, id desc`,
+    [questionId],
+  );
+  return rows.map((r) => ({
+    answer: r.answer,
+    retracted: r.retracted,
+    editedBy: r.edited_by,
+    createdAt: r.created_at.toISOString(),
+  }));
 }
 
 /** Everything this browser has ever asked, newest first, across every event. */

@@ -37,6 +37,19 @@ export type Question = {
   videoStart?: number;
   /** Only ever true on questions returned to the browser that submitted them. */
   mine?: boolean;
+  /**
+   * The answer has been rewritten at least once. A flag, never the revisions themselves: the
+   * public is told the text moved, the history is an admin screen. See ROADMAP.md §3.
+   */
+  edited?: boolean;
+};
+
+/** One saved version of an answer. Admin only; `answer_revisions` never reaches the public. */
+export type Revision = {
+  answer: string | null;
+  retracted: boolean;
+  editedBy: string | null;
+  createdAt: string;
 };
 
 export type Page = { items: Question[]; nextCursor: string | null };
@@ -89,6 +102,18 @@ export function parseVideoId(input: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * An instant → the "YYYY-MM-DDTHH:mm" **local** time `<input type="datetime-local">` wants.
+ * toISOString() alone would hand the picker UTC and silently shift every event by the offset.
+ * Seconds are dropped because the picker has no place to put them.
+ */
+export function isoToLocal(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset(), 0, 0);
+  return d.toISOString().slice(0, 16);
 }
 
 /** "Kajian Ahad Pagi" → "kajian-ahad-pagi". Ids are in URLs, so they stay readable. */

@@ -2,12 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CardSkeleton } from "@/components/Skeleton";
+import RevisionsDialog from "@/components/RevisionsDialog";
 import Spinner from "@/components/Spinner";
 import { adminList, draftAnswers, setAnswer, setQuestionStatus } from "@/lib/actions";
 import { relativeTime } from "@/lib/relativeTime";
 import { timecode, type Proposal, type Question, type QuestionStatus } from "@/lib/types";
 
-const FILTERS = ["Menunggu review", "Belum dijawab", "Sudah dijawab", "Semua"] as const;
+const FILTERS = [
+  "Menunggu review",
+  "Belum dijawab",
+  "Sudah dijawab",
+  // Hiding is the reject, and it is reversible. Without this chip a hidden question could only
+  // be found by scanning "Semua", which is the whole session.
+  "Disembunyikan",
+  "Semua",
+] as const;
 type Filter = (typeof FILTERS)[number];
 
 function match(q: Question, filter: Filter) {
@@ -18,6 +27,8 @@ function match(q: Question, filter: Filter) {
       return !q.answer && q.status !== "hidden";
     case "Sudah dijawab":
       return !!q.answer;
+    case "Disembunyikan":
+      return q.status === "hidden";
     default:
       return true;
   }
@@ -132,14 +143,22 @@ function Row({
           is room for both without either getting cramped. */}
       <div className="lg:flex lg:divide-x lg:divide-border">
         <div className="p-4 lg:w-1/2">
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          {/* A div, not a p: RevisionsDialog carries a <dialog>, which a <p> would not hold. */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
             <span className="font-medium text-foreground">{q.author ?? "Anonim"}</span>
             <span aria-hidden>·</span>
             <span suppressHydrationWarning>{relativeTime(q.createdAt)}</span>
             {q.status === "submitted" && <Pill tone="warn">menunggu review</Pill>}
             {q.status === "hidden" && <Pill tone="plain">disembunyikan</Pill>}
             {q.answer && <Pill tone="accent">dijawab</Pill>}
-          </p>
+            {/* The public gets this flag and nothing else; the text behind it is admin-only. */}
+            {q.edited && (
+              <>
+                <Pill tone="plain">diedit</Pill>
+                <RevisionsDialog questionId={q.id} />
+              </>
+            )}
+          </div>
           <p className="mt-2 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
         </div>
 

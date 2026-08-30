@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Segmented from "@/components/admin/Segmented";
 import Spinner from "@/components/Spinner";
@@ -11,6 +12,24 @@ const STATUS = [
   ["live", "Berlangsung"],
   ["archived", "Arsip"],
 ] as const satisfies readonly (readonly [EventStatus, string])[];
+
+/** Just the settings this panel owns. `accepting` is the raw column: null = follow the status. */
+type Draft = {
+  status: EventStatus;
+  accepting: boolean | null;
+  moderation: "auto" | "manual";
+};
+
+const draftOf = (e: Event): Draft => ({
+  status: e.status,
+  // getEvent resolves accepting_questions through coalesce, so the raw null is not on the wire.
+  // It is recoverable: an event whose resolved value already matches its status is following it.
+  accepting: e.acceptingQuestions === (e.status === "live") ? null : e.acceptingQuestions,
+  moderation: e.moderation,
+});
+
+/** Whether questions are open, given a draft. One expression, mirroring accepting_questions(). */
+const isOpen = (d: Draft) => d.accepting ?? d.status === "live";
 
 function Setting({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
   return (
@@ -24,49 +43,53 @@ function Setting({ label, hint, children }: { label: string; hint: string; child
 
 /**
  * Settings live behind a summary line rather than above the questions: during a session the
- * operator is reading questions, not flipping switches. The summary is driven by the same
- * optimistic copy as the controls, so it never disagrees with them.
+ * operator is reading questions, not flipping switches.
+ *
+ * Nothing here writes until Simpan. An earlier version saved on every tap, which meant one
+ * mis-aimed thumb could archive a running majelis with no undo. The summary previews the draft
+ * so a collapsed panel still shows what is pending, and says so when it is unsaved.
  */
 export default function EventControls({ event }: { event: Event }) {
+  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  // Optimistic local copy so the segmented controls don't lag a round trip behind the tap.
-  const [local, setLocal] = useState(event);
+  const [draft, setDraft] = useState(() => draftOf(event));
 
-  function apply(patch: Parameters<typeof updateEvent>[1]) {
-    setLocal((prev) => ({
-      ...prev,
-      ...(patch.status ? { status: patch.status } : {}),
-      ...(patch.moderation ? { moderation: patch.moderation } : {}),
-      ...(patch.publicArchive != null ? { publicArchive: patch.publicArchive } : {}),
-      // null means "go back to following the status", so the effective value has to be read
-      // off the status this patch lands on: the one being set, or the current one.
-      ...("acceptingQuestions" in patch
-        ? {
-            acceptingQuestions:
-              patch.acceptingQuestions ?? (patch.status ?? prev.status) === "live",
-          }
-        : {}),
-    }));
+  const saved = draftOf(event);
+  const dirty =
+    draft.status !== saved.status ||
+    draft.accepting !== saved.accepting ||
+    draft.moderation !== saved.moderation;
+
+  const set = (patch: Partial<Draft>) => {
+    setDraft((d) => ({ ...d, ...patch }));
+    setError(null);
+  };
+
+  function save() {
     setError(null);
     start(async () => {
-      const res = await updateEvent(event.id, patch);
-      if (!res.ok) {
-        setLocal(event); // the server is still the truth
-        setError(res.error);
-      }
+      const res = await updateEvent(event.id, {
+        status: draft.status,
+        acceptingQuestions: draft.accepting,
+        moderation: draft.moderation,
+      });
+      if (!res.ok) return setError(res.error);
+      router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
     });
   }
 
   // Questions normally follow the status; an explicit override is what keeps a finished session
   // taking them. Showing the resolved value rather than the raw column avoids a control that
   // reads "off" while the event is in fact open.
-  const openByStatus = local.status === "live";
-  const overridden = local.acceptingQuestions !== openByStatus;
+  const open = isOpen(draft);
+  const openByStatus = draft.status === "live";
+  const overridden = draft.accepting !== null;
+
   const summary = [
-    STATUS.find(([s]) => s === local.status)![1],
-    local.acceptingQuestions ? "terbuka" : "tertutup",
-    local.moderation === "manual" ? "review manual" : "review otomatis",
+    STATUS.find(([s]) => s === draft.status)![1],
+    open ? "terbuka" : "tertutup",
+    draft.moderation === "manual" ? "review manual" : "review otomatis",
   ].join(" · ");
 
   return (
@@ -76,6 +99,12 @@ export default function EventControls({ event }: { event: Event }) {
           <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
           <span className="block truncate text-xs text-muted">{summary}</span>
         </span>
+        {/* A collapsed panel must never hide an unsaved change. */}
+        {dirty && !pending && (
+          <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
+            belum disimpan
+          </span>
+        )}
         {pending && <Spinner className="h-4 w-4 shrink-0 text-muted" />}
         <svg
           viewBox="0 0 24 24"
@@ -93,9 +122,9 @@ export default function EventControls({ event }: { event: Event }) {
         <Setting label="Status" hint="Menentukan bagaimana majelis tampil untuk jamaah.">
           <Segmented
             label="Status majelis"
-            value={local.status}
+            value={draft.status}
             options={STATUS}
-            onChange={(status) => apply({ status })}
+            onChange={(status) => set({ status })}
           />
         </Setting>
 
@@ -109,16 +138,17 @@ export default function EventControls({ event }: { event: Event }) {
         >
           <Segmented
             label="Menerima pertanyaan"
-            value={local.acceptingQuestions ? "open" : "closed"}
+            value={open ? "open" : "closed"}
             options={[
               ["open", "Buka"],
               ["closed", "Tutup"],
             ]}
-            onChange={(v) => apply({ acceptingQuestions: v === "open" })}
+            onChange={(v) => set({ accepting: v === "open" })}
           />
           {overridden && (
             <button
-              onClick={() => apply({ acceptingQuestions: null })}
+              type="button"
+              onClick={() => set({ accepting: null })}
               className="mt-2 min-h-[2.25rem] text-sm font-medium text-accent underline underline-offset-4"
             >
               Ikuti status lagi
@@ -129,23 +159,45 @@ export default function EventControls({ event }: { event: Event }) {
         <Setting
           label="Review pertanyaan"
           hint={
-            local.moderation === "manual"
+            draft.moderation === "manual"
               ? "Pertanyaan baru menunggu persetujuan sebelum tampil."
               : "Pertanyaan baru langsung tampil."
           }
         >
           <Segmented
             label="Review pertanyaan"
-            value={local.moderation}
+            value={draft.moderation}
             options={[
               ["auto", "Otomatis"],
               ["manual", "Manual"],
             ]}
-            onChange={(moderation) => apply({ moderation })}
+            onChange={(moderation) => set({ moderation })}
           />
         </Setting>
 
         {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+
+        {dirty && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDraft(saved)}
+              disabled={pending}
+              className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted disabled:opacity-40"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={pending}
+              className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {pending && <Spinner />}
+              {pending ? "Menyimpan…" : "Simpan"}
+            </button>
+          </div>
+        )}
       </div>
     </details>
   );

@@ -19,7 +19,8 @@ vi.mock("../lib/auth.ts", () => ({
   auth: { api: { getSession: async () => ({ user: { id: "admin-1" } }) } },
 }));
 
-const { addQuestion, createEvent, setAnswer, updateEvent } = await import("../lib/actions.ts");
+const { addQuestion, answerHistory, createEvent, deleteEvent, setAnswer, updateEvent } =
+  await import("../lib/actions.ts");
 const { pool, query } = await import("../lib/db.ts");
 const { getEvent } = await import("../lib/queries.ts");
 import { MAX_BODY } from "../lib/types.ts";
@@ -197,6 +198,98 @@ suite("actions (integration)", () => {
 
     it("fails on an unknown session", async () => {
       expect((await updateEvent("ghost", { status: "live" })).ok).toBe(false);
+    });
+
+    const details = (over: Partial<NonNullable<Parameters<typeof updateEvent>[1]["details"]>> = {}) => ({
+      name: "Nama Baru",
+      startsAt: "2026-10-01T02:00:00Z",
+      venue: "Masjid Baru",
+      speaker: "Syaikh Baru",
+      ...over,
+    });
+
+    it("rewrites the details without moving the id", async () => {
+      const eventId = await seedEvent();
+      expect((await updateEvent(eventId, { details: details() })).ok).toBe(true);
+
+      // The id is the slug and it is in every shared link; renaming must not break them.
+      const e = await getEvent(eventId);
+      expect(e?.id).toBe(eventId);
+      expect(e?.name).toBe("Nama Baru");
+      expect(e?.venue).toBe("Masjid Baru");
+      expect(e?.speaker).toBe("Syaikh Baru");
+      expect(e?.startsAt).toBe("2026-10-01T02:00:00.000Z");
+    });
+
+    it("sets and then clears the youtube link", async () => {
+      const eventId = await seedEvent();
+      await updateEvent(eventId, { details: details({ video: "https://youtu.be/dQw4w9WgXcQ" }) });
+      expect((await getEvent(eventId))?.youtubeId).toBe("dQw4w9WgXcQ");
+
+      // An empty field is an instruction to clear, not an absent one to ignore.
+      await updateEvent(eventId, { details: details({ video: "" }) });
+      expect((await getEvent(eventId))?.youtubeId).toBeUndefined();
+    });
+
+    it("applies the same validation createEvent does", async () => {
+      const eventId = await seedEvent();
+      expect(errorOf(await updateEvent(eventId, { details: details({ name: " " }) }))).toMatch(/Nama majelis/);
+      expect(errorOf(await updateEvent(eventId, { details: details({ venue: "" }) }))).toMatch(/Tempat/);
+      expect(errorOf(await updateEvent(eventId, { details: details({ speaker: " " }) }))).toMatch(/pemateri/);
+      expect(errorOf(await updateEvent(eventId, { details: details({ startsAt: "besok" }) }))).toMatch(/Waktu mulai/);
+      expect(errorOf(await updateEvent(eventId, { details: details({ video: "nope" }) }))).toMatch(/YouTube/);
+      // A rejected patch must not have written anything.
+      expect((await getEvent(eventId))?.name).toBe("test event");
+    });
+
+    it("leaves the details alone when the patch is settings only", async () => {
+      const eventId = await seedEvent();
+      await updateEvent(eventId, { details: details({ video: "https://youtu.be/dQw4w9WgXcQ" }) });
+      await updateEvent(eventId, { status: "archived" });
+
+      const e = await getEvent(eventId);
+      expect(e?.name).toBe("Nama Baru");
+      expect(e?.youtubeId).toBe("dQw4w9WgXcQ");
+    });
+  });
+
+  describe("deleteEvent", () => {
+    it("takes the questions and their revisions with it", async () => {
+      const eventId = await seedEvent();
+      const q = await addQuestion({ eventId, body: "gone soon", author: null });
+      expect(q.ok).toBe(true);
+      if (q.ok) await setAnswer(q.data.id, "an answer");
+
+      expect((await deleteEvent(eventId)).ok).toBe(true);
+      expect(await getEvent(eventId)).toBeNull();
+      // questions cascades off events, and answer_revisions cascades off questions.
+      const left = await query(`select 1 from questions where event_id = $1`, [eventId]);
+      expect(left).toHaveLength(0);
+      expect(await query(`select 1 from answer_revisions`)).toHaveLength(0);
+    });
+
+    it("fails on an unknown session", async () => {
+      expect((await deleteEvent("ghost")).ok).toBe(false);
+    });
+  });
+
+  describe("edited", () => {
+    it("is set by a second save and not the first", async () => {
+      const eventId = await seedEvent();
+      const q = await addQuestion({ eventId, body: "q", author: null });
+      if (!q.ok) throw new Error(q.error);
+
+      const first = await setAnswer(q.data.id, "first answer");
+      expect(first.ok && first.data.edited).toBeUndefined();
+
+      const second = await setAnswer(q.data.id, "corrected answer");
+      expect(second.ok && second.data.edited).toBe(true);
+
+      // The history is the record; the flag is all the public side gets.
+      expect(await answerHistory(q.data.id)).toMatchObject([
+        { answer: "corrected answer" },
+        { answer: "first answer" },
+      ]);
     });
   });
 
