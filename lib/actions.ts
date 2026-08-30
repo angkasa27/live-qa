@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "./auth.ts";
 import { one, query } from "./db.ts";
 import { askerToken, ensureAskerToken, ipHash } from "./asker.ts";
+import { draftFromVideo } from "./gemini.ts";
 import {
   fetchPage as readPage,
   getEvent,
@@ -19,6 +20,7 @@ import {
   slugify,
   type EventStatus,
   type Page,
+  type Proposal,
   type Question,
   type QuestionStatus,
 } from "./types.ts";
@@ -107,18 +109,30 @@ export async function adminList(eventId: string): Promise<Question[]> {
   return listAllQuestions(eventId);
 }
 
-/** Publishes directly and keeps every prior version. Empty string retracts. */
-export async function setAnswer(id: string, answer: string): Promise<Result<Question>> {
+/**
+ * Publishes directly and keeps every prior version. Empty string retracts.
+ *
+ * `videoStart` rides along rather than being written when a draft is generated: queries.ts
+ * returns it whatever the answer is, so setting it early would put a ▶ replay control on a
+ * question nobody has answered yet.
+ */
+export async function setAnswer(
+  id: string,
+  answer: string,
+  videoStart?: number,
+): Promise<Result<Question>> {
   const user = await requireAdmin();
   const text = answer.trim();
   const retracted = text.length === 0;
+  const anchor = !retracted && Number.isInteger(videoStart) && videoStart! >= 0 ? videoStart! : null;
 
   const row = await one<{ id: string }>(
     `update questions
-        set answer = $2, retracted = $3, answered_at = case when $3 then answered_at else now() end
+        set answer = $2, retracted = $3, answered_at = case when $3 then answered_at else now() end,
+            video_start = coalesce($4, video_start)
       where id = $1::uuid
       returning id`,
-    [id, text || null, retracted],
+    [id, text || null, retracted, anchor],
   );
   if (!row) return fail("Pertanyaan tidak ditemukan.");
 
@@ -139,6 +153,38 @@ export async function setQuestionStatus(id: string, status: QuestionStatus): Pro
     [id, status],
   );
   return row ? done(undefined) : fail("Pertanyaan tidak ditemukan.");
+}
+
+/**
+ * Propose answers for this event's outstanding questions from its own recording. One call per
+ * press carrying the whole list, not one per question: the video is the expensive part and its
+ * cost is fixed, and a model that sees the questions together can tell when the speaker took two
+ * of them at once.
+ *
+ * An empty result is a success. The speaker gets through what time allows, so most of the queue
+ * going unmatched is the ordinary outcome, not a failure.
+ */
+export async function draftAnswers(eventId: string): Promise<Result<Record<string, Proposal>>> {
+  await requireAdmin();
+
+  const event = await getEvent(eventId);
+  if (!event) return fail("Majelis tidak ditemukan.");
+  if (!event.youtubeId) return fail("Majelis ini belum punya rekaman YouTube.");
+
+  const pending = (await listAllQuestions(eventId)).filter(
+    (q) => !q.answer && q.status !== "hidden",
+  );
+  if (pending.length === 0) return fail("Tidak ada pertanyaan yang belum dijawab.");
+
+  try {
+    const proposals = await draftFromVideo(
+      event.youtubeId,
+      pending.map((q) => ({ id: q.id, body: q.body })),
+    );
+    return done(Object.fromEntries(proposals.map((p) => [p.id, p])));
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : "Gagal membaca rekaman.");
+  }
 }
 
 export async function adminEvents() {

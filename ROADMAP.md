@@ -240,6 +240,10 @@ ship. Do not open archived sessions to search engines; see §8.
 **Out of v1, deliberately:** auto-triage, voice-to-text, WhatsApp notifications, Google and
 magic-link sign-in, ingestion automation, a syaikh-facing answer screen, websockets.
 
+"Ingestion automation" means §7: pulling someone else's talk off YouTube and discovering the
+questions inside it. Drafting answers to questions *we already hold* from *our own* recording is a
+different feature and it ships; see §7's closing note.
+
 ## 6. Later
 
 **Auto-triage.** §5's three signals, on-topic, urgency, and near-duplicate grouping, reorder the
@@ -303,6 +307,41 @@ voice-to-text included.
   replay link carries the reader to the real thing.
 - **Attribution varies.** One host reads out demographics ("perempuan, 29, Jakarta Pusat"), which
   makes a decent author line. The other video has none. The extractor can't assume either.
+
+### Drafting answers from our own recording
+
+Separate from the above, and not frozen. `components/AdminBoard.tsx` carries an **Ambil jawaban
+dari rekaman** button on any event with a `youtubeId`: one Gemini call sends the recording plus
+every still-unanswered question, and gets back a draft, a timestamp and a supporting quote for the
+ones the speaker actually addressed. `lib/gemini.ts` owns the call and the validation.
+
+Why this is not blocked by the freeze above:
+
+- **It is matching, not segmentation.** The questions already exist in `questions`, typed by real
+  students. §7's hard part was finding them in a caption stream; here they are handed to the model
+  as a list, and it rules on each one.
+- **§8's republishing question does not apply.** Own majelis, own recording, and the output is a
+  private draft an admin edits, not published text.
+- **No captions involved.** Gemini reads a public YouTube URL directly, so `yt-dlp`, the caption
+  track and their failure modes are all out of the path. It is one HTTPS call, which is why this
+  runs on Vercel today.
+
+Three things shape the implementation, and all three come from §3's rule that the worst failure
+here is a wrong ruling published under a real scholar's name:
+
+- **The speaker never answers the whole queue.** Most questions in a run come back with no
+  proposal, and that is the correct result. A model returning a draft for nearly every question is
+  failing, not succeeding — the first signal to check on a real run.
+- **Detection is framed before drafting**, `partly` exists as a middle verdict for merged or
+  half-answers, and every proposal carries a quote of what the speaker said taking the question
+  up. The quote is the admin's one-glance check that the match is real.
+- **Nothing is written without a human tap.** Proposals live in client state; `video_start` is
+  written only alongside the answer the admin saves, because `lib/queries.ts` returns it
+  regardless of answeredness and an early write would put a ▶ on an unanswered question.
+
+Known limits: the recording must be **public** (Gemini rejects unlisted and private URLs), the
+call re-reads the whole video on every press, and a question the speaker answered that was never
+submitted through the app is invisible to this — finding those is the frozen segmentation problem.
 
 ### Replay anchors
 

@@ -9,6 +9,10 @@ import { requireSession } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
+// Reading a 40-minute recording is a single long Gemini call from a server action on this
+// route, and the platform default (60s on Vercel Hobby) is not enough for it.
+export const maxDuration = 300;
+
 export default async function AdminEventPage({ params }: PageProps<"/admin/events/[id]">) {
   const { id } = await params;
   await requireSession(`/admin/events/${id}`);
@@ -37,7 +41,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
     >
       <EventControls event={event} />
       <h2 className="mb-3 mt-6 text-lg font-semibold">Pertanyaan</h2>
-      <AdminBoard eventId={event.id} />
+      <AdminBoard eventId={event.id} youtubeId={event.youtubeId} />
     </AdminShell>
   );
 }

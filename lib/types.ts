@@ -41,6 +41,21 @@ export type Question = {
 
 export type Page = { items: Question[]; nextCursor: string | null };
 
+/**
+ * A draft answer proposed from the event's own recording, before any human accepts it. Held in
+ * admin client state and never persisted: what gets stored is whatever the admin saves.
+ * `quote` and `videoStart` are the evidence that the match is real, not decoration.
+ */
+export type Proposal = {
+  id: string;
+  /** "partly" = taken up but not fully answered, or answered together with another question. */
+  verdict: "answered" | "partly";
+  draft: string;
+  /** Seconds into the recording where the ANSWER begins. */
+  videoStart: number;
+  quote: string;
+};
+
 /** List thumbnail: explicit cover wins, otherwise YouTube's own still, otherwise nothing. */
 export function coverFor(e: Event) {
   return e.image ?? (e.youtubeId ? `https://i.ytimg.com/vi/${e.youtubeId}/hqdefault.jpg` : null);
