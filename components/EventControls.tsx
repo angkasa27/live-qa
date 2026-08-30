@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Segmented from "@/components/admin/Segmented";
+import Spinner from "@/components/Spinner";
 import { updateEvent } from "@/lib/actions";
 import type { Event, EventStatus } from "@/lib/types";
 
@@ -75,6 +76,7 @@ export default function EventControls({ event }: { event: Event }) {
           <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
           <span className="block truncate text-xs text-muted">{summary}</span>
         </span>
+        {pending && <Spinner className="h-4 w-4 shrink-0 text-muted" />}
         <svg
           viewBox="0 0 24 24"
           className="h-5 w-5 shrink-0 text-muted transition-transform group-open:rotate-180"

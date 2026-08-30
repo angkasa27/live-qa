@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Spinner from "@/components/Spinner";
 import { signOut } from "@/lib/auth-client";
 
 export default function SignOutButton() {
@@ -17,9 +18,10 @@ export default function SignOutButton() {
         router.refresh();
       }}
       disabled={busy}
-      className="min-h-[2.5rem] shrink-0 rounded-lg border border-border px-3.5 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-foreground disabled:opacity-40"
+      className="flex min-h-[2.5rem] shrink-0 items-center gap-2 rounded-lg border border-border px-3.5 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-foreground disabled:opacity-40"
     >
-      {busy ? "Keluar…" : "Keluar"}
+      {busy && <Spinner />}
+      Keluar
     </button>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Spinner from "@/components/Spinner";
 import { signIn } from "@/lib/auth-client";
 
 export default function SignInForm({ next }: { next: string }) {
@@ -60,8 +61,9 @@ export default function SignInForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy}
-        className="min-h-[3rem] w-full rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40"
+        className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
+        {busy && <Spinner />}
         {busy ? "Memproses…" : "Masuk"}
       </button>
     </form>

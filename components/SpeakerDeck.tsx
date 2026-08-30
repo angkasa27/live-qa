@@ -106,7 +106,15 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
     setCurrent(Math.round(el.scrollLeft / el.clientWidth));
   }
 
-  if (ready && items.length === 0) {
+  if (!ready) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-950 text-zinc-500" role="status">
+        Memuat…
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100">
         <p className="text-2xl font-medium">Belum ada pertanyaan.</p>

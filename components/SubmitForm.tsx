@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Spinner from "@/components/Spinner";
 import { addQuestion } from "@/lib/actions";
 import { MAX_BODY } from "@/lib/types";
 
@@ -119,8 +120,9 @@ export default function SubmitForm({
         <button
           type="submit"
           disabled={!canSend}
-          className="min-h-[3rem] w-full rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
+          {busy && <Spinner />}
           {busy ? "Mengirim…" : "Kirim pertanyaan"}
         </button>
       </div>
