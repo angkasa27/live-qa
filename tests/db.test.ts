@@ -210,7 +210,7 @@ suite("queries (integration)", () => {
   });
 
   describe("listMine", () => {
-    it("spans events, marks mine, newest first, hides hidden", async () => {
+    it("spans events, marks mine, newest first, and keeps hidden ones", async () => {
       const older = await seedEvent();
       const newer = await seedEvent();
       await seedQ(older, "old mine", { token: "me", ageSec: 100 });
@@ -218,9 +218,13 @@ suite("queries (integration)", () => {
       await seedQ(newer, "hidden mine", { token: "me", status: "hidden" });
       await seedQ(newer, "someone else", { token: "them" });
 
+      // This list used to drop hidden questions, which made a rejected question read as one
+      // that never sent, so the student asked it again. Their own stays on their own list; it
+      // is still absent from every other read. See lib/queries.ts.
       const mine = await listMine("me");
-      expect(mine.map((q) => q.body)).toEqual(["new mine", "old mine"]);
+      expect(mine.map((q) => q.body)).toEqual(["hidden mine", "new mine", "old mine"]);
       expect(mine.every((q) => q.mine)).toBe(true);
+      expect(mine.find((q) => q.body === "hidden mine")?.status).toBe("hidden");
       expect(mine[0].eventName).toBe("test event");
     });
   });

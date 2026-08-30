@@ -34,16 +34,35 @@ export default async function MyQuestionsPage() {
             <ul className="space-y-3">
               {mine.map((q) => (
                 <li key={q.id} className="rounded-xl border border-border bg-surface p-4">
-                  <Link href={`/events/${q.eventId}`} className="text-sm text-muted underline underline-offset-4">
-                    {q.eventName}
-                  </Link>
+                  {/* A hidden majelis 404s for the public, so its name is text, not a dead link. */}
+                  {q.eventHidden ? (
+                    <span className="text-sm text-muted">{q.eventName}</span>
+                  ) : (
+                    <Link href={`/events/${q.eventId}`} className="text-sm text-muted underline underline-offset-4">
+                      {q.eventName}
+                    </Link>
+                  )}
                   <p className="mt-2 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
+
+                  {/* Status is stated even when there is an answer: a question can be hidden
+                      after it was answered, and the asker should still see where it stands. */}
+                  {q.status === "hidden" && (
+                    <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
+                      <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium">
+                        tidak ditampilkan
+                      </span>
+                      Pertanyaan ini tidak ditampilkan di daftar publik.
+                    </p>
+                  )}
+
                   {q.answer ? (
                     <AnswerBlock answer={q.answer} edited={q.edited} />
                   ) : (
-                    <p className="mt-3 text-sm text-muted">
-                      {q.status === "submitted" ? "Menunggu review admin." : "Belum dijawab."}
-                    </p>
+                    q.status !== "hidden" && (
+                      <p className="mt-3 text-sm text-muted">
+                        {q.status === "submitted" ? "Menunggu review admin." : "Belum dijawab."}
+                      </p>
+                    )
                   )}
                 </li>
               ))}

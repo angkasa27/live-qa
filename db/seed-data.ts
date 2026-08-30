@@ -12,7 +12,7 @@ type SeedEvent = {
   speaker: string;
   status: "scheduled" | "live" | "archived";
   moderation?: "auto" | "manual";
-  publicArchive?: boolean;
+  hidden?: boolean;
   image?: string;
   youtubeId?: string;
 };
@@ -39,7 +39,6 @@ export const events: SeedEvent[] = [
     venue: "Khalid Basalamah Official",
     speaker: "Khalid Basalamah",
     status: "archived",
-    publicArchive: true,
     youtubeId: "71z6vw_c5JE",
   },
   {
@@ -49,7 +48,6 @@ export const events: SeedEvent[] = [
     venue: "Moslem Nearer",
     speaker: "Ustadz Yazid bin Abdul Qadir Jawas",
     status: "archived",
-    publicArchive: true,
     youtubeId: "1mycTmtS5_4",
   },
   {

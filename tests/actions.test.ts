@@ -19,18 +19,20 @@ vi.mock("../lib/auth.ts", () => ({
   auth: { api: { getSession: async () => ({ user: { id: "admin-1" } }) } },
 }));
 
-const { addQuestion, answerHistory, createEvent, deleteEvent, setAnswer, updateEvent } =
-  await import("../lib/actions.ts");
+const { addQuestion, answerHistory, createEvent, deleteEvent, fetchApproved, fetchPage,
+        setAnswer, updateEvent } = await import("../lib/actions.ts");
 const { pool, query } = await import("../lib/db.ts");
-const { getEvent } = await import("../lib/queries.ts");
+const { getEvent, listEvents, listMine } = await import("../lib/queries.ts");
 import { MAX_BODY } from "../lib/types.ts";
 
-async function seedEvent(patch: Partial<{ status: string; moderation: string }> = {}) {
+async function seedEvent(
+  patch: Partial<{ status: string; moderation: string; hidden: boolean }> = {},
+) {
   const id = `act-${randomUUID().slice(0, 8)}`;
   await query(
-    `insert into events (id, name, starts_at, venue, speaker, status, moderation)
-     values ($1, 'test event', now(), 'test venue', 'test speaker', $2, $3)`,
-    [id, patch.status ?? "live", patch.moderation ?? "auto"],
+    `insert into events (id, name, starts_at, venue, speaker, status, moderation, hidden)
+     values ($1, 'test event', now(), 'test venue', 'test speaker', $2, $3, $4)`,
+    [id, patch.status ?? "live", patch.moderation ?? "auto", patch.hidden ?? false],
   );
   return id;
 }
@@ -189,11 +191,12 @@ suite("actions (integration)", () => {
 
     it("leaves fields alone when the patch omits them", async () => {
       const eventId = await seedEvent({ status: "live", moderation: "auto" });
-      await updateEvent(eventId, { publicArchive: true });
-      const e = await getEvent(eventId);
+      await updateEvent(eventId, { hidden: true });
+      // getEvent hides these by default, so an admin read is the only way to see the row.
+      const e = await getEvent(eventId, { includeHidden: true });
       expect(e?.status).toBe("live");
       expect(e?.moderation).toBe("auto");
-      expect(e?.publicArchive).toBe(true);
+      expect(e?.hidden).toBe(true);
     });
 
     it("fails on an unknown session", async () => {
@@ -250,6 +253,70 @@ suite("actions (integration)", () => {
       const e = await getEvent(eventId);
       expect(e?.name).toBe("Nama Baru");
       expect(e?.youtubeId).toBe("dQw4w9WgXcQ");
+    });
+  });
+
+  describe("hidden events", () => {
+    it("are unreachable through every public read, and reachable for admins", async () => {
+      const eventId = await seedEvent({ hidden: true });
+
+      // The default is closed: a public path that forgets about visibility gets null and 404s.
+      expect(await getEvent(eventId)).toBeNull();
+      expect((await listEvents()).some((e) => e.id === eventId)).toBe(false);
+      expect((await getEvent(eventId, { includeHidden: true }))?.hidden).toBe(true);
+    });
+
+    it("refuse new questions even though the action is public", async () => {
+      const eventId = await seedEvent({ hidden: true, status: "live" });
+      const res = await addQuestion({ eventId, body: "should not land", author: null });
+      expect(res.ok).toBe(false);
+
+      const rows = await query(`select 1 from questions where event_id = $1`, [eventId]);
+      expect(rows).toHaveLength(0);
+    });
+
+    it("keep their questions out of the public page but not the speaker deck", async () => {
+      // Seed visible so the question can be submitted, then hide the majelis afterwards.
+      const eventId = await seedEvent();
+      const q = await addQuestion({ eventId, body: "asked before hiding", author: null });
+      expect(q.ok).toBe(true);
+      await updateEvent(eventId, { hidden: true });
+
+      // The route would 404, but the server action is the trust boundary that has to hold.
+      expect((await fetchPage(eventId, null)).items).toHaveLength(0);
+      // The deck is behind requireAdmin and still runs the session.
+      expect((await fetchApproved(eventId, null)).items).toHaveLength(1);
+    });
+
+    it("still show the asker their own question, without a link to a dead page", async () => {
+      const eventId = await seedEvent();
+      const q = await addQuestion({ eventId, body: "mine", author: null });
+      if (!q.ok) throw new Error(q.error);
+      await updateEvent(eventId, { hidden: true });
+
+      const token = jar.get("ask_asker")!;
+      const mine = await listMine(token);
+      expect(mine).toHaveLength(1);
+      expect(mine[0].eventHidden).toBe(true);
+    });
+  });
+
+  describe("listMine", () => {
+    it("keeps a hidden question on its asker's own list", async () => {
+      const eventId = await seedEvent();
+      const q = await addQuestion({ eventId, body: "will be rejected", author: null });
+      if (!q.ok) throw new Error(q.error);
+      await query(`update questions set status = 'hidden' where id = $1::uuid`, [q.data.id]);
+
+      // Filtering these out made a rejected question read as one that failed to send, so the
+      // student asked it again. See ROADMAP.md §3 and lib/queries.ts.
+      const token = jar.get("ask_asker")!;
+      const mine = await listMine(token);
+      expect(mine).toHaveLength(1);
+      expect(mine[0].status).toBe("hidden");
+
+      // Still absent from what everyone else can read.
+      expect((await fetchPage(eventId, null)).items).toHaveLength(0);
     });
   });
 

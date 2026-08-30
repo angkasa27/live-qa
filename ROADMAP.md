@@ -166,7 +166,7 @@ Event {
   status:        "scheduled" | "live" | "archived"
   acceptingQuestions: boolean   // admin override; questions normally follow status === "live"
   moderation:    "auto" | "manual"
-  publicArchive: boolean        // link-only + noindex when true
+  hidden:        boolean        // hidden from the public entirely; 404s at its own URL
   image?, youtubeId?
 }
 
@@ -216,7 +216,7 @@ working thing.
 | 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` | **done** |
 | 4 | Email | Notify on answer. The address is already collected and stored. | |
 | 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF | |
-| 6 | Archive | Public toggle, `noindex`, disclaimer | only the toggle left |
+| 6 | Archive | Visibility toggle, `noindex`, disclaimer | **done** |
 
 ### What each of the three still needs
 
@@ -232,10 +232,19 @@ prints whatever is on screen, so the same route covers both timings: the finishe
 and the queue at the start once triage exists. Hide the app chrome, keep question, attribution
 and answer.
 
-**Step 6: Archive.** `events.public_archive` exists as a column and is seeded, but there is no control
-for it. That's the whole remaining task: one more toggle in `components/EventControls.tsx`.
-`noindex` and the "this is an admin's summary, the recording is the authority" disclaimer already
-ship. Do not open archived sessions to search engines; see §8.
+**Step 6: Archive.** Done. `public_archive` turned out to be the wrong question: it asked whether
+an archive was public, when what organisers actually need is to take a majelis away from the
+public entirely. It is replaced by `events.hidden`, its own axis rather than a fourth `status`, so
+un-hiding restores whatever lifecycle state the event already had and a *scheduled* majelis can be
+drafted before it is announced. The toggle is in `components/EventControls.tsx`.
+
+Hidden means hidden, not unlisted: `lib/queries.ts` excludes these from every public read, so the
+event page 404s and the questions are unreachable through the server actions too, not merely off
+the homepage. `getEvent` and `fetchPage` exclude them **by default** and admin callers opt in, so
+a public path that forgets about visibility fails closed.
+
+Indexing is no longer per-page. The whole site is `noindex` — `app/robots.ts` plus site-wide
+`robots` metadata in `app/layout.tsx`; see §8.
 
 **Out of v1, deliberately:** auto-triage, voice-to-text, WhatsApp notifications, Google and
 magic-link sign-in, ingestion automation, a syaikh-facing answer screen, websockets.
@@ -368,8 +377,12 @@ mitigation and the first three real events are the measurement. Nothing in §4 o
 if the number moves; that's why it's settled now.
 
 **Does the archive ever open to search engines?**
-Link-only and `noindex` for v1, with a disclaimer that the answer is an admin's summary and the
-recording is the authority. A searchable, indexed archive of a named scholar's answers, typed
+**Settled for now: no.** The entire site is excluded from search engines, not just the archive —
+a per-route rule is one forgotten `generateMetadata` away from leaking the pages that matter most,
+and `/events/[id]/questions` was in fact already indexable while `/events/[id]` was not. So it is
+`app/robots.ts` plus site-wide `robots` metadata, and the per-event rule was deleted. The
+disclaimer that the answer is an admin's summary and the recording is the authority still ships on
+the event page. A searchable, indexed archive of a named scholar's answers, typed
 from memory by a volunteer, is a fatwa database, and a mistyped or out-of-context one is
 attributed to a real person. Don't open it until answer editing has been used in anger.
 

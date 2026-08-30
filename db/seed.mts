@@ -27,15 +27,15 @@ await pool.query("begin");
 try {
   for (const e of wanted) {
     await pool.query(
-      `insert into events (id, name, starts_at, venue, speaker, status, moderation, public_archive, image, youtube_id)
+      `insert into events (id, name, starts_at, venue, speaker, status, moderation, hidden, image, youtube_id)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        on conflict (id) do update set
          name = excluded.name, starts_at = excluded.starts_at, venue = excluded.venue,
          speaker = excluded.speaker, status = excluded.status, moderation = excluded.moderation,
-         public_archive = excluded.public_archive, image = excluded.image,
+         hidden = excluded.hidden, image = excluded.image,
          youtube_id = excluded.youtube_id`,
       [e.id, e.name, e.startsAt, e.venue, e.speaker, e.status, e.moderation ?? "auto",
-       e.publicArchive ?? false, e.image ?? null, e.youtubeId ?? null],
+       e.hidden ?? false, e.image ?? null, e.youtubeId ?? null],
     );
   }
 

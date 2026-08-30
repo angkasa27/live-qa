@@ -76,7 +76,7 @@ describe("coverFor", () => {
     status: "live" as const,
     acceptingQuestions: true,
     moderation: "auto" as const,
-    publicArchive: false,
+    hidden: false,
   };
 
   it("prefers the explicit image, then youtube still, then nothing", () => {

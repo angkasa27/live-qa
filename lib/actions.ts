@@ -101,7 +101,7 @@ export async function fetchPage(eventId: string, cursor: string | null): Promise
  */
 export async function fetchApproved(eventId: string, cursor: string | null): Promise<Page> {
   await requireAdmin();
-  return readPage(eventId, cursor, null);
+  return readPage(eventId, cursor, null, { includeHidden: true });
 }
 
 // --- admin --------------------------------------------------------------------------------
@@ -169,7 +169,7 @@ export async function setQuestionStatus(id: string, status: QuestionStatus): Pro
 export async function draftAnswers(eventId: string): Promise<Result<Record<string, Proposal>>> {
   await requireAdmin();
 
-  const event = await getEvent(eventId);
+  const event = await getEvent(eventId, { includeHidden: true });
   if (!event) return fail("Majelis tidak ditemukan.");
   if (!event.youtubeId) return fail("Majelis ini belum punya rekaman YouTube.");
 
@@ -254,7 +254,7 @@ export async function updateEvent(
     status?: EventStatus;
     acceptingQuestions?: boolean | null;
     moderation?: "auto" | "manual";
-    publicArchive?: boolean;
+    hidden?: boolean;
     /**
      * The edit form's fields, all of them, every time. Absent means "leave the details alone",
      * which is what the settings panel sends. Present and empty means clear: an admin removing
@@ -280,7 +280,7 @@ export async function updateEvent(
        status              = coalesce($2, status),
        accepting_questions = case when $3 then $4 else accepting_questions end,
        moderation          = coalesce($5, moderation),
-       public_archive      = coalesce($6, public_archive),
+       hidden              = coalesce($6, hidden),
        name                = coalesce($8, name),
        starts_at           = coalesce($9::timestamptz, starts_at),
        venue               = coalesce($10, venue),
@@ -296,7 +296,7 @@ export async function updateEvent(
       "acceptingQuestions" in patch,
       patch.acceptingQuestions ?? null,
       patch.moderation ?? null,
-      patch.publicArchive ?? null,
+      patch.hidden ?? null,
       clean !== null,
       clean?.name ?? null,
       clean?.startsAt ?? null,

@@ -10,7 +10,7 @@ export default async function EditEventPage({ params }: PageProps<"/admin/events
   const { id } = await params;
   await requireSession(`/admin/events/${id}/edit`);
 
-  const event = await getEvent(id);
+  const event = await getEvent(id, { includeHidden: true });
   if (!event) notFound();
 
   return (

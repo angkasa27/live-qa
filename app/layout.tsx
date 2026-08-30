@@ -7,6 +7,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Sual: Tanya Jawab Majelis",
   description: "Kirim pertanyaan Anda ke pemateri, dengan nama atau anonim.",
+  // Site-wide, inherited by every route: robots.txt asks crawlers not to fetch, this tells the
+  // ones that fetch anyway not to index. See app/robots.ts and ROADMAP.md §8.
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export const viewport: Viewport = {

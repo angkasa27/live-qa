@@ -18,6 +18,7 @@ type Draft = {
   status: EventStatus;
   accepting: boolean | null;
   moderation: "auto" | "manual";
+  hidden: boolean;
 };
 
 const draftOf = (e: Event): Draft => ({
@@ -26,6 +27,7 @@ const draftOf = (e: Event): Draft => ({
   // It is recoverable: an event whose resolved value already matches its status is following it.
   accepting: e.acceptingQuestions === (e.status === "live") ? null : e.acceptingQuestions,
   moderation: e.moderation,
+  hidden: e.hidden,
 });
 
 /** Whether questions are open, given a draft. One expression, mirroring accepting_questions(). */
@@ -59,7 +61,8 @@ export default function EventControls({ event }: { event: Event }) {
   const dirty =
     draft.status !== saved.status ||
     draft.accepting !== saved.accepting ||
-    draft.moderation !== saved.moderation;
+    draft.moderation !== saved.moderation ||
+    draft.hidden !== saved.hidden;
 
   const set = (patch: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -73,6 +76,7 @@ export default function EventControls({ event }: { event: Event }) {
         status: draft.status,
         acceptingQuestions: draft.accepting,
         moderation: draft.moderation,
+        hidden: draft.hidden,
       });
       if (!res.ok) return setError(res.error);
       router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
@@ -90,6 +94,8 @@ export default function EventControls({ event }: { event: Event }) {
     STATUS.find(([s]) => s === draft.status)![1],
     open ? "terbuka" : "tertutup",
     draft.moderation === "manual" ? "review manual" : "review otomatis",
+    // Only worth a word when it is the unusual case.
+    ...(draft.hidden ? ["disembunyikan"] : []),
   ].join(" · ");
 
   return (
@@ -172,6 +178,25 @@ export default function EventControls({ event }: { event: Event }) {
               ["manual", "Manual"],
             ]}
             onChange={(moderation) => set({ moderation })}
+          />
+        </Setting>
+
+        <Setting
+          label="Tampil untuk publik"
+          hint={
+            draft.hidden
+              ? "Disembunyikan: tidak muncul di daftar, dan tautannya tidak bisa dibuka jamaah."
+              : "Muncul di daftar majelis dan bisa dibuka siapa saja."
+          }
+        >
+          <Segmented
+            label="Tampil untuk publik"
+            value={draft.hidden ? "hidden" : "public"}
+            options={[
+              ["public", "Tampil"],
+              ["hidden", "Sembunyikan"],
+            ]}
+            onChange={(v) => set({ hidden: v === "hidden" })}
           />
         </Setting>
 

@@ -14,7 +14,12 @@ export type Event = {
   /** Resolved server-side from `coalesce(accepting_questions, status = 'live')`. */
   acceptingQuestions: boolean;
   moderation: "auto" | "manual";
-  publicArchive: boolean;
+  /**
+   * Hidden from the public entirely: not listed, and 404 at its own URL for anyone but an admin.
+   * Its own axis rather than a fourth `status`, so un-hiding restores the lifecycle state the
+   * event already had. See db/schema.sql.
+   */
+  hidden: boolean;
   image?: string;
   youtubeId?: string;
 };

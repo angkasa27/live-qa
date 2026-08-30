@@ -55,7 +55,7 @@ function toQuestion(r: QuestionRow): Question {
 const EVENT_COLS = `
   e.id, e.name, e.starts_at, e.venue, e.speaker, e.status,
   coalesce(e.accepting_questions, e.status = 'live') as accepting_questions,
-  e.moderation, e.public_archive, e.image, e.youtube_id
+  e.moderation, e.hidden, e.image, e.youtube_id
 `;
 
 type EventRow = {
@@ -67,7 +67,7 @@ type EventRow = {
   status: Event["status"];
   accepting_questions: boolean;
   moderation: Event["moderation"];
-  public_archive: boolean;
+  hidden: boolean;
   image: string | null;
   youtube_id: string | null;
 };
@@ -82,14 +82,22 @@ function toEvent(r: EventRow): Event {
     status: r.status,
     acceptingQuestions: r.accepting_questions,
     moderation: r.moderation,
-    publicArchive: r.public_archive,
+    hidden: r.hidden,
     ...(r.image ? { image: r.image } : {}),
     ...(r.youtube_id ? { youtubeId: r.youtube_id } : {}),
   };
 }
 
-export async function getEvent(id: string) {
-  const row = await one<EventRow>(`select ${EVENT_COLS} from events e where e.id = $1`, [id]);
+/**
+ * One event. Hidden events are excluded **by default**, so a public path that forgets to think
+ * about visibility gets null and 404s rather than leaking. Admin callers pass `includeHidden`
+ * deliberately; that opt-in is the only way to read a hidden majelis.
+ */
+export async function getEvent(id: string, { includeHidden = false } = {}) {
+  const row = await one<EventRow>(
+    `select ${EVENT_COLS} from events e where e.id = $1 and ($2 or not e.hidden)`,
+    [id, includeHidden],
+  );
   return row && toEvent(row);
 }
 
@@ -100,6 +108,7 @@ export async function listEvents() {
             (select count(*) from questions q
               where q.event_id = e.id and q.status = 'approved') as question_count
        from events e
+      where not e.hidden
       order by e.starts_at desc`,
   );
   return rows.map((r) => ({ ...toEvent(r), questionCount: Number(r.question_count) }));
@@ -149,17 +158,25 @@ export async function fetchPage(
   eventId: string,
   cursor: string | null,
   askerToken: string | null,
-  { includeAll = false, limit = PAGE_SIZE } = {},
+  { includeAll = false, includeHidden = false, limit = PAGE_SIZE } = {},
 ): Promise<Page> {
   const visible = includeAll
     ? "true"
     : `(q.status = 'approved' or (q.status = 'submitted' and q.asker_token = $3))`;
+
+  // A hidden event's questions are unreachable through this path too, not just through its page.
+  // The server action is the trust boundary; a 404 on the route alone would still leave the
+  // questions readable to anyone who knew the event id. Admin callers opt in, as with getEvent.
+  const reachable = includeHidden
+    ? "true"
+    : `exists (select 1 from events e where e.id = q.event_id and not e.hidden)`;
 
   const rows = await query<QuestionRow>(
     `select ${PUBLIC_COLS.replace("$TOKEN", "$3")}
        from questions q
       where q.event_id = $1
         and ${visible}
+        and ${reachable}
         and ($2::uuid is null or (q.created_at, q.id) >
              (select c.created_at, c.id from questions c where c.id = $2::uuid))
       order by q.created_at, q.id
@@ -251,15 +268,28 @@ export async function listRevisions(questionId: string): Promise<Revision[]> {
   }));
 }
 
-/** Everything this browser has ever asked, newest first, across every event. */
+/**
+ * Everything this browser has ever asked, newest first, across every event.
+ *
+ * Hidden questions are included here and nowhere else. This used to filter them out, which
+ * recreated the exact failure ROADMAP.md §3 keeps a *pending* question visible to its asker to
+ * avoid: a question that silently vanishes reads as a question that failed to send, and the
+ * student asks it again. Their own question stays on their own list, marked for what it is.
+ *
+ * `event_hidden` rides along so the page can stop linking to a majelis the public cannot open.
+ */
 export async function listMine(askerToken: string) {
-  const rows = await query<QuestionRow & { event_name: string }>(
-    `select ${PUBLIC_COLS.replace("$TOKEN", "$1")}, e.name as event_name
+  const rows = await query<QuestionRow & { event_name: string; event_hidden: boolean }>(
+    `select ${PUBLIC_COLS.replace("$TOKEN", "$1")}, e.name as event_name, e.hidden as event_hidden
        from questions q join events e on e.id = q.event_id
-      where q.asker_token = $1 and q.status <> 'hidden'
+      where q.asker_token = $1
       order by q.created_at desc
       limit 100`,
     [askerToken],
   );
-  return rows.map((r) => ({ ...toQuestion(r), eventName: r.event_name }));
+  return rows.map((r) => ({
+    ...toQuestion(r),
+    eventName: r.event_name,
+    eventHidden: r.event_hidden,
+  }));
 }

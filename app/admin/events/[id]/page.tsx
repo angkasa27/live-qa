@@ -17,7 +17,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
   const { id } = await params;
   await requireSession(`/admin/events/${id}`);
 
-  const event = await getEvent(id);
+  const event = await getEvent(id, { includeHidden: true });
   if (!event) notFound();
 
   return (

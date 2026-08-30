@@ -28,14 +28,6 @@ function MaybePlayer({
   );
 }
 
-export async function generateMetadata({ params }: PageProps<"/events/[id]">) {
-  const { id } = await params;
-  const event = await getEvent(id);
-  // An archived session is link-only until someone decides otherwise; ROADMAP.md §8. A
-  // searchable index of a named scholar's answers is a bigger commitment than a share link.
-  return event?.status === "archived" ? { robots: { index: false, follow: false } } : {};
-}
-
 export default async function EventPage({ params }: PageProps<"/events/[id]">) {
   const { id } = await params;
   const event = await getEvent(id);

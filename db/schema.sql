@@ -22,7 +22,13 @@ create table if not exists events (
   accepting_questions boolean,
 
   moderation          text not null default 'auto' check (moderation in ('auto', 'manual')),
-  public_archive      boolean not null default false,
+
+  -- Visibility, and deliberately its own axis rather than a fourth `status`. An event is hidden
+  -- or not independently of where it is in its life: a scheduled majelis can be drafted before
+  -- it is announced, and un-hiding it restores whatever status it already had instead of having
+  -- to guess. Hidden means hidden from the public entirely, not merely unlisted: lib/queries.ts
+  -- excludes these from every public read, so the event page 404s for anyone but an admin.
+  hidden              boolean not null default false,
 
   image               text,
   youtube_id          text,
@@ -81,6 +87,16 @@ create table if not exists answer_revisions (
 );
 
 create index if not exists answer_revisions_q_idx on answer_revisions (question_id, created_at desc);
+
+-- Migrations. This file is applied with `create table if not exists`, so a column that changes
+-- after a database already exists needs an explicit statement here. Each one is idempotent and
+-- a no-op on a database created from the definitions above.
+--
+-- `public_archive` meant "this archive is publicly readable" and was never read by anything. It
+-- is replaced by `hidden`, which is the opposite question and the one the organisers actually
+-- ask. The old column carried no meaningful state, so it is dropped rather than translated.
+alter table events drop column if exists public_archive;
+alter table events add column if not exists hidden boolean not null default false;
 
 -- Whether an event takes new questions right now. One expression, used by the insert path and
 -- the UI both, so they can't disagree.
