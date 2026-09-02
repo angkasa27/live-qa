@@ -19,6 +19,15 @@ export default async function globalSetup() {
   admin.pathname = "/postgres";
   const bootstrap = new Pool({ connectionString: admin.toString() });
   try {
+    // The pooler (pgbouncer) keeps a server-side connection to the scratch database open
+    // after the previous run's client disconnects, and `drop database` fails while any
+    // session is attached. Evict them first. Safe: `name` is validated above and by
+    // scratchUrl() to be a plain identifier ending in _test.
+    await bootstrap.query(
+      `select pg_terminate_backend(pid) from pg_stat_activity
+        where datname = $1 and pid <> pg_backend_pid()`,
+      [name],
+    );
     await bootstrap.query(`drop database if exists "${name}"`);
     await bootstrap.query(`create database "${name}"`);
   } catch (e) {
