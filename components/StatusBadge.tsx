@@ -4,14 +4,14 @@ import type { EventStatus } from "@/lib/types";
 export default function StatusBadge({ status }: { status: EventStatus }) {
   if (status === "live") {
     return (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-500">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
+      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-live px-2.5 py-[5px] text-[0.6875rem] font-bold tracking-wide text-white uppercase">
+        <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden />
         Berlangsung
       </span>
     );
   }
   return (
-    <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted">
+    <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wide text-muted uppercase">
       {status === "scheduled" ? "Akan datang" : "Arsip"}
     </span>
   );

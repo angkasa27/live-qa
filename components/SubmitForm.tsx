@@ -43,20 +43,65 @@ export default function SubmitForm({
       setBody("");
       setSent(true);
     } catch {
-      setError("Gagal mengirim. Coba lagi.");
+      setError("Koneksi terputus. Pertanyaan Anda masih tersimpan di halaman ini — tekan kirim lagi.");
     } finally {
       setBusy(false);
     }
   }
 
   const counterTone =
-    body.length > MAX_BODY ? "text-red-500" : body.length > MAX_BODY - 50 ? "text-amber-500" : "text-muted";
+    body.length > MAX_BODY ? "text-danger" : body.length > MAX_BODY - 50 ? "text-warn" : "text-faint";
+
+  // Sending is the end of this screen, not a line of feedback on it: the question is gone, and
+  // the two things left to do are check on it or go back. Design P3.
+  if (sent && !error) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col items-center gap-3.5 px-2 py-7 text-center">
+          <span
+            className="flex h-13 w-13 items-center justify-center rounded-full border border-accent-border bg-accent-soft text-xl text-accent"
+            aria-hidden
+          >
+            ✓
+          </span>
+          <h2 className="font-serif text-[1.4375rem] leading-snug font-medium">
+            {moderated ? "Pertanyaan Anda terkirim" : "Sudah masuk antrean"}
+          </h2>
+          <p className="text-[0.9375rem] leading-relaxed text-muted text-pretty">
+            {moderated
+              ? "Majelis ini memakai review admin, jadi pertanyaan Anda menunggu disetujui sebelum tampil. Tidak perlu mengirim ulang."
+              : "Pertanyaan Anda langsung tampil dan sudah terbaca oleh admin majelis. Urutannya sesuai waktu bertanya."}
+          </p>
+          {moderated && (
+            <p className="w-full rounded-xl border border-warn-border bg-warn-soft px-3 py-2.5 text-left text-[0.8125rem] leading-relaxed text-warn">
+              Anda tetap bisa melihat pertanyaan ini di daftar — ditandai{" "}
+              <strong className="font-bold">menunggu review</strong> dan hanya terlihat oleh Anda.
+            </p>
+          )}
+        </div>
+        <div className="-mx-4 mt-6 flex flex-col gap-2.5 border-t border-border-soft px-4 pt-3 sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
+          <Link
+            href="/pertanyaan-saya"
+            className="flex min-h-[3.25rem] items-center justify-center rounded-[14px] bg-accent font-bold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Lihat pertanyaan saya
+          </Link>
+          <Link
+            href={`/events/${eventId}`}
+            className="flex min-h-12 items-center justify-center rounded-[14px] border border-border bg-surface text-[0.9375rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Kembali ke majelis
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col">
       <div className="flex-1 space-y-5">
         <div>
-          <label htmlFor="body" className="block text-sm font-medium">
+          <label htmlFor="body" className="block text-sm font-semibold">
             Pertanyaan Anda
           </label>
           <textarea
@@ -69,16 +114,22 @@ export default function SubmitForm({
               if (sent) setSent(false);
             }}
             placeholder="Apa yang ingin Anda tanyakan?"
-            className="mt-2 w-full resize-none rounded-xl border border-border bg-surface p-3.5 leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent"
+            className="mt-2 w-full resize-none rounded-[14px] border border-border bg-surface p-3 font-serif text-[1.0625rem] leading-relaxed outline-none transition-colors placeholder:font-sans placeholder:text-faint focus:border-[1.5px] focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent"
           />
-          <p className={`mt-1.5 text-right text-xs tabular-nums ${counterTone}`}>
-            {body.length} / {MAX_BODY}
+          <p className="mt-[7px] flex items-center justify-between text-xs text-faint">
+            <span>Maksimal {MAX_BODY} karakter</span>
+            <span className={`tabular-nums ${counterTone}`}>
+              {body.length} / {MAX_BODY}
+            </span>
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface">
-          <label className="flex min-h-[3.25rem] cursor-pointer items-center justify-between gap-3 px-4">
-            <span className="text-[0.9375rem] font-medium">Tanya secara anonim</span>
+        <div className="overflow-hidden rounded-[14px] border border-border bg-surface">
+          <label className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-3.5">
+            <span>
+              <span className="block text-[0.9375rem] font-semibold">Tanya secara anonim</span>
+              <span className="mt-0.5 block text-xs text-faint">Nama tidak ditampilkan</span>
+            </span>
             <input
               type="checkbox"
               checked={anonymous}
@@ -87,8 +138,8 @@ export default function SubmitForm({
             />
           </label>
           {!anonymous && (
-            <div className="border-t border-border px-4 py-3">
-              <label htmlFor="author" className="block text-sm font-medium">
+            <div className="border-t border-border-soft px-3.5 py-3">
+              <label htmlFor="author" className="block text-sm font-semibold">
                 Nama Anda
               </label>
               <input
@@ -97,33 +148,38 @@ export default function SubmitForm({
                 autoComplete="name"
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="mis. Rani"
-                className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted focus:border-accent"
+                className="mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-3 outline-none transition-colors placeholder:text-faint focus:border-accent"
               />
             </div>
           )}
         </div>
 
-        <div aria-live="polite" className="min-h-[1.5rem]">
-          {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-          {sent && !error && (
-            <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium text-accent">
-              {moderated ? "Terkirim, menunggu review admin." : "Terkirim ke pemateri."}
-              <Link href="/pertanyaan-saya" className="underline underline-offset-4">
-                Pertanyaan saya →
-              </Link>
-            </p>
+        {/* Manual review is the difference between "sent" and "published", and it is cheaper to
+            say so before the send than to explain a question that seems to have vanished. */}
+        {moderated && (
+          <p className="rounded-[14px] border border-warn-border bg-warn-soft px-3.5 py-3 text-[0.8125rem] leading-relaxed text-warn">
+            Majelis ini memakai review admin. Pertanyaan Anda tampil setelah disetujui.
+          </p>
+        )}
+
+        <div aria-live="polite" className="min-h-6">
+          {error && (
+            <div className="rounded-[14px] border border-danger-border bg-danger-soft px-3.5 py-3">
+              <p className="text-sm font-bold text-danger">Gagal mengirim.</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-[#6b4038]">{error}</p>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border bg-background/85 px-4 pt-3 backdrop-blur sm:-mx-6 sm:px-6 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
         <button
           type="submit"
           disabled={!canSend}
-          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[14px] bg-accent font-bold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {busy && <Spinner />}
-          {busy ? "Mengirim…" : "Kirim pertanyaan"}
+          {busy ? "Mengirim…" : error ? "Coba kirim lagi" : "Kirim pertanyaan"}
         </button>
       </div>
     </form>

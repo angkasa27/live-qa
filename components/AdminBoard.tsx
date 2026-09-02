@@ -36,7 +36,7 @@ function match(q: Question, filter: Filter) {
 
 function Pill({ tone, children }: { tone: "warn" | "accent" | "plain"; children: React.ReactNode }) {
   const style = {
-    warn: "border border-amber-500/40 bg-amber-500/10 text-amber-600",
+    warn: "border border-warn-border bg-warn-soft text-warn",
     accent: "bg-accent-soft text-accent",
     plain: "border border-border text-muted",
   }[tone];
@@ -63,7 +63,7 @@ function ProposalCard({
   return (
     <div
       className={`mb-3 rounded-lg border p-3 ${
-        partly ? "border-amber-500/40 bg-amber-500/5" : "border-accent/40 bg-accent-soft/40"
+        partly ? "border-warn-border bg-warn-soft" : "border-accent/40 bg-accent-soft/40"
       }`}
     >
       <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -212,7 +212,7 @@ function Row({
             Sembunyikan
           </button>
         )}
-        {error && <span className="w-full text-sm text-red-500 sm:w-auto">{error}</span>}
+        {error && <span className="w-full text-sm text-danger sm:w-auto">{error}</span>}
         {/* Clearing the box retracts: the answer is withdrawn from display but kept in the
             row and in answer_revisions. The fix path has to be as fast as the write path. */}
         <button
@@ -325,7 +325,7 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
             {drafting ? "Membaca rekaman…" : "Ambil jawaban dari rekaman"}
           </button>
           {draftNote && (
-            <span className={`text-sm ${draftNote.tone === "error" ? "text-red-500" : "text-muted"}`}>
+            <span className={`text-sm ${draftNote.tone === "error" ? "text-danger" : "text-muted"}`}>
               {draftNote.text}
             </span>
           )}

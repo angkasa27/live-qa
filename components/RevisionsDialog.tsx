@@ -44,7 +44,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
 
       <Modal open={open} onClose={() => setOpen(false)} title="Riwayat jawaban">
         {error ? (
-          <p className="text-sm text-red-500">Gagal memuat riwayat.</p>
+          <p className="text-sm text-danger">Gagal memuat riwayat.</p>
         ) : !rows ? (
           <p className="flex items-center gap-2 text-sm text-muted">
             <Spinner /> Memuat…

@@ -107,7 +107,7 @@ export default function EventControls({ event }: { event: Event }) {
         </span>
         {/* A collapsed panel must never hide an unsaved change. */}
         {dirty && !pending && (
-          <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
+          <span className="shrink-0 rounded-full border border-warn-border bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
             belum disimpan
           </span>
         )}
@@ -200,7 +200,7 @@ export default function EventControls({ event }: { event: Event }) {
           />
         </Setting>
 
-        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
         {dirty && (
           <div className="flex gap-2">

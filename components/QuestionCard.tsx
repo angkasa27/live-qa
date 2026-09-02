@@ -27,7 +27,7 @@ export function Attribution({ author }: { author: string | null }) {
 }
 
 const PILL =
-  "flex min-h-[1.75rem] shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-xs font-semibold tabular-nums text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "flex min-h-[1.875rem] shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-xs font-bold tabular-nums text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden>
@@ -75,15 +75,15 @@ export function AnswerBlock({
   edited?: boolean;
 }) {
   return (
-    <div className="mt-3 rounded-lg border-l-4 border-accent bg-accent-soft px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-accent">
+    <div className="mt-3 rounded-r-[10px] border-l-[3px] border-accent bg-accent-soft px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2.5">
+        <p className="flex items-center gap-2 font-mono text-[0.625rem] font-medium tracking-[0.1em] text-accent uppercase">
           Jawaban
-          {edited && <span className="font-medium normal-case tracking-normal text-muted">diedit</span>}
+          {edited && <span className="font-sans tracking-normal text-faint normal-case">· direvisi</span>}
         </p>
         {replay && <ReplayControl {...replay} />}
       </div>
-      <p className="mt-1 whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{answer}</p>
+      <p className="mt-1.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap">{answer}</p>
     </div>
   );
 }
@@ -93,25 +93,31 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
     youtubeId && q.videoStart != null ? { youtubeId, at: q.videoStart } : undefined;
 
   return (
-    <article className="rounded-xl border border-border bg-surface p-4">
-      <p className="whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
-      <p className="mt-2.5 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+    <article
+      className={`rounded-2xl border p-3.5 ${
+        /* A question still in the queue is only ever visible to the person who asked it, and it
+           reads as unfinished business rather than as part of the published list. */
+        q.status === "submitted" ? "border-warn-border bg-warn-soft" : "border-border bg-surface"
+      }`}
+    >
+      {q.status === "submitted" && (
+        <p className="mb-2.5 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-[#f3e4c6] px-2.5 py-1 text-[0.6875rem] font-bold tracking-wide text-warn uppercase">
+            Menunggu review
+          </span>
+          <span className="text-xs text-faint">hanya Anda yang melihat ini</span>
+        </p>
+      )}
+      <p className="font-serif text-[1.0625rem] leading-relaxed whitespace-pre-wrap">{q.body}</p>
+      <p className="mt-2.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-faint">
         <Attribution author={q.author} />
         <span aria-hidden>·</span>
         {q.source === "transcript" ? (
-          <span className="rounded-full border border-border px-2 py-0.5 text-xs">
+          <span className="rounded-full border border-border px-2 py-0.5 text-[0.6875rem]">
             dari rekaman
           </span>
         ) : (
           <Timestamp iso={q.createdAt} />
-        )}
-        {/* Only ever set on questions this browser submitted; see lib/queries.ts. A student
-            who submits into a moderation queue and sees nothing assumes it failed and submits
-            again, so their own pending question stays visible to them alone. */}
-        {q.status === "submitted" && (
-          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
-            menunggu review
-          </span>
         )}
       </p>
       {q.answer && <AnswerBlock answer={q.answer} replay={replay} edited={q.edited} />}

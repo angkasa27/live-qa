@@ -4,8 +4,8 @@ import EventHeader from "@/components/EventHeader";
 import StatusBadge from "@/components/StatusBadge";
 import Player from "@/components/Player";
 import QuestionList from "@/components/QuestionList";
-import SubmitForm from "@/components/SubmitForm";
 import { getEvent } from "@/lib/queries";
+import { coverFor } from "@/lib/types";
 import LocalTime from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
@@ -33,61 +33,62 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
   const event = await getEvent(id);
   if (!event) notFound();
 
+  const cover = !event.youtubeId ? coverFor(event) : undefined;
+
   return (
     <>
-      <EventHeader name={event.name} backHref="/" backLabel="Semua majelis" />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-4 pt-6 sm:px-6">
-        {!event.youtubeId && event.image && (
+      <EventHeader
+        name={event.name}
+        backHref="/"
+        backLabel="Semua majelis"
+        action={<StatusBadge status={event.status} />}
+      />
+
+      {/* With a recording on the page, <Player> owns the iframe and lets the answer timestamps
+          seek it in place instead of sending anyone off to YouTube. */}
+      <MaybePlayer youtubeId={event.youtubeId} title={`Rekaman: ${event.name}`}>
+        {cover && (
           // eslint-disable-next-line @next/next/no-img-element -- remote host, see app/page.tsx
-          <img
-            src={event.image}
-            alt=""
-            className="mb-5 aspect-video w-full rounded-xl bg-border object-cover"
-          />
+          <img src={cover} alt="" className="aspect-video w-full bg-border object-cover" />
         )}
 
-        {/* With a recording on the page, <Player> owns the iframe and lets the answer
-            timestamps seek it in place instead of sending anyone off to YouTube. */}
-        <MaybePlayer youtubeId={event.youtubeId} title={`Rekaman: ${event.name}`}>
-          <div className="mb-6">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-xl font-semibold leading-snug sm:text-2xl">{event.name}</h2>
-              <StatusBadge status={event.status} />
-            </div>
-            <p className="mt-1.5 text-sm text-muted">
-              {event.speaker} · <LocalTime iso={event.startsAt} /> · {event.venue}
-            </p>
-          </div>
+        <div className="border-b border-border-soft bg-surface px-4 py-3 sm:px-6">
+          <p className="text-sm text-foreground">
+            {event.speaker} · {event.venue}
+          </p>
+          <p className="mt-0.5 text-[0.8125rem] text-muted">
+            <LocalTime iso={event.startsAt} />
+            {event.moderation === "manual" && " · review manual"}
+          </p>
+        </div>
 
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3.5 sm:px-6">
           {/* Whether questions are open is the event's own answer, not a guess from its status:
               an admin can keep an archived session taking questions. See ROADMAP.md §2. */}
-          {event.acceptingQuestions ? (
-            <SubmitForm eventId={event.id} moderated={event.moderation === "manual"} />
-          ) : (
-            <>
-              {event.status === "archived" && (
-                <p className="mb-4 rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-muted">
-                  Sesi ini sudah selesai dan tidak lagi menerima pertanyaan. Jawaban di bawah
-                  adalah ringkasan yang ditulis admin, rekamannya adalah rujukan yang sebenarnya.
-                </p>
-              )}
-              <h3 className="mb-3 text-lg font-semibold">Pertanyaan sesi ini</h3>
-              <QuestionList eventId={event.id} youtubeId={event.youtubeId} />
-            </>
+          {!event.acceptingQuestions && event.status === "archived" && (
+            <p className="mb-3.5 rounded-[14px] border border-border bg-background px-3.5 py-3 text-[0.8125rem] leading-relaxed text-muted text-pretty">
+              Jawaban tertulis di bawah adalah ringkasan admin. Rekaman majelis adalah rujukan
+              utama.
+            </p>
           )}
-        </MaybePlayer>
+          <QuestionList
+            eventId={event.id}
+            youtubeId={event.youtubeId}
+            canAsk={event.acceptingQuestions}
+          />
+        </main>
+      </MaybePlayer>
 
-        <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
-          {event.acceptingQuestions && (
-            <Link href={`/events/${event.id}/questions`} className="underline underline-offset-4 hover:text-foreground">
-              Semua pertanyaan
-            </Link>
-          )}
-          <Link href="/pertanyaan-saya" className="underline underline-offset-4 hover:text-foreground">
-            Pertanyaan saya
+      {event.acceptingQuestions && (
+        <div className="sticky bottom-0 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
+          <Link
+            href={`/events/${event.id}/tanya`}
+            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center rounded-[14px] bg-accent font-bold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Kirim pertanyaan
           </Link>
-        </nav>
-      </main>
+        </div>
+      )}
     </>
   );
 }

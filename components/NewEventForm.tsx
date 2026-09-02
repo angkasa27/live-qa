@@ -118,7 +118,7 @@ export default function NewEventForm() {
       </Card>
 
       <div aria-live="polite" className="min-h-[1.25rem]">
-        {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
       </div>
 
       <button type="submit" disabled={busy}

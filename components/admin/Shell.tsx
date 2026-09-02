@@ -26,12 +26,14 @@ export default function AdminShell({
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-        <div className={`mx-auto flex h-14 w-full ${width} items-center gap-3 px-4 sm:px-6`}>
+      {/* Ink bar: the admin side of the app is a different place, and the header says so
+          before anything else on the screen does. Design "Admin — pola navigasi sama". */}
+      <header className="sticky top-0 z-20 bg-foreground text-background">
+        <div className={`mx-auto flex min-h-14 w-full ${width} items-center gap-3 px-4 sm:px-6`}>
           {back ? (
             <Link
               href={back.href}
-              className="-ml-2 flex h-11 min-w-0 items-center gap-1 rounded-lg pl-1 pr-2 text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="-ml-2 flex h-12 min-w-0 items-center gap-1 rounded-lg pr-2 pl-1 text-sm font-semibold text-[#e8e5df] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
                 <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
@@ -39,8 +41,8 @@ export default function AdminShell({
               <span className="truncate">{back.label}</span>
             </Link>
           ) : (
-            <Link href="/admin" className="text-[0.9375rem] font-semibold tracking-tight">
-              Sual <span className="font-normal text-muted">admin</span>
+            <Link href="/admin" className="font-serif text-lg font-medium tracking-tight">
+              Admin Sual
             </Link>
           )}
           <div className="ml-auto shrink-0">
@@ -52,7 +54,7 @@ export default function AdminShell({
       <main className={`mx-auto w-full ${width} flex-1 px-4 pb-20 pt-6 sm:px-6`}>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{title}</h1>
+            <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight sm:text-3xl">{title}</h1>
             {subtitle && <div className="mt-1.5 text-[0.9375rem] text-muted">{subtitle}</div>}
           </div>
           {action && <div className="shrink-0 sm:pt-1">{action}</div>}

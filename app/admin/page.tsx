@@ -32,7 +32,7 @@ function EventCard({ e }: { e: Row }) {
         {/* Pending first and loudest: during a live session it's the only number
             that needs anyone to do something. */}
         {e.pending > 0 && (
-          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-semibold text-amber-600">
+          <span className="rounded-full border border-warn-border bg-warn-soft px-2.5 py-1 font-semibold text-warn">
             {e.pending} menunggu review
           </span>
         )}
@@ -77,7 +77,7 @@ export default async function AdminHome() {
             return (
               <section key={status}>
                 <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
-                  {status === "live" && <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />}
+                  {status === "live" && <span className="h-1.5 w-1.5 rounded-full bg-live" aria-hidden />}
                   {label}
                   <span className="tabular-nums font-normal">{rows.length}</span>
                 </h2>

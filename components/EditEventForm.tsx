@@ -119,7 +119,7 @@ export default function EditEventForm({
         </Card>
 
         <div aria-live="polite" className="min-h-[1.25rem]">
-          {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+          {error && <p className="text-sm font-medium text-danger">{error}</p>}
           {saved && !dirty && <p className="text-sm text-muted">Tersimpan.</p>}
         </div>
 
@@ -132,8 +132,8 @@ export default function EditEventForm({
 
       {/* A sibling of the form, not a child: the confirm dialog has its own text input, and
           pressing Enter in it must never submit the edit form behind it. */}
-      <section className="mt-8 rounded-xl border border-red-500/30 bg-surface">
-        <h2 className="border-b border-red-500/30 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-red-500">
+      <section className="mt-8 rounded-xl border border-danger-border bg-surface">
+        <h2 className="border-b border-danger-border px-4 py-3 text-xs font-semibold uppercase tracking-wider text-danger">
           Zona berbahaya
         </h2>
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">

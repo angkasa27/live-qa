@@ -54,14 +54,18 @@ export default function QuestionList({
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted" aria-live="polite">
-          {loading === "refresh" ? "Memuat…" : syncedAt ? `Diperbarui ${relativeTime(syncedAt)}` : ""}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="font-mono text-[0.6875rem] tracking-[0.08em] text-faint uppercase" aria-live="polite">
+          {loading === "refresh"
+            ? "Memuat…"
+            : syncedAt
+              ? `Diperbarui ${relativeTime(syncedAt)}`
+              : "Terlama dulu"}
         </p>
         <button
           onClick={refresh}
           disabled={loading !== null}
-          className="flex min-h-[2.75rem] items-center gap-2 rounded-lg border border-border px-3.5 text-sm font-medium transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-[2.75rem] items-center gap-[7px] rounded-full border border-border bg-surface px-3 text-[0.8125rem] font-semibold transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <svg
             viewBox="0 0 24 24"
@@ -73,21 +77,24 @@ export default function QuestionList({
           >
             <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Muat ulang
+          Muat yang baru
         </button>
       </div>
 
       {items.length === 0 && loading === null ? (
-        <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center">
-          <p className="text-muted">
-            {canAsk ? "Belum ada pertanyaan." : "Belum ada pertanyaan pada sesi ini."}
+        <div className="rounded-2xl border border-dashed border-border px-7 py-13 text-center">
+          <p className="font-serif text-[1.1875rem] leading-snug">Belum ada pertanyaan.</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
+            {canAsk
+              ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
+              : "Belum ada pertanyaan pada majelis ini."}
           </p>
           {canAsk && (
             <Link
-              href={`/events/${eventId}`}
-              className="mt-2 inline-block font-medium text-accent underline underline-offset-4"
+              href={`/events/${eventId}/tanya`}
+              className="mt-3 inline-block text-sm font-semibold text-accent underline underline-offset-4"
             >
-              Jadi yang pertama bertanya →
+              Kirim pertanyaan →
             </Link>
           )}
         </div>
@@ -105,9 +112,9 @@ export default function QuestionList({
         <button
           onClick={loadMore}
           disabled={loading !== null}
-          className="mt-4 min-h-[3rem] w-full rounded-xl border border-border text-sm font-medium transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3 min-h-[3rem] w-full rounded-[14px] border border-border bg-surface text-sm font-semibold transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {loading === "more" ? "Memuat…" : "Muat lebih banyak"}
+          {loading === "more" ? "Memuat…" : "Muat pertanyaan lagi"}
         </button>
       )}
     </>

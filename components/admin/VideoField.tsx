@@ -35,7 +35,7 @@ export default function VideoField({
       placeholder="https://youtu.be/…"
     >
       {trimmed && (
-        <p className={`mt-1.5 text-xs ${videoId ? "text-muted" : "text-red-500"}`}>
+        <p className={`mt-1.5 text-xs ${videoId ? "text-muted" : "text-danger"}`}>
           {videoId ? `Video dikenali: ${videoId}` : "Tautan tidak dikenali."}
         </p>
       )}

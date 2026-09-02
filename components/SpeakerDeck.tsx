@@ -108,7 +108,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-950 text-zinc-500" role="status">
+      <div className="flex min-h-dvh items-center justify-center bg-[#141311] text-[#8b8377]" role="status">
         Memuat…
       </div>
     );
@@ -116,9 +116,9 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-950 px-6 text-center text-zinc-100">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#141311] px-6 text-center text-[#f7f4ed]">
         <p className="text-2xl font-medium">Belum ada pertanyaan.</p>
-        <Link href={`/admin/events/${eventId}`} className="text-zinc-400 underline underline-offset-4">
+        <Link href={`/admin/events/${eventId}`} className="text-[#a8a096] underline underline-offset-4">
           Kembali ke sesi
         </Link>
       </div>
@@ -126,7 +126,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
   }
 
   return (
-    <div className="relative min-h-dvh bg-zinc-950 text-zinc-50 [overscroll-behavior:contain]">
+    <div className="relative min-h-dvh bg-[#141311] text-[#f7f4ed] [overscroll-behavior:contain]">
       <div
         ref={scroller}
         onScroll={onScroll}
@@ -140,21 +140,21 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
             className="flex h-dvh w-dvw shrink-0 snap-center flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] py-20"
           >
             <div className="mx-auto flex w-full max-w-5xl flex-col">
-              <p className={`${bodyClass(q.body.length)} font-semibold leading-tight tracking-tight`}>
+              <p className={`${bodyClass(q.body.length)} font-serif leading-tight tracking-tight text-pretty`}>
                 {q.body}
               </p>
-              <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-zinc-400">
+              <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-[#a8a096]">
                 {q.author ?? "Anonim"}
               </p>
               {q.answer && (
-                <div className="mt-8 border-l-4 border-indigo-400 pl-4">
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
+                <div className="mt-8 border-l-4 border-[#8fbfae] pl-4">
+                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#8fbfae]">
                     Dijawab
                     {q.videoStart != null && (
-                      <span className="tabular-nums text-zinc-500">{timecode(q.videoStart)}</span>
+                      <span className="tabular-nums text-[#8b8377]">{timecode(q.videoStart)}</span>
                     )}
                   </p>
-                  <p className="mt-1.5 text-[clamp(0.95rem,2.2vw,1.5rem)] leading-snug text-zinc-300">
+                  <p className="mt-1.5 text-[clamp(0.95rem,2.2vw,1.5rem)] leading-snug text-[#d6d0c6]">
                     {q.answer}
                   </p>
                 </div>
@@ -167,11 +167,11 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
         <Link
           href={`/admin/events/${eventId}`}
-          className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-zinc-500 transition-colors hover:text-zinc-200"
+          className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-[#8b8377] transition-colors hover:text-[#f2efe8]"
         >
           Keluar
         </Link>
-        <span className="text-sm tabular-nums text-zinc-500">
+        <span className="text-sm tabular-nums text-[#8b8377]">
           {Math.min(current + 1, items.length)} / {items.length}
           {cursor ? "+" : ""}
         </span>
@@ -182,7 +182,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
         <button
           onClick={() => go(-1)}
           disabled={current === 0}
-          className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
+          className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
           aria-label="Pertanyaan sebelumnya"
         >
           ←
@@ -190,7 +190,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
         <button
           onClick={() => go(1)}
           disabled={current >= items.length - 1 && !cursor}
-          className="pointer-events-auto h-12 w-12 rounded-full border border-zinc-800 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-30"
+          className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
           aria-label="Pertanyaan berikutnya"
         >
           →
