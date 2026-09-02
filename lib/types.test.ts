@@ -26,6 +26,10 @@ describe("parseVideoId", () => {
     expect(parseVideoId("https://www.youtube.com/live/dQw4w9WgXcQ?feature=share")).toBe("dQw4w9WgXcQ");
     expect(parseVideoId("dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
     expect(parseVideoId("  dQw4w9WgXcQ  ")).toBe("dQw4w9WgXcQ");
+    // Share sheets hand over a link with no scheme, and the admin form promises these work.
+    expect(parseVideoId("youtu.be/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(parseVideoId("www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(parseVideoId("youtube.com/live/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
   });
 
   it("returns null for anything that is not a youtube video id", () => {
@@ -34,6 +38,8 @@ describe("parseVideoId", () => {
     expect(parseVideoId("short")).toBeNull();
     expect(parseVideoId("way-too-long-to-be-an-id")).toBeNull();
     expect(parseVideoId("not a url at all")).toBeNull();
+    // Assuming https must not turn any other host into a match.
+    expect(parseVideoId("example.com/watch?v=dQw4w9WgXcQ")).toBeNull();
     // Non-youtube hosts are rejected, even when shaped like a youtube link.
     expect(parseVideoId("https://example.com/watch?v=dQw4w9WgXcQ")).toBeNull();
     // A playlist or channel link has no video id in it.

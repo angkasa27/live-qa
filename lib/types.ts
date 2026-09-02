@@ -94,7 +94,10 @@ export function parseVideoId(input: string): string | null {
   if (!trimmed) return null;
   if (/^[\w-]{11}$/.test(trimmed)) return trimmed;
   try {
-    const url = new URL(trimmed);
+    // A link copied from a phone's share sheet often arrives without a scheme
+    // ("youtu.be/abc…"), which new URL() rejects outright. Assume https rather than
+    // telling someone their own YouTube link is unrecognised.
+    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
     const host = url.hostname.replace(/^(www|m|music)\./, "");
     if (host !== "youtube.com" && host !== "youtu.be") return null;
     const id =
