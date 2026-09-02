@@ -19,6 +19,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import Clamp from "@/components/admin/Clamp";
 import { Attribution } from "@/components/QuestionCard";
 import { Badge } from "@/components/ui/badge";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
@@ -165,12 +166,14 @@ function Action({
   busy,
   disabled,
   tone,
+  grow,
   children,
 }: {
   onClick: () => void;
   busy?: boolean;
   disabled?: boolean;
   tone: "primary" | "outline" | "destructive";
+  grow?: boolean;
   children: React.ReactNode;
 }) {
   const style = {
@@ -183,7 +186,7 @@ function Action({
       type="button"
       onClick={onClick}
       disabled={busy || disabled}
-      className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style}`}
+      className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style} ${grow ? "flex-1" : ""}`}
     >
       {busy ? <Spinner /> : children}
     </button>
@@ -268,7 +271,9 @@ function Row({
             {relativeTime(q.createdAt)}
           </span>
         </div>
-        <p className="mt-2.5 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
+        <Clamp className="mt-2.5 whitespace-pre-wrap text-[1.0625rem] leading-relaxed" lines={5}>
+          {q.body}
+        </Clamp>
         {/* A div, not a p: RevisionsDialog carries a <dialog>, which a <p> would not hold. */}
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-faint">
           <Attribution author={q.author} />
@@ -339,7 +344,9 @@ function Row({
         ) : (
           <div className="mt-3.5">
             <div className="rounded-r-[10px] border-l-[3px] border-primary bg-accent px-3 py-2.5">
-              <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">{q.answer}</p>
+              <Clamp className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap" lines={4}>
+                {q.answer}
+              </Clamp>
             </div>
             {/* A4: the correction path is never slower than the publication path, so revise
                 and retract sit on the answer itself rather than a screen further in. */}
@@ -348,7 +355,7 @@ function Row({
                 <Pencil className="h-4 w-4" aria-hidden />
                 Revisi
               </Action>
-              <Action onClick={retract} busy={busy === "answer"} tone="destructive">
+              <Action onClick={retract} busy={busy === "answer"} tone="destructive" grow>
                 <Undo2 className="h-4 w-4" aria-hidden />
                 Tarik jawaban
               </Action>
