@@ -1,20 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CardSkeleton } from "@/components/Skeleton";
 import RevisionsDialog from "@/components/RevisionsDialog";
 import Spinner from "@/components/Spinner";
 import {
   Check,
-  CheckCheck,
   Clock,
   CornerDownRight,
   Eye,
   EyeOff,
   Inbox,
-  List,
   Pencil,
-  MessageCircleDashed,
   Sparkles,
   Undo2,
   X,
@@ -28,33 +25,30 @@ import { adminList, draftAnswers, setAnswer, setQuestionStatus } from "@/lib/act
 import { relativeTime } from "@/lib/relativeTime";
 import { timecode, type Proposal, type Question, type QuestionStatus } from "@/lib/types";
 
+/**
+ * Short on purpose. These are chips on a 390px phone: at "Menunggu review" and "Sudah
+ * dijawab" only two fit before the row runs off the screen, and a filter you cannot see
+ * is a filter you do not use.
+ */
 const FILTERS = [
-  "Menunggu review",
+  "Review",
   "Belum dijawab",
-  "Sudah dijawab",
-  // Hiding is the reject, and it is reversible. Without this chip a hidden question could only
-  // be found by scanning "Semua", which is the whole session.
-  "Disembunyikan",
+  "Terjawab",
   "Semua",
+  // Last: hiding is the reject, and it is reversible, but it is also the rarest thing an
+  // operator comes here to look at. Without the chip a hidden question could only be found
+  // by scanning "Semua", which is the whole session.
+  "Disembunyikan",
 ] as const;
 type Filter = (typeof FILTERS)[number];
 
-/** One glyph per filter, so the strip reads as states rather than as a row of words. */
-const FILTER_ICON: Record<Filter, typeof Clock> = {
-  "Menunggu review": Clock,
-  "Belum dijawab": MessageCircleDashed,
-  "Sudah dijawab": CheckCheck,
-  Disembunyikan: EyeOff,
-  Semua: List,
-};
-
 function match(q: Question, filter: Filter) {
   switch (filter) {
-    case "Menunggu review":
+    case "Review":
       return q.status === "submitted";
     case "Belum dijawab":
       return !q.answer && q.status !== "hidden";
-    case "Sudah dijawab":
+    case "Terjawab":
       return !!q.answer;
     case "Disembunyikan":
       return q.status === "hidden";
@@ -186,7 +180,9 @@ function Action({
       type="button"
       onClick={onClick}
       disabled={busy || disabled}
-      className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style} ${grow ? "flex-1" : ""}`}
+      /* nowrap: "Terbitkan jawaban" wrapped to two lines inside an equal-width pair, which
+         made the row taller than the textarea above it. Narrower padding buys the space. */
+      className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style} ${grow ? "flex-1" : ""}`}
     >
       {busy ? <Spinner /> : children}
     </button>
@@ -378,7 +374,8 @@ function Row({
 export default function AdminBoard({ eventId, youtubeId }: { eventId: string; youtubeId?: string }) {
   const [all, setAll] = useState<Question[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [filter, setFilter] = useState<Filter>("Belum dijawab");
+  // Null until the first load says what is actually here; see `filter` below.
+  const [picked, setPicked] = useState<Filter | null>(null);
   // Proposals live here and nowhere else: nothing is persisted until an admin saves an answer.
   const [suggestions, setSuggestions] = useState<Record<string, Proposal>>({});
   const [drafting, setDrafting] = useState(false);
@@ -391,6 +388,22 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
     });
   }, [eventId]);
 
+  /**
+   * A3 says default to the work rather than the full archive — but "the work" is not always
+   * the same chip, and a fixed default lands an archived session on an empty board with its
+   * questions apparently gone. So: whatever needs doing, else everything.
+   *
+   * Only until the operator picks for themselves. Recomputing after that would move the
+   * board under someone mid-answer, every four seconds, as the counts change.
+   */
+  const filter: Filter =
+    picked ??
+    (all.some((q) => q.status === "submitted")
+      ? "Review"
+      : all.some((q) => !q.answer && q.status !== "hidden")
+        ? "Belum dijawab"
+        : "Semua");
+
   useEffect(() => {
     load();
     // Same 4s poll as the speaker deck, and for the same reason: this is an operator screen
@@ -398,6 +411,13 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
     const id = setInterval(load, 4000);
     return () => clearInterval(id);
   }, [load]);
+
+  // The default filter depends on content, so the selected chip can start anywhere in the
+  // row. Bring it into view once the first load has decided, or the strip looks unselected.
+  const activeChip = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (loaded) activeChip.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [loaded]);
 
   const replace = useCallback((next: Question) => {
     setAll((prev) => prev.map((q) => (q.id === next.id ? next : q)));
@@ -445,20 +465,21 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
         {FILTERS.map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            ref={f === filter ? activeChip : undefined}
+            onClick={() => setPicked(f)}
             aria-pressed={filter === f}
-            className={`flex min-h-[2.5rem] shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors ${
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors ${
               filter === f
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                ? "border-primary bg-primary font-semibold text-primary-foreground"
+                : f === "Review" && counts[f] > 0
+                  ? "border-warn-border bg-warn-soft font-semibold text-warn"
+                  : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
-            {(() => {
-              const Icon = FILTER_ICON[f];
-              return <Icon className="h-4 w-4" aria-hidden />;
-            })()}
             {f}
-            {loaded && <span className="tabular-nums opacity-70">{counts[f]}</span>}
+            {loaded && counts[f] > 0 && (
+              <span className="tabular-nums opacity-80">{counts[f]}</span>
+            )}
           </button>
         ))}
       </div>
