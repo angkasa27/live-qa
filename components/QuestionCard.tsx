@@ -3,6 +3,7 @@
 import { relativeTime } from "@/lib/relativeTime";
 import { timecode, type Question } from "@/lib/types";
 import { useSeek } from "@/components/Player";
+import { Badge } from "@/components/ui/badge";
 import { useSyncExternalStore } from "react";
 
 const noop = () => () => {};
@@ -102,9 +103,9 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
     >
       {q.status === "submitted" && (
         <p className="mb-2.5 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-warn-pill px-2.5 py-1 text-[0.6875rem] font-bold tracking-wide text-warn uppercase">
+          <Badge variant="warn" className="px-2.5 text-[0.6875rem]">
             Menunggu review
-          </span>
+          </Badge>
           <span className="text-xs text-faint">hanya Anda yang melihat ini</span>
         </p>
       )}
@@ -113,9 +114,9 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
         <Attribution author={q.author} />
         <span aria-hidden>·</span>
         {q.source === "transcript" ? (
-          <span className="rounded-full border border-border px-2 py-0.5 text-[0.6875rem]">
+          <Badge variant="outline" className="text-[0.6875rem] normal-case tracking-normal">
             dari rekaman
-          </span>
+          </Badge>
         ) : (
           <Timestamp iso={q.createdAt} />
         )}

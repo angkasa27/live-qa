@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CardSkeleton } from "@/components/Skeleton";
 import RevisionsDialog from "@/components/RevisionsDialog";
 import Spinner from "@/components/Spinner";
+import { Badge } from "@/components/ui/badge";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Textarea } from "@/components/ui/textarea";
 import { adminList, draftAnswers, setAnswer, setQuestionStatus } from "@/lib/actions";
 import { relativeTime } from "@/lib/relativeTime";
 import { timecode, type Proposal, type Question, type QuestionStatus } from "@/lib/types";
@@ -34,13 +37,14 @@ function match(q: Question, filter: Filter) {
   }
 }
 
+/** The admin board's own labels. Thin over Badge so the tones stay the documented ones. */
 function Pill({ tone, children }: { tone: "warn" | "primary" | "plain"; children: React.ReactNode }) {
-  const style = {
-    warn: "border border-warn-border bg-warn-soft text-warn",
-    primary: "bg-accent text-primary",
-    plain: "border border-border text-muted-foreground",
-  }[tone];
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{children}</span>;
+  const variant = { warn: "warn", primary: "accent", plain: "outline" } as const;
+  return (
+    <Badge variant={variant[tone]} className="font-medium normal-case tracking-normal">
+      {children}
+    </Badge>
+  );
 }
 
 /**
@@ -178,13 +182,13 @@ function Row({
               onDismiss={() => setDismissed(true)}
             />
           )}
-          <textarea
+          <Textarea
             id={`a-${q.id}`}
             rows={3}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Tulis jawaban yang disampaikan pemateri…"
-            className="w-full resize-y rounded-lg border border-border bg-background p-3 leading-relaxed outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            className="resize-y"
           />
         </div>
       </div>
@@ -335,9 +339,9 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
       {!loaded ? (
         <CardSkeleton count={4} />
       ) : rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
-          Tidak ada apa-apa di sini.
-        </p>
+        <Empty>
+          <EmptyDescription>Tidak ada apa-apa di sini.</EmptyDescription>
+        </Empty>
       ) : (
         <ul className="space-y-3">
           {rows.map((q) => (

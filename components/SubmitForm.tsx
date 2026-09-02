@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import Spinner from "@/components/Spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { addQuestion } from "@/lib/actions";
 import { MAX_BODY } from "@/lib/types";
 
@@ -73,10 +76,12 @@ export default function SubmitForm({
               : "Pertanyaan Anda langsung tampil dan sudah terbaca oleh admin majelis. Urutannya sesuai waktu bertanya."}
           </p>
           {moderated && (
-            <p className="w-full rounded-xl border border-warn-border bg-warn-soft px-3 py-2.5 text-left text-[0.8125rem] leading-relaxed text-warn">
-              Anda tetap bisa melihat pertanyaan ini di daftar — ditandai{" "}
-              <strong className="font-bold">menunggu review</strong> dan hanya terlihat oleh Anda.
-            </p>
+            <Alert variant="warn" className="text-[0.8125rem]">
+              <AlertDescription>
+                Anda tetap bisa melihat pertanyaan ini di daftar — ditandai{" "}
+                <strong className="font-bold">menunggu review</strong> dan hanya terlihat oleh Anda.
+              </AlertDescription>
+            </Alert>
           )}
         </div>
         <div className="-mx-4 mt-6 flex flex-col gap-2.5 border-t border-border-soft px-4 pt-3 sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
@@ -104,7 +109,7 @@ export default function SubmitForm({
           <label htmlFor="body" className="block text-sm font-semibold">
             Pertanyaan Anda
           </label>
-          <textarea
+          <Textarea
             id="body"
             autoFocus
             rows={6}
@@ -114,7 +119,7 @@ export default function SubmitForm({
               if (sent) setSent(false);
             }}
             placeholder="Apa yang ingin Anda tanyakan?"
-            className="mt-2 w-full resize-none rounded-[14px] border border-border bg-card p-3 font-serif text-[1.0625rem] leading-relaxed outline-none transition-colors placeholder:font-sans placeholder:text-faint focus:border-[1.5px] focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+            className="mt-2 resize-none rounded-xl bg-card p-3 font-serif text-[1.0625rem] placeholder:font-sans"
           />
           <p className="mt-[7px] flex items-center justify-between text-xs text-faint">
             <span>Maksimal {MAX_BODY} karakter</span>
@@ -142,13 +147,13 @@ export default function SubmitForm({
               <label htmlFor="author" className="block text-sm font-semibold">
                 Nama Anda
               </label>
-              <input
+              <Input
                 id="author"
                 value={author}
                 autoComplete="name"
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="mis. Rani"
-                className="mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-3 outline-none transition-colors placeholder:text-faint focus:border-primary"
+                className="mt-2 min-h-12 rounded-xl"
               />
             </div>
           )}
@@ -157,17 +162,19 @@ export default function SubmitForm({
         {/* Manual review is the difference between "sent" and "published", and it is cheaper to
             say so before the send than to explain a question that seems to have vanished. */}
         {moderated && (
-          <p className="rounded-[14px] border border-warn-border bg-warn-soft px-3.5 py-3 text-[0.8125rem] leading-relaxed text-warn">
-            Majelis ini memakai review admin. Pertanyaan Anda tampil setelah disetujui.
-          </p>
+          <Alert variant="warn" className="rounded-xl text-[0.8125rem]">
+            <AlertDescription>
+              Majelis ini memakai review admin. Pertanyaan Anda tampil setelah disetujui.
+            </AlertDescription>
+          </Alert>
         )}
 
         <div aria-live="polite" className="min-h-6">
           {error && (
-            <div className="rounded-[14px] border border-destructive-border bg-destructive-soft px-3.5 py-3">
-              <p className="text-sm font-bold text-destructive">Gagal mengirim.</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-[#6b4038]">{error}</p>
-            </div>
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertTitle className="font-bold">Gagal mengirim.</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import QuestionCard from "@/components/QuestionCard";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { relativeTime } from "@/lib/relativeTime";
 import { fetchPage } from "@/lib/actions";
 import type { Question } from "@/lib/types";
@@ -82,22 +83,28 @@ export default function QuestionList({
       </div>
 
       {items.length === 0 && loading === null ? (
-        <div className="rounded-2xl border border-dashed border-border px-7 py-13 text-center">
-          <p className="font-serif text-[1.1875rem] leading-snug">Belum ada pertanyaan.</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
-            {canAsk
-              ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
-              : "Belum ada pertanyaan pada majelis ini."}
-          </p>
+        <Empty className="rounded-2xl px-7 py-13">
+          <EmptyHeader>
+            <EmptyTitle className="font-serif text-[1.1875rem] leading-snug font-normal">
+              Belum ada pertanyaan.
+            </EmptyTitle>
+            <EmptyDescription>
+              {canAsk
+                ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
+                : "Belum ada pertanyaan pada majelis ini."}
+            </EmptyDescription>
+          </EmptyHeader>
           {canAsk && (
-            <Link
-              href={`/events/${eventId}/tanya`}
-              className="mt-3 inline-block text-sm font-semibold text-primary underline underline-offset-4"
-            >
-              Kirim pertanyaan →
-            </Link>
+            <EmptyContent>
+              <Link
+                href={`/events/${eventId}/tanya`}
+                className="text-sm font-semibold text-primary underline underline-offset-4"
+              >
+                Kirim pertanyaan →
+              </Link>
+            </EmptyContent>
           )}
-        </div>
+        </Empty>
       ) : (
         <ul className="space-y-3">
           {items.map((q) => (

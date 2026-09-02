@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminShell from "@/components/admin/Shell";
 import LocalTime from "@/components/LocalTime";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { listEventsForAdmin } from "@/lib/queries";
 import { requireSession } from "@/lib/guard";
 import type { EventStatus } from "@/lib/types";
@@ -66,9 +67,9 @@ export default async function AdminHome() {
       }
     >
       {events.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
-          Belum ada majelis.
-        </p>
+        <Empty>
+          <EmptyDescription>Belum ada majelis.</EmptyDescription>
+        </Empty>
       ) : (
         <div className="space-y-8">
           {GROUPS.map(([status, label]) => {

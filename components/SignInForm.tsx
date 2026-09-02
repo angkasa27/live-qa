@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Spinner from "@/components/Spinner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/auth-client";
 
 export default function SignInForm({ next }: { next: string }) {
@@ -26,31 +28,27 @@ export default function SignInForm({ next }: { next: string }) {
   return (
     <form onSubmit={submit} className="mt-6 space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium">
-          Email
-        </label>
-        <input
+        <Label htmlFor="email">Email</Label>
+        <Input
+          className="mt-2"
           id="email"
           type="email"
           required
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-card px-3 outline-none transition-colors focus:border-primary"
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium">
-          Kata sandi
-        </label>
-        <input
+        <Label htmlFor="password">Kata sandi</Label>
+        <Input
+          className="mt-2"
           id="password"
           type="password"
           required
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-2 min-h-[2.75rem] w-full rounded-lg border border-border bg-card px-3 outline-none transition-colors focus:border-primary"
         />
       </div>
 

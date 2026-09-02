@@ -1,5 +1,6 @@
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
 import BottomTabs from "@/components/BottomTabs";
 import { listEvents } from "@/lib/queries";
 import { coverFor } from "@/lib/types";
@@ -21,9 +22,9 @@ export default async function EventListPage() {
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4 sm:px-6">
         {events.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
-            Belum ada majelis.
-          </p>
+          <Empty className="rounded-2xl">
+            <EmptyDescription>Belum ada majelis.</EmptyDescription>
+          </Empty>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
             {events.map((e) => {

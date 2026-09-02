@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Modal from "@/components/admin/Modal";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Spinner from "@/components/Spinner";
 import { deleteEvent } from "@/lib/actions";
 import type { Event } from "@/lib/types";
@@ -70,15 +72,15 @@ export default function DeleteEventDialog({
           Tindakan ini tidak bisa dibatalkan.
         </p>
 
-        <label htmlFor="confirm-name" className="mt-4 block text-sm font-medium">
+        <Label htmlFor="confirm-name" className="mt-4">
           Ketik <span className="font-semibold">{event.name}</span> untuk melanjutkan
-        </label>
-        <input
+        </Label>
+        <Input
+          className="mt-1.5"
           id="confirm-name"
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           autoComplete="off"
-          className="mt-1.5 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors focus:border-primary"
         />
 
         {error && <p className="mt-3 text-sm font-medium text-destructive">{error}</p>}

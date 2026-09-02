@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BottomTabs from "@/components/BottomTabs";
 import { AnswerBlock } from "@/components/QuestionCard";
+import { Empty, EmptyContent, EmptyDescription } from "@/components/ui/empty";
 import { askerToken } from "@/lib/asker";
 import { listMine } from "@/lib/queries";
 
@@ -28,12 +29,14 @@ export default async function MyQuestionsPage() {
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3.5 sm:px-6">
         {mine.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border px-4 py-12 text-center">
-            <p className="text-muted-foreground">Anda belum mengirim pertanyaan dari perangkat ini.</p>
-            <Link href="/" className="mt-2 inline-block font-semibold text-primary underline underline-offset-4">
-              Lihat majelis →
-            </Link>
-          </div>
+          <Empty className="rounded-2xl">
+            <EmptyDescription>Anda belum mengirim pertanyaan dari perangkat ini.</EmptyDescription>
+            <EmptyContent>
+              <Link href="/" className="font-semibold text-primary underline underline-offset-4">
+                Lihat majelis →
+              </Link>
+            </EmptyContent>
+          </Empty>
         ) : (
           <ul className="space-y-3">
             {mine.map((q) => {
