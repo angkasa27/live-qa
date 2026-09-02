@@ -4,22 +4,34 @@ import type { ReactNode } from "react";
 import SignOutButton from "@/components/SignOutButton";
 
 /**
- * Every admin screen wears this: a nav bar that never moves, then a page header, then the work.
+ * Every admin screen wears this: an ink bar that never moves, then the work.
  * The speaker deck is the one admin route that opts out, it takes the whole viewport.
+ *
+ * The bar carries the title rather than the page repeating it underneath. Two shapes:
+ * the index gets the product's name and who is signed in, and every inner screen gets
+ * back plus the majelis it belongs to, so the phone never shows a header taller than it
+ * needs. `action` is the one thing this screen does that is not reading — "Pengaturan"
+ * on the event, nothing on the list.
+ *
+ * Ink is painted with literal hexes on purpose; see docs/DESIGN.md § Light only.
  */
 export default function AdminShell({
   back,
   title,
   subtitle,
   action,
+  strip,
   wide,
   children,
 }: {
   back?: { href: string; label: string };
   title: string;
+  /** Sits under the title in the bar. The index uses it for the signed-in address. */
   subtitle?: ReactNode;
-  /** Primary action for the screen. Full width on a phone, beside the title from sm up. */
+  /** Right-hand control in the bar. Replaces sign-out on screens that have one. */
   action?: ReactNode;
+  /** A band of context directly under the bar, still on ink. The event screen's status line. */
+  strip?: ReactNode;
   wide?: boolean;
   children: ReactNode;
 }) {
@@ -27,39 +39,34 @@ export default function AdminShell({
 
   return (
     <>
-      {/* Ink bar: the admin side of the app is a different place, and the header says so
-          before anything else on the screen does. Design "Admin — pola navigasi sama". */}
       <header className="sticky top-0 z-20 bg-foreground text-background">
-        <div className={`mx-auto flex min-h-14 w-full ${width} items-center gap-3 px-4 sm:px-6`}>
-          {back ? (
+        {back ? (
+          <div className={`mx-auto flex min-h-14 w-full ${width} items-center gap-2 px-2 sm:px-4`}>
             <Link
               href={back.href}
-              className="-ml-2 flex h-12 min-w-0 items-center gap-1 rounded-lg pr-2 pl-1 text-sm font-semibold text-[#e8e5df] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
+              aria-label={back.label}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[#e8e5df] transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
             >
-              <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
-              <span className="truncate">{back.label}</span>
+              <ChevronLeft className="h-5 w-5" aria-hidden />
             </Link>
-          ) : (
-            <Link href="/admin" className="font-serif text-lg font-medium tracking-tight">
-              Admin Sual
-            </Link>
-          )}
-          <div className="ml-auto shrink-0">
-            <SignOutButton />
+            <h1 className="min-w-0 flex-1 truncate font-semibold">{title}</h1>
+            <div className="shrink-0">{action ?? <SignOutButton />}</div>
           </div>
-        </div>
+        ) : (
+          <div className={`mx-auto w-full ${width} px-4 pt-4 pb-3.5 sm:px-6`}>
+            <div className="flex items-start gap-3">
+              <h1 className="min-w-0 flex-1 font-serif text-[1.625rem] leading-tight font-medium tracking-tight">
+                {title}
+              </h1>
+              <div className="shrink-0">{action ?? <SignOutButton />}</div>
+            </div>
+            {subtitle && <div className="mt-0.5 text-[0.8125rem] text-[#8b857c]">{subtitle}</div>}
+          </div>
+        )}
+        {strip}
       </header>
 
-      <main className={`mx-auto w-full ${width} flex-1 px-4 pb-20 pt-6 sm:px-6`}>
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight sm:text-3xl">{title}</h1>
-            {subtitle && <div className="mt-1.5 text-[0.9375rem] text-muted-foreground">{subtitle}</div>}
-          </div>
-          {action && <div className="shrink-0 sm:pt-1">{action}</div>}
-        </div>
-        {children}
-      </main>
+      <main className={`mx-auto w-full ${width} flex-1 px-4 pt-4 pb-20 sm:px-6`}>{children}</main>
     </>
   );
 }
