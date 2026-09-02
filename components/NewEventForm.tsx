@@ -29,6 +29,9 @@ export default function NewEventForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (Number.isNaN(Date.parse(startsAt))) {
+      return setError("Tanggal dan waktu belum lengkap.");
+    }
     setBusy(true);
     setError(null);
     try {

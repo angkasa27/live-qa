@@ -21,7 +21,21 @@ export default async function AdminHome() {
   const events = await listEventsForAdmin();
 
   return (
-    <AdminShell title="Admin Sual" subtitle={session.user.email}>
+    <AdminShell
+      title="Admin Sual"
+      subtitle={session.user.email}
+      /* Under the thumb rather than beside the way out: making a session is the one thing
+         this screen does that is not reading. */
+      footer={
+        <Link
+          href="/admin/events/new"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold text-primary transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <Plus className="h-[18px] w-[18px]" aria-hidden />
+          Sesi baru
+        </Link>
+      }
+    >
       {events.length === 0 ? (
         <Empty>
           <EmptyMedia variant="icon">
@@ -57,17 +71,6 @@ export default async function AdminHome() {
         </div>
       )}
 
-      {/* Sticky rather than in the header: making a majelis is a deliberate act, and it
-          should sit under the thumb rather than beside the way out. */}
-      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
-        <Link
-          href="/admin/events/new"
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold text-primary transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <Plus className="h-[18px] w-[18px]" aria-hidden />
-          Sesi baru
-        </Link>
-      </div>
     </AdminShell>
   );
 }

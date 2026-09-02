@@ -21,6 +21,7 @@ export default function AdminShell({
   subtitle,
   action,
   strip,
+  footer,
   wide,
   children,
 }: {
@@ -32,6 +33,12 @@ export default function AdminShell({
   action?: ReactNode;
   /** A band of context directly under the bar, still on ink. The event screen's status line. */
   strip?: ReactNode;
+  /**
+   * Pinned to the bottom of the viewport. A sibling of <main> rather than its last child:
+   * inside the scroll `sticky bottom-0` only pins once the content overflows, so on a short
+   * list the bar simply sat under the cards instead of staying under the thumb.
+   */
+  footer?: ReactNode;
   wide?: boolean;
   children: ReactNode;
 }) {
@@ -66,7 +73,19 @@ export default function AdminShell({
         {strip}
       </header>
 
-      <main className={`mx-auto w-full ${width} flex-1 px-4 pt-4 pb-20 sm:px-6`}>{children}</main>
+      <main className={`mx-auto w-full ${width} flex-1 px-4 pt-4 ${footer ? "pb-4" : "pb-20"} sm:px-6`}>
+        {children}
+      </main>
+
+      {footer && (
+        <div className="sticky bottom-0 border-t border-border-soft bg-background/90 backdrop-blur">
+          <div
+            className={`mx-auto w-full ${width} px-4 py-3 sm:px-6 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]`}
+          >
+            {footer}
+          </div>
+        </div>
+      )}
     </>
   );
 }
