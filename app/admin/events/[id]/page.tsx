@@ -1,3 +1,4 @@
+import { ExternalLink, Pencil, Presentation } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminBoard from "@/components/AdminBoard";
@@ -33,8 +34,9 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
       action={
         <Link
           href={`/admin/events/${event.id}/speaker`}
-          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
+          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
+          <Presentation className="h-[18px] w-[18px]" aria-hidden />
           Layar pemateri
         </Link>
       }
@@ -44,16 +46,18 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
       <nav className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
         <Link
           href={`/admin/events/${event.id}/edit`}
-          className="underline underline-offset-4 transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 underline underline-offset-4 transition-colors hover:text-foreground"
         >
+          <Pencil className="h-3.5 w-3.5" aria-hidden />
           Ubah detail
         </Link>
         <a
           href={`/events/${event.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline underline-offset-4 transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 underline underline-offset-4 transition-colors hover:text-foreground"
         >
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           Lihat halaman jamaah
         </a>
       </nav>

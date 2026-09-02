@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -36,14 +37,16 @@ export default function Error({
       <div className="mt-7 flex flex-col gap-3 sm:flex-row">
         <button
           onClick={reset}
-          className="flex min-h-[3rem] items-center justify-center rounded-xl bg-primary px-6 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex min-h-[3rem] items-center justify-center gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
+          <RotateCw className="h-[18px] w-[18px]" aria-hidden />
           Coba lagi
         </button>
         <Link
           href="/"
-          className="flex min-h-[3rem] items-center justify-center rounded-xl border border-border px-6 font-medium transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex min-h-[3rem] items-center justify-center gap-2 rounded-xl border border-border px-6 font-medium transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
+          <BookOpen className="h-[18px] w-[18px]" aria-hidden />
           Semua majelis
         </Link>
       </div>

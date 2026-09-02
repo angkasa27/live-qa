@@ -1,6 +1,7 @@
+import { ArrowRight, CalendarOff } from "lucide-react";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
-import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import BottomTabs from "@/components/BottomTabs";
 import { listEvents } from "@/lib/queries";
 import { coverFor } from "@/lib/types";
@@ -23,6 +24,9 @@ export default async function EventListPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4 sm:px-6">
         {events.length === 0 ? (
           <Empty className="rounded-2xl">
+            <EmptyMedia variant="icon">
+              <CalendarOff aria-hidden />
+            </EmptyMedia>
             <EmptyDescription>Belum ada majelis.</EmptyDescription>
           </Empty>
         ) : (
@@ -70,7 +74,10 @@ export default async function EventListPage() {
                       <p className="mt-1.5 flex items-center justify-between gap-3 text-[0.8125rem] font-semibold">
                         <span className="text-primary">{e.questionCount} pertanyaan</span>
                         {e.acceptingQuestions ? (
-                          <span className="text-primary">Bertanya →</span>
+                          <span className="flex items-center gap-1 text-primary">
+                            Bertanya
+                            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                          </span>
                         ) : (
                           <span className="font-normal text-faint">
                             {e.status === "scheduled"

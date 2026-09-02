@@ -1,3 +1,4 @@
+import { BookOpen, MessageCircleQuestionMark } from "lucide-react";
 import Link from "next/link";
 
 /**
@@ -19,14 +20,16 @@ export default function NotFound() {
       <div className="mt-7 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/"
-          className="flex min-h-[3rem] items-center justify-center rounded-xl bg-primary px-6 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex min-h-[3rem] items-center justify-center gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
+          <BookOpen className="h-[18px] w-[18px]" aria-hidden />
           Lihat semua majelis
         </Link>
         <Link
           href="/pertanyaan-saya"
-          className="flex min-h-[3rem] items-center justify-center rounded-xl border border-border px-6 font-medium transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex min-h-[3rem] items-center justify-center gap-2 rounded-xl border border-border px-6 font-medium transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
+          <MessageCircleQuestionMark className="h-[18px] w-[18px]" aria-hidden />
           Pertanyaan saya
         </Link>
       </div>

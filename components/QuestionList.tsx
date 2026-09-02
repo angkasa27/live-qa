@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { ArrowRight, ChevronDown, MessageCircleDashed, RefreshCw } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { relativeTime } from "@/lib/relativeTime";
 import { fetchPage } from "@/lib/actions";
 import type { Question } from "@/lib/types";
@@ -68,16 +69,7 @@ export default function QuestionList({
           disabled={loading !== null}
           className="flex min-h-[2.75rem] items-center gap-[7px] rounded-full border border-border bg-card px-3 text-[0.8125rem] font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <svg
-            viewBox="0 0 24 24"
-            className={`h-4 w-4 ${loading === "refresh" ? "animate-spin" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-          >
-            <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <RefreshCw className={`h-4 w-4 ${loading === "refresh" ? "animate-spin" : ""}`} aria-hidden />
           Muat yang baru
         </button>
       </div>
@@ -85,6 +77,9 @@ export default function QuestionList({
       {items.length === 0 && loading === null ? (
         <Empty className="rounded-2xl px-7 py-13">
           <EmptyHeader>
+            <EmptyMedia variant="icon" className="bg-accent text-accent-foreground">
+              <MessageCircleDashed aria-hidden />
+            </EmptyMedia>
             <EmptyTitle className="font-serif text-[1.1875rem] leading-snug font-normal">
               Belum ada pertanyaan.
             </EmptyTitle>
@@ -100,7 +95,8 @@ export default function QuestionList({
                 href={`/events/${eventId}/tanya`}
                 className="text-sm font-semibold text-primary underline underline-offset-4"
               >
-                Kirim pertanyaan →
+                Kirim pertanyaan
+                <ArrowRight className="ml-1 inline h-4 w-4 align-[-2px]" aria-hidden />
               </Link>
             </EmptyContent>
           )}
@@ -119,9 +115,16 @@ export default function QuestionList({
         <button
           onClick={loadMore}
           disabled={loading !== null}
-          className="mt-3 min-h-[3rem] w-full rounded-[14px] border border-border bg-card text-sm font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="mt-3 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-[14px] border border-border bg-card text-sm font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          {loading === "more" ? "Memuat…" : "Muat pertanyaan lagi"}
+          {loading === "more" ? (
+            "Memuat…"
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4" aria-hidden />
+              Muat pertanyaan lagi
+            </>
+          )}
         </button>
       )}
     </>

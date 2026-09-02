@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Trash2, X } from "lucide-react";
 import Modal from "@/components/admin/Modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,8 +55,9 @@ export default function DeleteEventDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[2.75rem] shrink-0 rounded-lg border border-destructive-border px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex min-h-[2.75rem] shrink-0 items-center gap-2 rounded-lg border border-destructive-border px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
+        <Trash2 className="h-4 w-4" aria-hidden />
         Hapus majelis
       </button>
 
@@ -90,17 +92,18 @@ export default function DeleteEventDialog({
             type="button"
             onClick={close}
             disabled={busy}
-            className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
+            className="flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
           >
+            <X className="h-4 w-4" aria-hidden />
             Batal
           </button>
           <button
             type="button"
             onClick={remove}
             disabled={!confirmed || busy}
-            className="flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+            className="flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg bg-destructive px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
           >
-            {busy && <Spinner />}
+            {busy ? <Spinner /> : <Trash2 className="h-4 w-4" aria-hidden />}
             {busy ? "Menghapus…" : "Hapus"}
           </button>
         </div>

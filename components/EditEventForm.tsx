@@ -5,6 +5,7 @@ import { useState } from "react";
 import Card from "@/components/admin/Card";
 import DeleteEventDialog from "@/components/DeleteEventDialog";
 import Field from "@/components/admin/Field";
+import { Check } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
 import { updateEvent } from "@/lib/actions";
@@ -125,7 +126,7 @@ export default function EditEventForm({
 
         <button type="submit" disabled={!dirty || busy}
           className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-          {busy && <Spinner />}
+          {busy ? <Spinner /> : <Check className="h-[18px] w-[18px]" aria-hidden />}
           {busy ? "Menyimpan…" : "Simpan perubahan"}
         </button>
       </form>

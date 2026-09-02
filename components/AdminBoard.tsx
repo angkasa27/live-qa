@@ -4,8 +4,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CardSkeleton } from "@/components/Skeleton";
 import RevisionsDialog from "@/components/RevisionsDialog";
 import Spinner from "@/components/Spinner";
+import {
+  Check,
+  CheckCheck,
+  Clock,
+  CornerDownRight,
+  Eye,
+  EyeOff,
+  Inbox,
+  List,
+  MessageCircleDashed,
+  Sparkles,
+  Undo2,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { Textarea } from "@/components/ui/textarea";
 import { adminList, draftAnswers, setAnswer, setQuestionStatus } from "@/lib/actions";
 import { relativeTime } from "@/lib/relativeTime";
@@ -21,6 +35,15 @@ const FILTERS = [
   "Semua",
 ] as const;
 type Filter = (typeof FILTERS)[number];
+
+/** One glyph per filter, so the strip reads as states rather than as a row of words. */
+const FILTER_ICON: Record<Filter, typeof Clock> = {
+  "Menunggu review": Clock,
+  "Belum dijawab": MessageCircleDashed,
+  "Sudah dijawab": CheckCheck,
+  Disembunyikan: EyeOff,
+  Semua: List,
+};
 
 function match(q: Question, filter: Filter) {
   switch (filter) {
@@ -71,7 +94,10 @@ function ProposalCard({
       }`}
     >
       <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">Usulan dari rekaman</span>
+        <span className="flex items-center gap-1.5 font-medium text-foreground">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          Usulan dari rekaman
+        </span>
         {partly && <Pill tone="warn">dijawab sebagian</Pill>}
         <span className="tabular-nums">{timecode(proposal.videoStart)}</span>
       </p>
@@ -82,14 +108,16 @@ function ProposalCard({
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={onUse}
-          className="min-h-[2.25rem] rounded-lg border border-primary px-3 text-sm font-medium text-primary"
+          className="flex min-h-[2.25rem] items-center gap-1.5 rounded-lg border border-primary px-3 text-sm font-medium text-primary"
         >
+          <Check className="h-4 w-4" aria-hidden />
           Gunakan
         </button>
         <button
           onClick={onDismiss}
-          className="min-h-[2.25rem] px-2 text-sm font-medium text-muted-foreground underline underline-offset-4"
+          className="flex min-h-[2.25rem] items-center gap-1.5 px-2 text-sm font-medium text-muted-foreground"
         >
+          <X className="h-4 w-4" aria-hidden />
           Abaikan
         </button>
       </div>
@@ -167,7 +195,8 @@ function Row({
         </div>
 
         <div className="border-t border-border p-4 lg:w-1/2 lg:border-t-0">
-          <label htmlFor={`a-${q.id}`} className="mb-2 block text-sm font-medium text-muted-foreground">
+          <label htmlFor={`a-${q.id}`} className="mb-2 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <CornerDownRight className="h-4 w-4" aria-hidden />
             Jawaban
             <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
           </label>
@@ -202,7 +231,7 @@ function Row({
             disabled={busy !== null}
             className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-primary px-3 text-sm font-medium text-primary disabled:opacity-40"
           >
-            {busy === "moderate" && <Spinner />}
+            {busy === "moderate" ? <Spinner /> : <Eye className="h-4 w-4" aria-hidden />}
             Tampilkan
           </button>
         )}
@@ -212,7 +241,7 @@ function Row({
             disabled={busy !== null}
             className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground disabled:opacity-40"
           >
-            {busy === "moderate" && <Spinner />}
+            {busy === "moderate" ? <Spinner /> : <EyeOff className="h-4 w-4" aria-hidden />}
             Sembunyikan
           </button>
         )}
@@ -224,7 +253,13 @@ function Row({
           disabled={!dirty || busy !== null}
           className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          {busy === "answer" && <Spinner />}
+          {busy === "answer" ? (
+            <Spinner />
+          ) : draft.trim() ? (
+            <Check className="h-4 w-4" aria-hidden />
+          ) : (
+            <Undo2 className="h-4 w-4" aria-hidden />
+          )}
           {busy === "answer" ? "Menyimpan…" : draft.trim() ? "Simpan jawaban" : "Tarik jawaban"}
         </button>
       </div>
@@ -310,6 +345,10 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
                 : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
+            {(() => {
+              const Icon = FILTER_ICON[f];
+              return <Icon className="h-4 w-4" aria-hidden />;
+            })()}
             {f}
             {loaded && <span className="tabular-nums opacity-70">{counts[f]}</span>}
           </button>
@@ -325,7 +364,7 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
             disabled={drafting}
             className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground transition-colors disabled:opacity-40 hover:border-primary hover:text-foreground"
           >
-            {drafting && <Spinner />}
+            {drafting ? <Spinner /> : <Sparkles className="h-4 w-4" aria-hidden />}
             {drafting ? "Membaca rekaman…" : "Ambil jawaban dari rekaman"}
           </button>
           {draftNote && (
@@ -340,6 +379,9 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
         <CardSkeleton count={4} />
       ) : rows.length === 0 ? (
         <Empty>
+          <EmptyMedia variant="icon">
+            <Inbox aria-hidden />
+          </EmptyMedia>
           <EmptyDescription>Tidak ada apa-apa di sini.</EmptyDescription>
         </Empty>
       ) : (

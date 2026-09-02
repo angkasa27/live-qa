@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ArrowLeft, Check, ListChecks, Send, VenetianMask } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
@@ -62,10 +63,10 @@ export default function SubmitForm({
       <div className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col items-center gap-3.5 px-2 py-7 text-center">
           <span
-            className="flex h-13 w-13 items-center justify-center rounded-full border border-accent-border bg-accent text-xl text-primary"
+            className="flex h-13 w-13 items-center justify-center rounded-full border border-accent-border bg-accent text-primary"
             aria-hidden
           >
-            ✓
+            <Check className="h-6 w-6" strokeWidth={2.5} />
           </span>
           <h2 className="font-serif text-[1.4375rem] leading-snug font-medium">
             {moderated ? "Pertanyaan Anda terkirim" : "Sudah masuk antrean"}
@@ -87,14 +88,16 @@ export default function SubmitForm({
         <div className="-mx-4 mt-6 flex flex-col gap-2.5 border-t border-border-soft px-4 pt-3 sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
           <Link
             href="/pertanyaan-saya"
-            className="flex min-h-[3.25rem] items-center justify-center rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="flex min-h-[3.25rem] items-center justify-center gap-2 rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
+            <ListChecks className="h-[18px] w-[18px]" aria-hidden />
             Lihat pertanyaan saya
           </Link>
           <Link
             href={`/events/${eventId}`}
-            className="flex min-h-12 items-center justify-center rounded-[14px] border border-border bg-card text-[0.9375rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-[14px] border border-border bg-card text-[0.9375rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
             Kembali ke majelis
           </Link>
         </div>
@@ -132,7 +135,10 @@ export default function SubmitForm({
         <div className="overflow-hidden rounded-[14px] border border-border bg-card">
           <label className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-3.5">
             <span>
-              <span className="block text-[0.9375rem] font-semibold">Tanya secara anonim</span>
+              <span className="flex items-center gap-2 text-[0.9375rem] font-semibold">
+                <VenetianMask className="h-[18px] w-[18px] text-muted-foreground" aria-hidden />
+                Tanya secara anonim
+              </span>
               <span className="mt-0.5 block text-xs text-faint">Nama tidak ditampilkan</span>
             </span>
             <input
@@ -185,7 +191,7 @@ export default function SubmitForm({
           disabled={!canSend}
           className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[14px] bg-primary font-bold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          {busy && <Spinner />}
+          {busy ? <Spinner /> : <Send className="h-[18px] w-[18px]" aria-hidden />}
           {busy ? "Mengirim…" : error ? "Coba kirim lagi" : "Kirim pertanyaan"}
         </button>
       </div>

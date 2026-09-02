@@ -1,7 +1,8 @@
+import { CalendarOff, Plus } from "lucide-react";
 import Link from "next/link";
 import AdminShell from "@/components/admin/Shell";
 import LocalTime from "@/components/LocalTime";
-import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { listEventsForAdmin } from "@/lib/queries";
 import { requireSession } from "@/lib/guard";
 import type { EventStatus } from "@/lib/types";
@@ -60,14 +61,18 @@ export default async function AdminHome() {
       action={
         <Link
           href="/admin/events/new"
-          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
+          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
+          <Plus className="h-[18px] w-[18px]" aria-hidden />
           Buat majelis
         </Link>
       }
     >
       {events.length === 0 ? (
         <Empty>
+          <EmptyMedia variant="icon">
+            <CalendarOff aria-hidden />
+          </EmptyMedia>
           <EmptyDescription>Belum ada majelis.</EmptyDescription>
         </Empty>
       ) : (

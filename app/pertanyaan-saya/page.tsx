@@ -1,7 +1,8 @@
+import { ArrowRight, MessageCircleDashed } from "lucide-react";
 import Link from "next/link";
 import BottomTabs from "@/components/BottomTabs";
 import { AnswerBlock } from "@/components/QuestionCard";
-import { Empty, EmptyContent, EmptyDescription } from "@/components/ui/empty";
+import { Empty, EmptyContent, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { askerToken } from "@/lib/asker";
 import { listMine } from "@/lib/queries";
 
@@ -30,10 +31,14 @@ export default async function MyQuestionsPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3.5 sm:px-6">
         {mine.length === 0 ? (
           <Empty className="rounded-2xl">
+            <EmptyMedia variant="icon">
+              <MessageCircleDashed aria-hidden />
+            </EmptyMedia>
             <EmptyDescription>Anda belum mengirim pertanyaan dari perangkat ini.</EmptyDescription>
             <EmptyContent>
-              <Link href="/" className="font-semibold text-primary underline underline-offset-4">
-                Lihat majelis →
+              <Link href="/" className="flex items-center gap-1.5 font-semibold text-primary underline underline-offset-4">
+                Lihat majelis
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </EmptyContent>
           </Empty>

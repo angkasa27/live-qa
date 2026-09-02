@@ -1,3 +1,4 @@
+import { PenLine } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EventHeader from "@/components/EventHeader";
@@ -83,8 +84,9 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
         <div className="sticky bottom-0 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
           <Link
             href={`/events/${event.id}/tanya`}
-            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center gap-2 rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
+            <PenLine className="h-[18px] w-[18px]" aria-hidden />
             Kirim pertanyaan
           </Link>
         </div>

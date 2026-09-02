@@ -5,6 +5,7 @@ import { useState } from "react";
 import Card from "@/components/admin/Card";
 import Field from "@/components/admin/Field";
 import Segmented from "@/components/admin/Segmented";
+import { Plus } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
 import { createEvent } from "@/lib/actions";
@@ -123,7 +124,7 @@ export default function NewEventForm() {
 
       <button type="submit" disabled={busy}
         className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-        {busy && <Spinner />}
+        {busy ? <Spinner /> : <Plus className="h-[18px] w-[18px]" aria-hidden />}
         {busy ? "Membuat…" : "Buat majelis"}
       </button>
     </form>

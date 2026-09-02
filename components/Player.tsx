@@ -39,7 +39,7 @@ export default function Player({
 
   return (
     <PlayerContext.Provider value={seek}>
-      <div ref={box} className="mb-5 aspect-video w-full overflow-hidden rounded-xl bg-border">
+      <div ref={box} className="mb-5 aspect-video w-full bg-border">
         <iframe
           ref={frame}
           src={`${EMBED_ORIGIN}/embed/${youtubeId}?enablejsapi=1`}

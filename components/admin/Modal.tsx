@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 /**
@@ -49,9 +50,7 @@ export default function Modal({
           aria-label="Tutup"
           className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-          </svg>
+          <X className="h-5 w-5" aria-hidden />
         </button>
       </div>
       <div className="max-h-[70vh] overflow-y-auto p-4">{children}</div>

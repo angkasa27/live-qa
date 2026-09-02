@@ -1,3 +1,4 @@
+import { Archive, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { EventStatus } from "@/lib/types";
 
@@ -12,7 +13,12 @@ export default function StatusBadge({ status }: { status: EventStatus }) {
     );
   }
   return (
-    <Badge variant="outline" className="shrink-0 px-2.5 text-[0.6875rem]">
+    <Badge variant="outline" className="shrink-0 gap-1 px-2.5 text-[0.6875rem]">
+      {status === "scheduled" ? (
+        <CalendarClock className="h-3 w-3" aria-hidden />
+      ) : (
+        <Archive className="h-3 w-3" aria-hidden />
+      )}
       {status === "scheduled" ? "Akan datang" : "Arsip"}
     </Badge>
   );

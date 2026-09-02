@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import SignOutButton from "@/components/SignOutButton";
@@ -35,9 +36,7 @@ export default function AdminShell({
               href={back.href}
               className="-ml-2 flex h-12 min-w-0 items-center gap-1 rounded-lg pr-2 pl-1 text-sm font-semibold text-[#e8e5df] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
               <span className="truncate">{back.label}</span>
             </Link>
           ) : (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { History } from "lucide-react";
 import Modal from "@/components/admin/Modal";
 import Spinner from "@/components/Spinner";
 import { answerHistory } from "@/lib/actions";
@@ -37,8 +38,9 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[1.75rem] rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
+        <History className="h-3.5 w-3.5" aria-hidden />
         Riwayat
       </button>
 

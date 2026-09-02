@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -33,9 +34,7 @@ export default function EventHeader({
             dark ? "text-[#e8e5df]" : "text-foreground hover:bg-background"
           }`}
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-            <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <ChevronLeft className="h-5 w-5" aria-hidden />
         </Link>
         <h1 className="min-w-0 flex-1 truncate font-bold">{name}</h1>
         {action}

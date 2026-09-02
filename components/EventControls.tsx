@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Check, ChevronDown, Settings2, X } from "lucide-react";
 import Segmented from "@/components/admin/Segmented";
 import Spinner from "@/components/Spinner";
 import { updateEvent } from "@/lib/actions";
@@ -101,6 +102,7 @@ export default function EventControls({ event }: { event: Event }) {
   return (
     <details className="group rounded-xl border border-border bg-card" aria-busy={pending}>
       <summary className="flex min-h-[3.25rem] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+        <Settings2 className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
           <span className="block truncate text-xs text-muted-foreground">{summary}</span>
@@ -112,16 +114,10 @@ export default function EventControls({ event }: { event: Event }) {
           </span>
         )}
         {pending && <Spinner className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        <svg
-          viewBox="0 0 24 24"
+        <ChevronDown
           className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
           aria-hidden
-        >
-          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        />
       </summary>
 
       <div className="space-y-5 border-t border-border p-4">
@@ -208,8 +204,9 @@ export default function EventControls({ event }: { event: Event }) {
               type="button"
               onClick={() => setDraft(saved)}
               disabled={pending}
-              className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
+              className="flex min-h-[2.75rem] items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
             >
+              <X className="h-4 w-4" aria-hidden />
               Batal
             </button>
             <button
@@ -218,7 +215,7 @@ export default function EventControls({ event }: { event: Event }) {
               disabled={pending}
               className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {pending && <Spinner />}
+              {pending ? <Spinner /> : <Check className="h-4 w-4" aria-hidden />}
               {pending ? "Menyimpan…" : "Simpan"}
             </button>
           </div>

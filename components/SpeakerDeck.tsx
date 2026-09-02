@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchApproved } from "@/lib/actions";
@@ -167,8 +168,9 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
         <Link
           href={`/admin/events/${eventId}`}
-          className="pointer-events-auto flex h-11 items-center rounded-lg px-3 text-sm text-[#8b8377] transition-colors hover:text-[#f2efe8]"
+          className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-[#8b8377] transition-colors hover:text-[#f2efe8]"
         >
+          <X className="h-4 w-4" aria-hidden />
           Keluar
         </Link>
         <span className="text-sm tabular-nums text-[#8b8377]">
@@ -185,7 +187,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
           className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
           aria-label="Pertanyaan sebelumnya"
         >
-          ←
+          <ChevronLeft className="mx-auto h-6 w-6" aria-hidden />
         </button>
         <button
           onClick={() => go(1)}
@@ -193,7 +195,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
           className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
           aria-label="Pertanyaan berikutnya"
         >
-          →
+          <ChevronRight className="mx-auto h-6 w-6" aria-hidden />
         </button>
       </div>
     </div>

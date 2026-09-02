@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleUserRound, Clock, CornerDownRight, Play, VenetianMask, Video } from "lucide-react";
 import { relativeTime } from "@/lib/relativeTime";
 import { timecode, type Question } from "@/lib/types";
 import { useSeek } from "@/components/Player";
@@ -21,20 +22,20 @@ function Timestamp({ iso }: { iso: string }) {
 
 export function Attribution({ author }: { author: string | null }) {
   return author ? (
-    <span className="font-medium text-foreground">{author}</span>
+    <span className="flex items-center gap-1 font-medium text-foreground">
+      <CircleUserRound className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
+      {author}
+    </span>
   ) : (
-    <span className="italic">Anonim</span>
+    <span className="flex items-center gap-1 italic">
+      <VenetianMask className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      Anonim
+    </span>
   );
 }
 
 const PILL =
   "flex min-h-[1.875rem] shrink-0 items-center gap-1.5 rounded-full bg-primary px-2.5 text-xs font-bold tabular-nums text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
-
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor" aria-hidden>
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
 
 /** Seeks the embedded player when one is on the page; otherwise opens YouTube at the mark. */
 function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
@@ -43,7 +44,7 @@ function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
   if (seek) {
     return (
       <button type="button" onClick={() => seek(at)} className={PILL}>
-        <PlayIcon />
+        <Play className="h-3 w-3 fill-current" aria-hidden />
         {timecode(at)}
         <span className="sr-only">Putar video di jawaban ini</span>
       </button>
@@ -57,7 +58,7 @@ function ReplayControl({ youtubeId, at }: { youtubeId: string; at: number }) {
       rel="noopener noreferrer"
       className={PILL}
     >
-      <PlayIcon />
+      <Play className="h-3 w-3 fill-current" aria-hidden />
       {timecode(at)}
       <span className="sr-only">Tonton jawabannya di YouTube</span>
     </a>
@@ -78,7 +79,8 @@ export function AnswerBlock({
   return (
     <div className="mt-3 rounded-r-[10px] border-l-[3px] border-primary bg-accent px-3 py-2.5">
       <div className="flex items-center justify-between gap-2.5">
-        <p className="flex items-center gap-2 font-mono text-[0.625rem] font-medium tracking-[0.1em] text-primary uppercase">
+        <p className="flex items-center gap-1.5 font-mono text-[0.625rem] font-medium tracking-[0.1em] text-primary uppercase">
+          <CornerDownRight className="h-3 w-3" aria-hidden />
           Jawaban
           {edited && <span className="font-sans tracking-normal text-faint normal-case">· direvisi</span>}
         </p>
@@ -103,7 +105,8 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
     >
       {q.status === "submitted" && (
         <p className="mb-2.5 flex flex-wrap items-center gap-2">
-          <Badge variant="warn" className="px-2.5 text-[0.6875rem]">
+          <Badge variant="warn" className="gap-1 px-2.5 text-[0.6875rem]">
+            <Clock className="h-3 w-3" aria-hidden />
             Menunggu review
           </Badge>
           <span className="text-xs text-faint">hanya Anda yang melihat ini</span>
@@ -114,7 +117,8 @@ export default function QuestionCard({ q, youtubeId }: { q: Question; youtubeId?
         <Attribution author={q.author} />
         <span aria-hidden>·</span>
         {q.source === "transcript" ? (
-          <Badge variant="outline" className="text-[0.6875rem] normal-case tracking-normal">
+          <Badge variant="outline" className="gap-1 text-[0.6875rem] normal-case tracking-normal">
+            <Video className="h-3 w-3" aria-hidden />
             dari rekaman
           </Badge>
         ) : (
