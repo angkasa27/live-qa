@@ -14,14 +14,14 @@ export default async function EventListPage() {
 
   return (
     <>
-      <header className="border-b border-border-soft bg-surface px-4 pt-[18px] pb-3.5 sm:px-6">
+      <header className="border-b border-border-soft bg-card px-4 pt-[18px] pb-3.5 sm:px-6">
         <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight">Majelis</h1>
-        <p className="mt-1.5 text-sm text-muted">Pilih majelis untuk bertanya atau membaca jawaban.</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">Pilih majelis untuk bertanya atau membaca jawaban.</p>
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4 sm:px-6">
         {events.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted">
+          <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
             Belum ada majelis.
           </p>
         ) : (
@@ -33,8 +33,8 @@ export default async function EventListPage() {
                 <li key={e.id}>
                   <Link
                     href={`/events/${e.id}`}
-                    className={`flex h-full flex-col overflow-hidden rounded-2xl bg-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                      live ? "border-[1.5px] border-accent" : "border border-border"
+                    className={`flex h-full flex-col overflow-hidden rounded-2xl bg-card transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                      live ? "border-[1.5px] border-primary" : "border border-border"
                     }`}
                   >
                     {cover && (
@@ -60,16 +60,16 @@ export default async function EventListPage() {
                         {/* Already shown over the cover on a live card; don't say it twice. */}
                         {!(live && cover) && <StatusBadge status={e.status} />}
                       </div>
-                      <p className="text-sm text-muted">
+                      <p className="text-sm text-muted-foreground">
                         {e.speaker} · {e.venue}
                       </p>
-                      <p className="text-sm text-muted">
+                      <p className="text-sm text-muted-foreground">
                         <LocalTime iso={e.startsAt} />
                       </p>
                       <p className="mt-1.5 flex items-center justify-between gap-3 text-[0.8125rem] font-semibold">
-                        <span className="text-accent">{e.questionCount} pertanyaan</span>
+                        <span className="text-primary">{e.questionCount} pertanyaan</span>
                         {e.acceptingQuestions ? (
-                          <span className="text-accent">Bertanya →</span>
+                          <span className="text-primary">Bertanya →</span>
                         ) : (
                           <span className="font-normal text-faint">
                             {e.status === "scheduled"

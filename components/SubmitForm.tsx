@@ -50,7 +50,7 @@ export default function SubmitForm({
   }
 
   const counterTone =
-    body.length > MAX_BODY ? "text-danger" : body.length > MAX_BODY - 50 ? "text-warn" : "text-faint";
+    body.length > MAX_BODY ? "text-destructive" : body.length > MAX_BODY - 50 ? "text-warn" : "text-faint";
 
   // Sending is the end of this screen, not a line of feedback on it: the question is gone, and
   // the two things left to do are check on it or go back. Design P3.
@@ -59,7 +59,7 @@ export default function SubmitForm({
       <div className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col items-center gap-3.5 px-2 py-7 text-center">
           <span
-            className="flex h-13 w-13 items-center justify-center rounded-full border border-accent-border bg-accent-soft text-xl text-accent"
+            className="flex h-13 w-13 items-center justify-center rounded-full border border-accent-border bg-accent text-xl text-primary"
             aria-hidden
           >
             ✓
@@ -67,7 +67,7 @@ export default function SubmitForm({
           <h2 className="font-serif text-[1.4375rem] leading-snug font-medium">
             {moderated ? "Pertanyaan Anda terkirim" : "Sudah masuk antrean"}
           </h2>
-          <p className="text-[0.9375rem] leading-relaxed text-muted text-pretty">
+          <p className="text-[0.9375rem] leading-relaxed text-muted-foreground text-pretty">
             {moderated
               ? "Majelis ini memakai review admin, jadi pertanyaan Anda menunggu disetujui sebelum tampil. Tidak perlu mengirim ulang."
               : "Pertanyaan Anda langsung tampil dan sudah terbaca oleh admin majelis. Urutannya sesuai waktu bertanya."}
@@ -82,13 +82,13 @@ export default function SubmitForm({
         <div className="-mx-4 mt-6 flex flex-col gap-2.5 border-t border-border-soft px-4 pt-3 sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
           <Link
             href="/pertanyaan-saya"
-            className="flex min-h-[3.25rem] items-center justify-center rounded-[14px] bg-accent font-bold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex min-h-[3.25rem] items-center justify-center rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Lihat pertanyaan saya
           </Link>
           <Link
             href={`/events/${eventId}`}
-            className="flex min-h-12 items-center justify-center rounded-[14px] border border-border bg-surface text-[0.9375rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex min-h-12 items-center justify-center rounded-[14px] border border-border bg-card text-[0.9375rem] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Kembali ke majelis
           </Link>
@@ -114,7 +114,7 @@ export default function SubmitForm({
               if (sent) setSent(false);
             }}
             placeholder="Apa yang ingin Anda tanyakan?"
-            className="mt-2 w-full resize-none rounded-[14px] border border-border bg-surface p-3 font-serif text-[1.0625rem] leading-relaxed outline-none transition-colors placeholder:font-sans placeholder:text-faint focus:border-[1.5px] focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent"
+            className="mt-2 w-full resize-none rounded-[14px] border border-border bg-card p-3 font-serif text-[1.0625rem] leading-relaxed outline-none transition-colors placeholder:font-sans placeholder:text-faint focus:border-[1.5px] focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
           />
           <p className="mt-[7px] flex items-center justify-between text-xs text-faint">
             <span>Maksimal {MAX_BODY} karakter</span>
@@ -124,7 +124,7 @@ export default function SubmitForm({
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-[14px] border border-border bg-surface">
+        <div className="overflow-hidden rounded-[14px] border border-border bg-card">
           <label className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-3.5">
             <span>
               <span className="block text-[0.9375rem] font-semibold">Tanya secara anonim</span>
@@ -134,7 +134,7 @@ export default function SubmitForm({
               type="checkbox"
               checked={anonymous}
               onChange={(e) => setAnonymous(e.target.checked)}
-              className="h-5 w-5 shrink-0 accent-accent"
+              className="h-5 w-5 shrink-0 accent-primary"
             />
           </label>
           {!anonymous && (
@@ -148,7 +148,7 @@ export default function SubmitForm({
                 autoComplete="name"
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="mis. Rani"
-                className="mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-3 outline-none transition-colors placeholder:text-faint focus:border-accent"
+                className="mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-3 outline-none transition-colors placeholder:text-faint focus:border-primary"
               />
             </div>
           )}
@@ -164,8 +164,8 @@ export default function SubmitForm({
 
         <div aria-live="polite" className="min-h-6">
           {error && (
-            <div className="rounded-[14px] border border-danger-border bg-danger-soft px-3.5 py-3">
-              <p className="text-sm font-bold text-danger">Gagal mengirim.</p>
+            <div className="rounded-[14px] border border-destructive-border bg-destructive-soft px-3.5 py-3">
+              <p className="text-sm font-bold text-destructive">Gagal mengirim.</p>
               <p className="mt-1.5 text-sm leading-relaxed text-[#6b4038]">{error}</p>
             </div>
           )}
@@ -176,7 +176,7 @@ export default function SubmitForm({
         <button
           type="submit"
           disabled={!canSend}
-          className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[14px] bg-accent font-bold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[14px] bg-primary font-bold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           {busy && <Spinner />}
           {busy ? "Mengirim…" : error ? "Coba kirim lagi" : "Kirim pertanyaan"}

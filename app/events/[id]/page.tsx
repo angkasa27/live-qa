@@ -52,11 +52,11 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           <img src={cover} alt="" className="aspect-video w-full bg-border object-cover" />
         )}
 
-        <div className="border-b border-border-soft bg-surface px-4 py-3 sm:px-6">
+        <div className="border-b border-border-soft bg-card px-4 py-3 sm:px-6">
           <p className="text-sm text-foreground">
             {event.speaker} · {event.venue}
           </p>
-          <p className="mt-0.5 text-[0.8125rem] text-muted">
+          <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
             <LocalTime iso={event.startsAt} />
             {event.moderation === "manual" && " · review manual"}
           </p>
@@ -66,7 +66,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           {/* Whether questions are open is the event's own answer, not a guess from its status:
               an admin can keep an archived session taking questions. See ROADMAP.md §2. */}
           {!event.acceptingQuestions && event.status === "archived" && (
-            <p className="mb-3.5 rounded-[14px] border border-border bg-background px-3.5 py-3 text-[0.8125rem] leading-relaxed text-muted text-pretty">
+            <p className="mb-3.5 rounded-[14px] border border-border bg-background px-3.5 py-3 text-[0.8125rem] leading-relaxed text-muted-foreground text-pretty">
               Jawaban tertulis di bawah adalah ringkasan admin. Rekaman majelis adalah rujukan
               utama.
             </p>
@@ -83,7 +83,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
         <div className="sticky bottom-0 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
           <Link
             href={`/events/${event.id}/tanya`}
-            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center rounded-[14px] bg-accent font-bold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Kirim pertanyaan
           </Link>

@@ -52,7 +52,7 @@ export default function DeleteEventDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[2.75rem] shrink-0 rounded-lg border border-danger-border px-4 text-sm font-semibold text-danger transition-colors hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="min-h-[2.75rem] shrink-0 rounded-lg border border-destructive-border px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         Hapus majelis
       </button>
@@ -78,17 +78,17 @@ export default function DeleteEventDialog({
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           autoComplete="off"
-          className="mt-1.5 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors focus:border-accent"
+          className="mt-1.5 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors focus:border-primary"
         />
 
-        {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
+        {error && <p className="mt-3 text-sm font-medium text-destructive">{error}</p>}
 
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={close}
             disabled={busy}
-            className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted disabled:opacity-40"
+            className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
           >
             Batal
           </button>

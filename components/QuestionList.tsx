@@ -65,7 +65,7 @@ export default function QuestionList({
         <button
           onClick={refresh}
           disabled={loading !== null}
-          className="flex min-h-[2.75rem] items-center gap-[7px] rounded-full border border-border bg-surface px-3 text-[0.8125rem] font-semibold transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-[2.75rem] items-center gap-[7px] rounded-full border border-border bg-card px-3 text-[0.8125rem] font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <svg
             viewBox="0 0 24 24"
@@ -84,7 +84,7 @@ export default function QuestionList({
       {items.length === 0 && loading === null ? (
         <div className="rounded-2xl border border-dashed border-border px-7 py-13 text-center">
           <p className="font-serif text-[1.1875rem] leading-snug">Belum ada pertanyaan.</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
             {canAsk
               ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
               : "Belum ada pertanyaan pada majelis ini."}
@@ -92,7 +92,7 @@ export default function QuestionList({
           {canAsk && (
             <Link
               href={`/events/${eventId}/tanya`}
-              className="mt-3 inline-block text-sm font-semibold text-accent underline underline-offset-4"
+              className="mt-3 inline-block text-sm font-semibold text-primary underline underline-offset-4"
             >
               Kirim pertanyaan →
             </Link>
@@ -112,7 +112,7 @@ export default function QuestionList({
         <button
           onClick={loadMore}
           disabled={loading !== null}
-          className="mt-3 min-h-[3rem] w-full rounded-[14px] border border-border bg-surface text-sm font-semibold transition-colors hover:border-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3 min-h-[3rem] w-full rounded-[14px] border border-border bg-card text-sm font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           {loading === "more" ? "Memuat…" : "Muat pertanyaan lagi"}
         </button>

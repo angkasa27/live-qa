@@ -27,7 +27,7 @@ export default function VideoField({
       id="video"
       label={
         <>
-          Rekaman atau siaran YouTube <span className="font-normal text-muted">(opsional)</span>
+          Rekaman atau siaran YouTube <span className="font-normal text-muted-foreground">(opsional)</span>
         </>
       }
       value={value}
@@ -35,7 +35,7 @@ export default function VideoField({
       placeholder="https://youtu.be/…"
     >
       {trimmed && (
-        <p className={`mt-1.5 text-xs ${videoId ? "text-muted" : "text-danger"}`}>
+        <p className={`mt-1.5 text-xs ${videoId ? "text-muted-foreground" : "text-destructive"}`}>
           {videoId ? `Video dikenali: ${videoId}` : "Tautan tidak dikenali."}
         </p>
       )}

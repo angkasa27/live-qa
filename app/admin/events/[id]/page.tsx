@@ -33,7 +33,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
       action={
         <Link
           href={`/admin/events/${event.id}/speaker`}
-          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-accent px-5 font-semibold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto"
+          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
           Layar pemateri
         </Link>
@@ -41,7 +41,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
     >
       {/* Text links, not buttons: three full-width blocks stacked on a phone would push the
           questions below the fold, and only "Layar pemateri" is touched mid-session. */}
-      <nav className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
+      <nav className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
         <Link
           href={`/admin/events/${event.id}/edit`}
           className="underline underline-offset-4 transition-colors hover:text-foreground"

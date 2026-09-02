@@ -55,7 +55,7 @@ export default function AdminShell({
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight sm:text-3xl">{title}</h1>
-            {subtitle && <div className="mt-1.5 text-[0.9375rem] text-muted">{subtitle}</div>}
+            {subtitle && <div className="mt-1.5 text-[0.9375rem] text-muted-foreground">{subtitle}</div>}
           </div>
           {action && <div className="shrink-0 sm:pt-1">{action}</div>}
         </div>

@@ -1,60 +1,112 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Palette and type come from the Sual mobile design canvas: warm paper, a single green for
    anything actionable, amber for "waiting on a human", and one red reserved for live + errors.
    Light only on purpose — the design's dark surfaces are the admin header and the speaker
-   screen, both painted explicitly, not a colour scheme the phone gets to choose. */
+   screen, both painted explicitly, not a colour scheme the phone gets to choose.
+
+   Written in oklch, which makes the structure visible: every neutral sits on hue 78–85, every
+   green on 165–172, both reds on 28–30. Add a colour by holding an existing hue and moving L
+   and C — never by eyeballing a hex. Trailing comments carry the sRGB the value came from, so
+   the shadcn token rename stays checkable against git history. */
 :root {
-  --background: #faf9f7;
-  --surface: #ffffff;
-  --border: #e2ded6;
-  --border-soft: #ece8e1;
-  --foreground: #1c1a17;
-  --muted: #77716a;
-  --faint: #8b857c;
-  --accent: #16624f;
-  --accent-soft: #eef4f1;
-  --accent-border: #bcd6cc;
-  --accent-fg: #ffffff;
-  --warn: #8a5a12;
-  --warn-soft: #fdf8ee;
-  --warn-border: #d9c9a8;
-  --danger: #a13124;
-  --danger-soft: #fdf1ef;
-  --danger-border: #c9857c;
-  --live: #b2382a;
+  /* shadcn's vocabulary, carrying Sual's palette. */
+  --background: oklch(0.982 0.003 84.6); /* #faf9f7 warm paper */
+  --foreground: oklch(0.219 0.007 78.2); /* #1c1a17 */
+  --card: oklch(1 0 89.9); /* #ffffff — was --surface */
+  --card-foreground: oklch(0.219 0.007 78.2); /* #1c1a17 */
+  --popover: oklch(1 0 89.9); /* #ffffff — the Modal surface */
+  --popover-foreground: oklch(0.219 0.007 78.2); /* #1c1a17 */
+  --primary: oklch(0.446 0.078 171.9); /* #16624f — was --accent */
+  --primary-foreground: oklch(1 0 89.9); /* #ffffff — was --accent-fg */
+  --secondary: oklch(1 0 89.9); /* #ffffff — a bordered button on paper */
+  --secondary-foreground: oklch(0.219 0.007 78.2); /* #1c1a17 */
+  --muted: oklch(0.958 0.006 84.6); /* #f4f2ed — a sunk surface, e.g. the tab bar */
+  --muted-foreground: oklch(0.552 0.013 71.8); /* #77716a — was --muted */
+  --accent: oklch(0.962 0.007 164.9); /* #eef4f1 — was --accent-soft */
+  --accent-foreground: oklch(0.446 0.078 171.9); /* #16624f on that surface */
+  --destructive: oklch(0.48 0.15 30.1); /* #a13124 — was --danger */
+  --border: oklch(0.902 0.012 84.6); /* #e2ded6 */
+  --input: oklch(0.902 0.012 84.6); /* #e2ded6 */
+  --ring: oklch(0.446 0.078 171.9); /* #16624f — focus rings are green here */
+  --radius: 0.625rem;
+
+  /* Sual-only. shadcn has no word for any of these, and each carries a meaning the
+     interface is not allowed to spend elsewhere. */
+  --live: oklch(0.518 0.16 30); /* #b2382a a running session, and nothing else */
+  --warn: oklch(0.509 0.103 70.8); /* #8a5a12 waiting on a human */
+  --warn-soft: oklch(0.98 0.014 84.6); /* #fdf8ee */
+  --warn-border: oklch(0.841 0.048 85.2); /* #d9c9a8 */
+  --warn-pill: oklch(0.923 0.043 84.6); /* #f3e4c6 */
+  --border-soft: oklch(0.932 0.01 81.8); /* #ece8e1 the bottom-tab hairline */
+  --faint: oklch(0.619 0.015 78.2); /* #8b857c third text tier, under muted-foreground */
+  --accent-border: oklch(0.854 0.031 170.4); /* #bcd6cc */
+  --destructive-soft: oklch(0.967 0.013 28.9); /* #fdf1ef — was --danger-soft */
+  --destructive-border: oklch(0.684 0.086 27.8); /* #c9857c — was --danger-border */
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-border: var(--border);
-  --color-border-soft: var(--border-soft);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
-  --color-faint: var(--faint);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-border: var(--accent-border);
-  --color-accent-fg: var(--accent-fg);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-live: var(--live);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-warn-border: var(--warn-border);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
-  --color-danger-border: var(--danger-border);
-  --color-live: var(--live);
+  --color-warn-pill: var(--warn-pill);
+  --color-border-soft: var(--border-soft);
+  --color-faint: var(--faint);
+  --color-accent-border: var(--accent-border);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-border: var(--destructive-border);
+
   --font-sans: var(--font-sans-ui);
   /* Questions and answers are the reading matter; they get the serif. */
   --font-serif: var(--font-serif-reading);
   --font-mono: var(--font-mono-label);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans-ui), system-ui, sans-serif;
-  -webkit-text-size-adjust: 100%;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-text-size-adjust: 100%;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* iOS zooms any input under 16px on focus. Never let that happen. */

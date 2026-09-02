@@ -22,14 +22,14 @@ export default function EventHeader({
   return (
     <header
       className={`sticky top-0 z-10 border-b ${
-        dark ? "border-[#35302a] bg-foreground text-background" : "border-border-soft bg-surface"
+        dark ? "border-[#35302a] bg-foreground text-background" : "border-border-soft bg-card"
       }`}
     >
       <div className="mx-auto flex min-h-14 w-full max-w-3xl items-center gap-1 py-1 pr-3 pl-1 sm:px-4">
         <Link
           href={backHref}
           aria-label={backLabel}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
             dark ? "text-[#e8e5df]" : "text-foreground hover:bg-background"
           }`}
         >

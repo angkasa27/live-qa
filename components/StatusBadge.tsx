@@ -11,7 +11,7 @@ export default function StatusBadge({ status }: { status: EventStatus }) {
     );
   }
   return (
-    <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wide text-muted uppercase">
+    <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wide text-muted-foreground uppercase">
       {status === "scheduled" ? "Akan datang" : "Arsip"}
     </span>
   );

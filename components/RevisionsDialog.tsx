@@ -37,25 +37,25 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[1.75rem] rounded-full border border-border px-2.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="min-h-[1.75rem] rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         Riwayat
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Riwayat jawaban">
         {error ? (
-          <p className="text-sm text-danger">Gagal memuat riwayat.</p>
+          <p className="text-sm text-destructive">Gagal memuat riwayat.</p>
         ) : !rows ? (
-          <p className="flex items-center gap-2 text-sm text-muted">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Spinner /> Memuat…
           </p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-muted">Belum ada riwayat.</p>
+          <p className="text-sm text-muted-foreground">Belum ada riwayat.</p>
         ) : (
           <ol className="space-y-3">
             {rows.map((r, i) => (
               <li key={r.createdAt + i} className="rounded-lg border border-border p-3">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   {/* The newest row is what is published now; the rest are what it replaced. */}
                   <span className="font-medium text-foreground">
                     {i === 0 ? "Versi sekarang" : `Versi ${rows.length - i}`}
@@ -73,7 +73,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
                 </p>
                 {/* A retraction is an event in its own right, not an empty row. */}
                 {r.retracted || r.answer === null ? (
-                  <p className="mt-1.5 text-sm italic text-muted">Jawaban ditarik.</p>
+                  <p className="mt-1.5 text-sm italic text-muted-foreground">Jawaban ditarik.</p>
                 ) : (
                   <p className="mt-1.5 whitespace-pre-wrap text-[0.9375rem] leading-relaxed">
                     {r.answer}

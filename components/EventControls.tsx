@@ -37,7 +37,7 @@ function Setting({ label, hint, children }: { label: string; hint: string; child
   return (
     <div>
       <p className="text-[0.9375rem] font-medium">{label}</p>
-      <p className="mb-2 mt-0.5 text-xs text-muted">{hint}</p>
+      <p className="mb-2 mt-0.5 text-xs text-muted-foreground">{hint}</p>
       {children}
     </div>
   );
@@ -99,11 +99,11 @@ export default function EventControls({ event }: { event: Event }) {
   ].join(" · ");
 
   return (
-    <details className="group rounded-xl border border-border bg-surface" aria-busy={pending}>
+    <details className="group rounded-xl border border-border bg-card" aria-busy={pending}>
       <summary className="flex min-h-[3.25rem] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 flex-1">
           <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
-          <span className="block truncate text-xs text-muted">{summary}</span>
+          <span className="block truncate text-xs text-muted-foreground">{summary}</span>
         </span>
         {/* A collapsed panel must never hide an unsaved change. */}
         {dirty && !pending && (
@@ -111,10 +111,10 @@ export default function EventControls({ event }: { event: Event }) {
             belum disimpan
           </span>
         )}
-        {pending && <Spinner className="h-4 w-4 shrink-0 text-muted" />}
+        {pending && <Spinner className="h-4 w-4 shrink-0 text-muted-foreground" />}
         <svg
           viewBox="0 0 24 24"
-          className="h-5 w-5 shrink-0 text-muted transition-transform group-open:rotate-180"
+          className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -155,7 +155,7 @@ export default function EventControls({ event }: { event: Event }) {
             <button
               type="button"
               onClick={() => set({ accepting: null })}
-              className="mt-2 min-h-[2.25rem] text-sm font-medium text-accent underline underline-offset-4"
+              className="mt-2 min-h-[2.25rem] text-sm font-medium text-primary underline underline-offset-4"
             >
               Ikuti status lagi
             </button>
@@ -200,7 +200,7 @@ export default function EventControls({ event }: { event: Event }) {
           />
         </Setting>
 
-        {error && <p className="text-sm font-medium text-danger">{error}</p>}
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
 
         {dirty && (
           <div className="flex gap-2">
@@ -208,7 +208,7 @@ export default function EventControls({ event }: { event: Event }) {
               type="button"
               onClick={() => setDraft(saved)}
               disabled={pending}
-              className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted disabled:opacity-40"
+              className="min-h-[2.75rem] rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
             >
               Batal
             </button>
@@ -216,7 +216,7 @@ export default function EventControls({ event }: { event: Event }) {
               type="button"
               onClick={save}
               disabled={pending}
-              className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {pending && <Spinner />}
               {pending ? "Menyimpan…" : "Simpan"}

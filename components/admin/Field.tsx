@@ -20,11 +20,11 @@ export default function Field({
       <label htmlFor={id} className="block text-sm font-medium">
         {label}
       </label>
-      {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
       <input
         id={id}
         {...input}
-        className="mt-1.5 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted focus:border-accent"
+        className="mt-1.5 min-h-[2.75rem] w-full rounded-lg border border-border bg-background px-3 outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
       />
       {children}
     </div>

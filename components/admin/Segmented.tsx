@@ -20,8 +20,8 @@ export default function Segmented<T extends string>({
           type="button"
           onClick={() => onChange(v)}
           aria-pressed={value === v}
-          className={`min-h-[2.5rem] flex-1 rounded-lg px-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-            value === v ? "bg-accent text-accent-fg" : "text-muted hover:text-foreground"
+          className={`min-h-[2.5rem] flex-1 rounded-lg px-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+            value === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {text}

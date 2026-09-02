@@ -90,7 +90,7 @@ export default function NewEventForm() {
       <Card title="Pengaturan">
         <div>
           <p className="text-sm font-medium">Status</p>
-          <p className="mb-2 mt-0.5 text-xs text-muted">
+          <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
             Pertanyaan hanya diterima saat berlangsung. Bisa diubah kapan saja setelah dibuat.
           </p>
           <Segmented
@@ -103,7 +103,7 @@ export default function NewEventForm() {
 
         <div>
           <p className="text-sm font-medium">Review pertanyaan</p>
-          <p className="mb-2 mt-0.5 text-xs text-muted">
+          <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
             Manual berarti setiap pertanyaan menunggu persetujuan admin sebelum tampil.
           </p>
           <Segmented
@@ -118,11 +118,11 @@ export default function NewEventForm() {
       </Card>
 
       <div aria-live="polite" className="min-h-[1.25rem]">
-        {error && <p className="text-sm font-medium text-danger">{error}</p>}
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
       </div>
 
       <button type="submit" disabled={busy}
-        className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
         {busy && <Spinner />}
         {busy ? "Membuat…" : "Buat majelis"}
       </button>

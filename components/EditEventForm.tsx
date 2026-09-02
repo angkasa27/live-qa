@@ -110,7 +110,7 @@ export default function EditEventForm({
           <VideoField value={draft.video} onChange={set("video")} />
           <Field
             id="image"
-            label={<>Gambar sampul <span className="font-normal text-muted">(opsional)</span></>}
+            label={<>Gambar sampul <span className="font-normal text-muted-foreground">(opsional)</span></>}
             hint="Kalau kosong, sampul diambil dari rekaman YouTube."
             value={draft.image}
             onChange={(e) => set("image")(e.target.value)}
@@ -119,12 +119,12 @@ export default function EditEventForm({
         </Card>
 
         <div aria-live="polite" className="min-h-[1.25rem]">
-          {error && <p className="text-sm font-medium text-danger">{error}</p>}
-          {saved && !dirty && <p className="text-sm text-muted">Tersimpan.</p>}
+          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+          {saved && !dirty && <p className="text-sm text-muted-foreground">Tersimpan.</p>}
         </div>
 
         <button type="submit" disabled={!dirty || busy}
-          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
           {busy && <Spinner />}
           {busy ? "Menyimpan…" : "Simpan perubahan"}
         </button>
@@ -132,12 +132,12 @@ export default function EditEventForm({
 
       {/* A sibling of the form, not a child: the confirm dialog has its own text input, and
           pressing Enter in it must never submit the edit form behind it. */}
-      <section className="mt-8 rounded-xl border border-danger-border bg-surface">
-        <h2 className="border-b border-danger-border px-4 py-3 text-xs font-semibold uppercase tracking-wider text-danger">
+      <section className="mt-8 rounded-xl border border-destructive-border bg-card">
+        <h2 className="border-b border-destructive-border px-4 py-3 text-xs font-semibold uppercase tracking-wider text-destructive">
           Zona berbahaya
         </h2>
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted-foreground">
             Menghapus majelis ini beserta seluruh pertanyaan dan riwayat jawabannya.
           </p>
           <DeleteEventDialog event={event} questionCount={questionCount} />

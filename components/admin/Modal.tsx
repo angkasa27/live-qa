@@ -39,7 +39,7 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="m-auto w-[calc(100vw-2rem)] max-w-lg rounded-xl border border-border bg-surface p-0 text-foreground backdrop:bg-black/50"
+      className="m-auto w-[calc(100vw-2rem)] max-w-lg rounded-xl border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
     >
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <h2 className="min-w-0 flex-1 text-base font-semibold">{title}</h2>
@@ -47,7 +47,7 @@ export default function Modal({
           type="button"
           onClick={onClose}
           aria-label="Tutup"
-          className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />

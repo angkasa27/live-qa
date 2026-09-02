@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${sans.variable} ${serif.variable} ${mono.variable} h-full antialiased`}>
+    <html lang="id" className={`h-full antialiased ${sans.variable} ${serif.variable} ${mono.variable}`}>
       <body className="min-h-full flex flex-col">
         {children}
       </body>

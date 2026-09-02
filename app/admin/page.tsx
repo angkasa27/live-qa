@@ -20,11 +20,11 @@ function EventCard({ e }: { e: Row }) {
   return (
     <Link
       href={`/admin/events/${e.id}`}
-      className="block rounded-xl border border-border bg-surface transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="block rounded-xl border border-border bg-card transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
       <div className="p-4">
         <h3 className="text-lg font-semibold leading-snug">{e.name}</h3>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-sm text-muted-foreground">
           {e.speaker} · <LocalTime iso={e.startsAt} /> · {e.venue}
         </p>
       </div>
@@ -37,12 +37,12 @@ function EventCard({ e }: { e: Row }) {
           </span>
         )}
         {e.unanswered > 0 && (
-          <span className="rounded-full bg-accent-soft px-2.5 py-1 font-medium text-accent">
+          <span className="rounded-full bg-accent px-2.5 py-1 font-medium text-primary">
             {e.unanswered} belum dijawab
           </span>
         )}
-        <span className="text-muted">{e.total} pertanyaan</span>
-        {!e.acceptingQuestions && <span className="ml-auto text-muted">tertutup</span>}
+        <span className="text-muted-foreground">{e.total} pertanyaan</span>
+        {!e.acceptingQuestions && <span className="ml-auto text-muted-foreground">tertutup</span>}
       </div>
     </Link>
   );
@@ -59,14 +59,14 @@ export default async function AdminHome() {
       action={
         <Link
           href="/admin/events/new"
-          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-accent px-5 font-semibold text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto"
+          className="flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
           Buat majelis
         </Link>
       }
     >
       {events.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           Belum ada majelis.
         </p>
       ) : (
@@ -76,7 +76,7 @@ export default async function AdminHome() {
             if (rows.length === 0) return null;
             return (
               <section key={status}>
-                <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {status === "live" && <span className="h-1.5 w-1.5 rounded-full bg-live" aria-hidden />}
                   {label}
                   <span className="tabular-nums font-normal">{rows.length}</span>

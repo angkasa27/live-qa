@@ -34,11 +34,11 @@ function match(q: Question, filter: Filter) {
   }
 }
 
-function Pill({ tone, children }: { tone: "warn" | "accent" | "plain"; children: React.ReactNode }) {
+function Pill({ tone, children }: { tone: "warn" | "primary" | "plain"; children: React.ReactNode }) {
   const style = {
     warn: "border border-warn-border bg-warn-soft text-warn",
-    accent: "bg-accent-soft text-accent",
-    plain: "border border-border text-muted",
+    primary: "bg-accent text-primary",
+    plain: "border border-border text-muted-foreground",
   }[tone];
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{children}</span>;
 }
@@ -63,28 +63,28 @@ function ProposalCard({
   return (
     <div
       className={`mb-3 rounded-lg border p-3 ${
-        partly ? "border-warn-border bg-warn-soft" : "border-accent/40 bg-accent-soft/40"
+        partly ? "border-warn-border bg-warn-soft" : "border-primary/40 bg-accent/40"
       }`}
     >
-      <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted">
+      <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Usulan dari rekaman</span>
         {partly && <Pill tone="warn">dijawab sebagian</Pill>}
         <span className="tabular-nums">{timecode(proposal.videoStart)}</span>
       </p>
       <p className="whitespace-pre-wrap text-sm leading-relaxed">{proposal.draft}</p>
-      <p className="mt-2 border-l-2 border-border pl-2 text-xs italic text-muted">
+      <p className="mt-2 border-l-2 border-border pl-2 text-xs italic text-muted-foreground">
         “{proposal.quote}”
       </p>
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={onUse}
-          className="min-h-[2.25rem] rounded-lg border border-accent px-3 text-sm font-medium text-accent"
+          className="min-h-[2.25rem] rounded-lg border border-primary px-3 text-sm font-medium text-primary"
         >
           Gunakan
         </button>
         <button
           onClick={onDismiss}
-          className="min-h-[2.25rem] px-2 text-sm font-medium text-muted underline underline-offset-4"
+          className="min-h-[2.25rem] px-2 text-sm font-medium text-muted-foreground underline underline-offset-4"
         >
           Abaikan
         </button>
@@ -138,19 +138,19 @@ function Row({
   }
 
   return (
-    <li className="overflow-hidden rounded-xl border border-border bg-surface">
+    <li className="overflow-hidden rounded-xl border border-border bg-card">
       {/* Stacked on a phone: read the question, then write the answer. Side by side once there
           is room for both without either getting cramped. */}
       <div className="lg:flex lg:divide-x lg:divide-border">
         <div className="p-4 lg:w-1/2">
           {/* A div, not a p: RevisionsDialog carries a <dialog>, which a <p> would not hold. */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{q.author ?? "Anonim"}</span>
             <span aria-hidden>·</span>
             <span suppressHydrationWarning>{relativeTime(q.createdAt)}</span>
             {q.status === "submitted" && <Pill tone="warn">menunggu review</Pill>}
             {q.status === "hidden" && <Pill tone="plain">disembunyikan</Pill>}
-            {q.answer && <Pill tone="accent">dijawab</Pill>}
+            {q.answer && <Pill tone="primary">dijawab</Pill>}
             {/* The public gets this flag and nothing else; the text behind it is admin-only. */}
             {q.edited && (
               <>
@@ -163,7 +163,7 @@ function Row({
         </div>
 
         <div className="border-t border-border p-4 lg:w-1/2 lg:border-t-0">
-          <label htmlFor={`a-${q.id}`} className="mb-2 block text-sm font-medium text-muted">
+          <label htmlFor={`a-${q.id}`} className="mb-2 block text-sm font-medium text-muted-foreground">
             Jawaban
             <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
           </label>
@@ -184,7 +184,7 @@ function Row({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Tulis jawaban yang disampaikan pemateri…"
-            className="w-full resize-y rounded-lg border border-border bg-background p-3 leading-relaxed outline-none transition-colors placeholder:text-muted focus:border-accent"
+            className="w-full resize-y rounded-lg border border-border bg-background p-3 leading-relaxed outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
           />
         </div>
       </div>
@@ -196,7 +196,7 @@ function Row({
           <button
             onClick={() => moderate("approved")}
             disabled={busy !== null}
-            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-accent px-3 text-sm font-medium text-accent disabled:opacity-40"
+            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-primary px-3 text-sm font-medium text-primary disabled:opacity-40"
           >
             {busy === "moderate" && <Spinner />}
             Tampilkan
@@ -206,19 +206,19 @@ function Row({
           <button
             onClick={() => moderate("hidden")}
             disabled={busy !== null}
-            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted disabled:opacity-40"
+            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground disabled:opacity-40"
           >
             {busy === "moderate" && <Spinner />}
             Sembunyikan
           </button>
         )}
-        {error && <span className="w-full text-sm text-danger sm:w-auto">{error}</span>}
+        {error && <span className="w-full text-sm text-destructive sm:w-auto">{error}</span>}
         {/* Clearing the box retracts: the answer is withdrawn from display but kept in the
             row and in answer_revisions. The fix path has to be as fast as the write path. */}
         <button
           onClick={save}
           disabled={!dirty || busy !== null}
-          className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-accent-fg transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           {busy === "answer" && <Spinner />}
           {busy === "answer" ? "Menyimpan…" : draft.trim() ? "Simpan jawaban" : "Tarik jawaban"}
@@ -302,8 +302,8 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
             aria-pressed={filter === f}
             className={`flex min-h-[2.5rem] shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors ${
               filter === f
-                ? "border-accent bg-accent text-accent-fg"
-                : "border-border text-muted hover:border-accent hover:text-foreground"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
             {f}
@@ -319,13 +319,13 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
           <button
             onClick={draft}
             disabled={drafting}
-            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted transition-colors disabled:opacity-40 hover:border-accent hover:text-foreground"
+            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground transition-colors disabled:opacity-40 hover:border-primary hover:text-foreground"
           >
             {drafting && <Spinner />}
             {drafting ? "Membaca rekaman…" : "Ambil jawaban dari rekaman"}
           </button>
           {draftNote && (
-            <span className={`text-sm ${draftNote.tone === "error" ? "text-danger" : "text-muted"}`}>
+            <span className={`text-sm ${draftNote.tone === "error" ? "text-destructive" : "text-muted-foreground"}`}>
               {draftNote.text}
             </span>
           )}
@@ -335,7 +335,7 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
       {!loaded ? (
         <CardSkeleton count={4} />
       ) : rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           Tidak ada apa-apa di sini.
         </p>
       ) : (

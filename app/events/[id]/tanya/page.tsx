@@ -16,17 +16,17 @@ export default async function AskPage({ params }: PageProps<"/events/[id]/tanya"
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-3 border-b border-border-soft bg-surface px-3 sm:px-4">
+      <header className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-3 border-b border-border-soft bg-card px-3 sm:px-4">
         <h1 className="min-w-0 flex-1 truncate pl-2 font-bold">Kirim pertanyaan</h1>
         <Link
           href={`/events/${event.id}`}
-          className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           Tutup
         </Link>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-4 sm:px-6">
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-sm text-muted-foreground">
           {event.name} · {event.speaker}
         </p>
         <SubmitForm eventId={event.id} moderated={event.moderation === "manual"} />
