@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function NewEventPage() {
   await requireSession("/admin/events/new");
   return (
-    <AdminShell back={{ href: "/admin", label: "Semua majelis" }} title="Majelis baru">
+    <AdminShell back={{ href: "/admin", label: "Semua majelis" }} title="Sesi baru">
       <NewEventForm />
     </AdminShell>
   );

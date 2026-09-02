@@ -2,14 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Card from "@/components/admin/Card";
+import CoverField from "@/components/admin/CoverField";
+import DateTimeField from "@/components/admin/DateTimeField";
 import Field from "@/components/admin/Field";
+import FormSection from "@/components/admin/FormSection";
 import Segmented from "@/components/admin/Segmented";
-import { Plus } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createEvent } from "@/lib/actions";
-import { isoToLocal, type EventStatus } from "@/lib/types";
+import { isoToLocal, parseVideoId } from "@/lib/types";
 
 export default function NewEventForm() {
   const router = useRouter();
@@ -17,11 +19,13 @@ export default function NewEventForm() {
   const [startsAt, setStartsAt] = useState(() => isoToLocal(new Date().toISOString()));
   const [venue, setVenue] = useState("");
   const [speaker, setSpeaker] = useState("");
-  const [status, setStatus] = useState<EventStatus>("scheduled");
   const [moderation, setModeration] = useState<"auto" | "manual">("auto");
   const [video, setVideo] = useState("");
+  const [image, setImage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const videoId = video.trim() ? parseVideoId(video.trim()) : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,9 +38,12 @@ export default function NewEventForm() {
         startsAt: new Date(startsAt).toISOString(),
         venue,
         speaker,
-        status,
+        // A new session is always scheduled. Going live is a deliberate act taken from the
+        // session's own controls, not a dropdown chosen while typing the venue.
+        status: "scheduled",
         moderation,
         video,
+        image,
       });
       if (!res.ok) return setError(res.error);
       router.push(`/admin/events/${res.data.id}`);
@@ -48,85 +55,87 @@ export default function NewEventForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Card title="Majelis">
+    <form onSubmit={submit} className="flex flex-1 flex-col">
+      <div className="flex-1 space-y-4">
         <Field
           id="name"
-          label="Nama majelis"
+          label="Nama sesi"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="mis. Kajian Ahad Pagi Kitab Tauhid"
+          placeholder="mis. Kajian Ahad Pagi: Adab Menuntut Ilmu"
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            id="speaker"
-            label="Pemateri"
-            required
-            value={speaker}
-            onChange={(e) => setSpeaker(e.target.value)}
-            placeholder="mis. Ustadz Ahmad"
-          />
-          <Field
-            id="venue"
-            label="Tempat"
-            required
-            value={venue}
-            onChange={(e) => setVenue(e.target.value)}
-            placeholder="mis. Masjid Al-Ikhlas"
-          />
-        </div>
+        <DateTimeField value={startsAt} onChange={setStartsAt} />
 
         <Field
-          id="startsAt"
-          label="Waktu mulai"
-          type="datetime-local"
+          id="venue"
+          label="Tempat"
           required
-          value={startsAt}
-          onChange={(e) => setStartsAt(e.target.value)}
+          value={venue}
+          onChange={(e) => setVenue(e.target.value)}
+          placeholder="mis. Masjid Al-Ikhlas, Bandung"
         />
-      </Card>
 
-      <Card title="Pengaturan">
-        <div>
-          <p className="text-sm font-medium">Status</p>
-          <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
-            Pertanyaan hanya diterima saat berlangsung. Bisa diubah kapan saja setelah dibuat.
-          </p>
-          <Segmented
-            label="Status"
-            value={status}
-            options={[["scheduled", "Akan datang"], ["live", "Berlangsung"], ["archived", "Arsip"]]}
-            onChange={setStatus}
-          />
-        </div>
+        <Field
+          id="speaker"
+          label="Pemateri"
+          required
+          value={speaker}
+          onChange={(e) => setSpeaker(e.target.value)}
+          placeholder="mis. Ust. Abdul Hakim"
+        />
 
-        <div>
-          <p className="text-sm font-medium">Review pertanyaan</p>
-          <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
-            Manual berarti setiap pertanyaan menunggu persetujuan admin sebelum tampil.
-          </p>
-          <Segmented
-            label="Review pertanyaan"
-            value={moderation}
-            options={[["auto", "Otomatis"], ["manual", "Manual"]]}
-            onChange={setModeration}
-          />
-        </div>
+        <FormSection label="Opsional" />
+
+        <CoverField
+          value={image}
+          onChange={setImage}
+          fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
+        />
 
         <VideoField value={video} onChange={setVideo} />
-      </Card>
 
-      <div aria-live="polite" className="min-h-[1.25rem]">
-        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Mode review awal</p>
+          <Segmented
+            label="Mode review awal"
+            value={moderation}
+            options={[
+              ["auto", "Otomatis"],
+              ["manual", "Manual"],
+            ]}
+            onChange={setModeration}
+            activeClassName={
+              moderation === "manual" ? "bg-warn text-white" : "bg-foreground text-background"
+            }
+          />
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {moderation === "manual"
+              ? "Pertanyaan menunggu disetujui sebelum tampil. Bisa diubah kapan saja."
+              : "Pertanyaan langsung tampil. Bisa diubah kapan saja."}
+          </p>
+        </div>
+
+        <div aria-live="polite">
+          {error && (
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
 
-      <button type="submit" disabled={busy}
-        className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-        {busy ? <Spinner /> : <Plus className="h-[18px] w-[18px]" aria-hidden />}
-        {busy ? "Membuat…" : "Buat majelis"}
-      </button>
+      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
+        <button
+          type="submit"
+          disabled={busy}
+          className="flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {busy && <Spinner />}
+          {busy ? "Menyimpan…" : "Simpan sesi"}
+        </button>
+      </div>
     </form>
   );
 }

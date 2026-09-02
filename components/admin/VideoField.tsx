@@ -1,16 +1,17 @@
 "use client";
 
-import Field from "@/components/admin/Field";
-import { EMBED_ORIGIN } from "@/components/Player";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { parseVideoId } from "@/lib/types";
 
 /**
- * The YouTube link, with the id we understood echoed back and the video itself shown once it
- * parses. A recording pasted from a phone is easy to get wrong and expensive to get wrong
- * quietly: the wrong id is what Gemini would then read to draft answers.
+ * The YouTube link, with the id we understood echoed back and the still shown once it parses.
+ * A recording pasted from a phone is easy to get wrong and expensive to get wrong quietly: the
+ * wrong id is what Gemini would then read to draft answers, and what the replay anchors point
+ * into. Confirming with the actual thumbnail is the cheapest way to catch it.
  *
- * A plain iframe rather than <Player>: nothing here seeks, so there is no reason to pull in the
- * postMessage plumbing or put a seek context on an admin form.
+ * A still rather than an embedded player: nothing on this form seeks, and an iframe per keystroke
+ * is a lot of machinery to say "yes, that one".
  */
 export default function VideoField({
   value,
@@ -23,32 +24,38 @@ export default function VideoField({
   const videoId = trimmed ? parseVideoId(trimmed) : null;
 
   return (
-    <Field
-      id="video"
-      label={
-        <>
-          Rekaman atau siaran YouTube <span className="font-normal text-muted-foreground">(opsional)</span>
-        </>
-      }
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="https://youtu.be/…"
-    >
-      {trimmed && (
-        <p className={`mt-1.5 text-xs ${videoId ? "text-muted-foreground" : "text-destructive"}`}>
-          {videoId ? `Video dikenali: ${videoId}` : "Tautan tidak dikenali."}
-        </p>
-      )}
+    <Field className="gap-1.5">
+      <FieldLabel htmlFor="video" className="font-medium">
+        Tautan siaran atau rekaman{" "}
+        <span className="font-normal text-muted-foreground">(opsional)</span>
+      </FieldLabel>
+
+      <Input
+        id="video"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="youtu.be/…"
+        aria-invalid={Boolean(trimmed) && !videoId}
+      />
+
       {videoId && (
-        <div className="mt-2.5 aspect-video w-full overflow-hidden rounded-lg bg-border">
-          <iframe
-            src={`${EMBED_ORIGIN}/embed/${videoId}`}
-            title="Pratinjau rekaman"
-            allow="encrypted-media; picture-in-picture"
-            allowFullScreen
-            className="h-full w-full border-0"
+        <div className="mt-1 flex items-center gap-2.5 rounded-xl border border-accent-border bg-accent p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote still, no loader configured */}
+          <img
+            src={`https://i.ytimg.com/vi/${videoId}/default.jpg`}
+            alt=""
+            className="h-10 w-[4.25rem] shrink-0 rounded object-cover"
           />
+          <p className="min-w-0 text-xs leading-relaxed text-accent-foreground">
+            Video dikenali. Tautan YouTube, youtu.be, atau ID saja bisa dipakai.
+          </p>
         </div>
+      )}
+
+      {trimmed && !videoId && (
+        <p className="mt-0.5 text-xs text-destructive">
+          Tautan tidak dikenali. Tempel tautan YouTube, youtu.be, atau ID videonya saja.
+        </p>
       )}
     </Field>
   );

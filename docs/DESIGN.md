@@ -202,7 +202,8 @@ overwrites them; that comment is what to re-apply from.
 | `alert` | Three tones with fixed meanings: `default` neutral, `warn` waiting on a human, `destructive` a failure. The generated `destructive` was a plain card; it now carries the soft ground and coloured edge. |
 | `badge` | Added `live` (the only user of `--live`), `warn`, `accent`. Dropped `secondary`, `ghost`, `link`. Fixed `h-5` → `min-h-5.5` so Indonesian labels don't clip. |
 | `empty` | The generated base set `border-dashed` with no width or colour, so no border drew. Fixed, and `rounded-lg` → `rounded-xl`. |
-| `card` | `shadow-xs ring-1` → `border border-border`; the design is flat. Spacing tightened 24px → 16px for one-handed reading. `components/admin/Card.tsx` wraps it. |
+| `drawer` | Header left-aligned rather than centred: the session sheet puts a title and a close action on one row. |
+| `switch` | 32x18px → 44x24 with a 20px thumb. The generated size is a pointer control, and these sit in the session sheet the admin works with a thumb. No shadow, no dark branches. |
 | `separator` | Arrived as a transitive dependency of `field`. Unmodified, unused directly. |
 
 A button-styled `<Link>` uses `buttonVariants({ variant, size })` as its `className`. There are

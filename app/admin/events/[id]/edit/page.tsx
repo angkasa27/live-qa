@@ -16,8 +16,7 @@ export default async function EditEventPage({ params }: PageProps<"/admin/events
   return (
     <AdminShell
       back={{ href: `/admin/events/${id}`, label: event.name }}
-      title="Ubah detail"
-      subtitle="Status dan review pertanyaan diatur dari halaman majelis."
+      title="Ubah detail sesi"
     >
       <EditEventForm event={event} questionCount={await countQuestions(id)} />
     </AdminShell>

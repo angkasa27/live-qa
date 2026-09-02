@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Card from "@/components/admin/Card";
 import DeleteEventDialog from "@/components/DeleteEventDialog";
+import CoverField from "@/components/admin/CoverField";
+import DateTimeField from "@/components/admin/DateTimeField";
 import Field from "@/components/admin/Field";
+import FormSection from "@/components/admin/FormSection";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from "lucide-react";
 import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
@@ -49,6 +52,7 @@ export default function EditEventForm({
   const [saved, setSaved] = useState(false);
 
   const dirty = (Object.keys(initial) as (keyof Draft)[]).some((k) => draft[k] !== initial[k]);
+  const videoId = draft.video.trim() ? parseVideoId(draft.video.trim()) : null;
   const set = <K extends keyof Draft>(key: K) => (value: Draft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
     setSaved(false);
@@ -91,41 +95,57 @@ export default function EditEventForm({
   return (
     <>
       <form onSubmit={submit} className="space-y-4">
-        <Card title="Majelis">
-          <Field id="name" label="Nama majelis" required value={draft.name}
-            onChange={(e) => set("name")(e.target.value)}
-            hint="Alamat majelis tidak ikut berubah, tautan yang sudah dibagikan tetap berfungsi." />
+        <Field
+          id="name"
+          label="Nama sesi"
+          required
+          value={draft.name}
+          onChange={(e) => set("name")(e.target.value)}
+          hint="Alamat sesi tidak ikut berubah, tautan yang sudah dibagikan tetap berfungsi."
+        />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="speaker" label="Pemateri" required value={draft.speaker}
-              onChange={(e) => set("speaker")(e.target.value)} />
-            <Field id="venue" label="Tempat" required value={draft.venue}
-              onChange={(e) => set("venue")(e.target.value)} />
-          </div>
+        <DateTimeField value={draft.startsAt} onChange={set("startsAt")} />
 
-          <Field id="startsAt" label="Waktu mulai" type="datetime-local" required value={draft.startsAt}
-            onChange={(e) => set("startsAt")(e.target.value)} />
-        </Card>
+        <Field
+          id="venue"
+          label="Tempat"
+          required
+          value={draft.venue}
+          onChange={(e) => set("venue")(e.target.value)}
+        />
 
-        <Card title="Media">
-          <VideoField value={draft.video} onChange={set("video")} />
-          <Field
-            id="image"
-            label={<>Gambar sampul <span className="font-normal text-muted-foreground">(opsional)</span></>}
-            hint="Kalau kosong, sampul diambil dari rekaman YouTube."
-            value={draft.image}
-            onChange={(e) => set("image")(e.target.value)}
-            placeholder="https://…"
-          />
-        </Card>
+        <Field
+          id="speaker"
+          label="Pemateri"
+          required
+          value={draft.speaker}
+          onChange={(e) => set("speaker")(e.target.value)}
+        />
 
-        <div aria-live="polite" className="min-h-[1.25rem]">
-          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+        <FormSection label="Opsional" />
+
+        <CoverField
+          value={draft.image}
+          onChange={set("image")}
+          fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
+        />
+
+        <VideoField value={draft.video} onChange={set("video")} />
+
+        <div aria-live="polite">
+          {error && (
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           {saved && !dirty && <p className="text-sm text-muted-foreground">Tersimpan.</p>}
         </div>
 
-        <button type="submit" disabled={!dirty || busy}
-          className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+        <button
+          type="submit"
+          disabled={!dirty || busy}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
           {busy ? <Spinner /> : <Check className="h-[18px] w-[18px]" aria-hidden />}
           {busy ? "Menyimpan…" : "Simpan perubahan"}
         </button>
