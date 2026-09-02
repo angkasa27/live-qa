@@ -13,11 +13,13 @@ import {
   EyeOff,
   Inbox,
   List,
+  Pencil,
   MessageCircleDashed,
   Sparkles,
   Undo2,
   X,
 } from "lucide-react";
+import { Attribution } from "@/components/QuestionCard";
 import { Badge } from "@/components/ui/badge";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,6 +127,69 @@ function ProposalCard({
   );
 }
 
+/**
+ * Where this question stands, in one badge. Moderation and answeredness are two axes
+ * (REQUIREMENTS.md § Orthogonal pairs) and this reads them out in that order rather than
+ * collapsing them into a single status — a question can be approved and unanswered, or
+ * answered and hidden.
+ */
+function StateBadge({ q }: { q: Question }) {
+  if (q.status === "submitted") {
+    return (
+      <Badge variant="warn" className="text-[0.625rem]">
+        <Clock className="h-3 w-3" aria-hidden />
+        Butuh review
+      </Badge>
+    );
+  }
+  const moderation = q.status === "hidden" ? "Disembunyikan" : "Disetujui";
+  const answer = q.retracted ? "ditarik" : q.answer ? (q.edited ? "direvisi" : "terjawab") : "belum dijawab";
+  return (
+    <Badge
+      variant={q.answer && !q.retracted ? "accent" : "outline"}
+      className="text-[0.625rem]"
+    >
+      {q.status === "hidden" && <EyeOff className="h-3 w-3" aria-hidden />}
+      {moderation} · {answer}
+    </Badge>
+  );
+}
+
+/**
+ * One button in a card's action row. Three tones, and they are the ones docs/DESIGN.md
+ * allows: the act being offered, the alternative, and the withdrawal. Destructive is
+ * outlined — retracting an answer is reversible and the history survives it.
+ */
+function Action({
+  onClick,
+  busy,
+  disabled,
+  tone,
+  children,
+}: {
+  onClick: () => void;
+  busy?: boolean;
+  disabled?: boolean;
+  tone: "primary" | "outline" | "destructive";
+  children: React.ReactNode;
+}) {
+  const style = {
+    primary: "flex-1 bg-primary text-primary-foreground hover:opacity-90",
+    outline: "flex-1 border border-border bg-card hover:border-primary",
+    destructive: "border border-destructive-border text-destructive hover:bg-destructive-soft",
+  }[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy || disabled}
+      className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style}`}
+    >
+      {busy ? <Spinner /> : children}
+    </button>
+  );
+}
+
 function Row({
   q,
   suggestion,
@@ -139,12 +204,16 @@ function Row({
   const [busy, setBusy] = useState<"answer" | "moderate" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  // A published answer shows as text until the operator asks to change it.
+  const [editing, setEditing] = useState(false);
   // Only set once the admin accepts a proposal, so an anchor is never written for text they
   // typed themselves.
   const [anchor, setAnchor] = useState<number | undefined>();
 
   const dirty = draft.trim() !== (q.answer ?? "");
   const offered = suggestion && !dismissed && !q.answer;
+  const answered = Boolean(q.answer) && !q.retracted;
+  const showEditor = !answered || editing;
 
   async function save() {
     setBusy("answer");
@@ -153,9 +222,26 @@ function Row({
       const res = await setAnswer(q.id, draft, anchor);
       if (!res.ok) throw new Error(res.error);
       onChange(res.data);
+      setEditing(false);
     } catch {
       setDraft(q.answer ?? ""); // roll back to what the server still believes
       setError("Gagal menyimpan. Coba lagi.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function retract() {
+    setBusy("answer");
+    setError(null);
+    try {
+      const res = await setAnswer(q.id, "", undefined);
+      if (!res.ok) throw new Error(res.error);
+      onChange(res.data);
+      setDraft("");
+      setEditing(false);
+    } catch {
+      setError("Gagal menarik jawaban. Coba lagi.");
     } finally {
       setBusy(null);
     }
@@ -170,98 +256,113 @@ function Row({
   }
 
   return (
-    <li className="overflow-hidden rounded-xl border border-border bg-card">
-      {/* Stacked on a phone: read the question, then write the answer. Side by side once there
-          is room for both without either getting cramped. */}
-      <div className="lg:flex lg:divide-x lg:divide-border">
-        <div className="p-4 lg:w-1/2">
-          {/* A div, not a p: RevisionsDialog carries a <dialog>, which a <p> would not hold. */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{q.author ?? "Anonim"}</span>
-            <span aria-hidden>·</span>
-            <span suppressHydrationWarning>{relativeTime(q.createdAt)}</span>
-            {q.status === "submitted" && <Pill tone="warn">menunggu review</Pill>}
-            {q.status === "hidden" && <Pill tone="plain">disembunyikan</Pill>}
-            {q.answer && <Pill tone="primary">dijawab</Pill>}
-            {/* The public gets this flag and nothing else; the text behind it is admin-only. */}
-            {q.edited && (
-              <>
-                <Pill tone="plain">diedit</Pill>
-                <RevisionsDialog questionId={q.id} />
-              </>
-            )}
+    <li
+      className={`overflow-hidden rounded-xl border ${
+        q.status === "submitted" ? "border-warn-border bg-warn-soft" : "border-border bg-card"
+      }`}
+    >
+      <div className="p-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <StateBadge q={q} />
+          <span className="shrink-0 text-xs text-faint" suppressHydrationWarning>
+            {relativeTime(q.createdAt)}
+          </span>
+        </div>
+        <p className="mt-2.5 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
+        {/* A div, not a p: RevisionsDialog carries a <dialog>, which a <p> would not hold. */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-faint">
+          <Attribution author={q.author} />
+          {q.edited && <RevisionsDialog questionId={q.id} />}
+        </div>
+
+        {/* What the card offers depends on where the question stands. A question awaiting
+            review offers no answer box: approving it is the decision in front of the
+            operator, and answering something that may yet be hidden is work done twice. */}
+        {q.status === "submitted" ? (
+          <div className="mt-3.5 flex gap-2.5">
+            <Action onClick={() => moderate("approved")} busy={busy === "moderate"} tone="primary">
+              <Check className="h-4 w-4" aria-hidden />
+              Setujui
+            </Action>
+            <Action onClick={() => moderate("hidden")} busy={busy === "moderate"} tone="outline">
+              <EyeOff className="h-4 w-4" aria-hidden />
+              Sembunyikan
+            </Action>
           </div>
-          <p className="mt-2 whitespace-pre-wrap text-[1.0625rem] leading-relaxed">{q.body}</p>
-        </div>
-
-        <div className="border-t border-border p-4 lg:w-1/2 lg:border-t-0">
-          <label htmlFor={`a-${q.id}`} className="mb-2 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <CornerDownRight className="h-4 w-4" aria-hidden />
-            Jawaban
-            <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
-          </label>
-          {offered && (
-            <ProposalCard
-              proposal={suggestion}
-              onUse={() => {
-                setDraft(suggestion.draft);
-                setAnchor(suggestion.videoStart);
-                setDismissed(true);
-              }}
-              onDismiss={() => setDismissed(true)}
+        ) : showEditor ? (
+          <div className="mt-3.5">
+            {offered && (
+              <ProposalCard
+                proposal={suggestion}
+                onUse={() => {
+                  setDraft(suggestion.draft);
+                  setAnchor(suggestion.videoStart);
+                  setDismissed(true);
+                }}
+                onDismiss={() => setDismissed(true)}
+              />
+            )}
+            <label
+              htmlFor={`a-${q.id}`}
+              className="mb-1.5 flex items-center gap-1.5 text-[0.8125rem] font-medium text-muted-foreground"
+            >
+              <CornerDownRight className="h-4 w-4" aria-hidden />
+              Tulis jawaban
+              <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
+            </label>
+            <Textarea
+              id={`a-${q.id}`}
+              rows={3}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Ringkas jawaban pemateri…"
+              className="resize-y bg-card"
             />
-          )}
-          <Textarea
-            id={`a-${q.id}`}
-            rows={3}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Tulis jawaban yang disampaikan pemateri…"
-            className="resize-y"
-          />
-        </div>
-      </div>
+            <div className="mt-2.5 flex flex-wrap gap-2.5">
+              <Action onClick={save} busy={busy === "answer"} tone="primary" disabled={!dirty}>
+                <Check className="h-4 w-4" aria-hidden />
+                {q.answer ? "Simpan revisi" : "Terbitkan jawaban"}
+              </Action>
+              {q.answer ? (
+                <Action onClick={() => { setEditing(false); setDraft(q.answer ?? ""); }} tone="outline">
+                  <X className="h-4 w-4" aria-hidden />
+                  Batal
+                </Action>
+              ) : (
+                <Action onClick={() => moderate("hidden")} busy={busy === "moderate"} tone="outline">
+                  <EyeOff className="h-4 w-4" aria-hidden />
+                  Sembunyikan
+                </Action>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3.5">
+            <div className="rounded-r-[10px] border-l-[3px] border-primary bg-accent px-3 py-2.5">
+              <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">{q.answer}</p>
+            </div>
+            {/* A4: the correction path is never slower than the publication path, so revise
+                and retract sit on the answer itself rather than a screen further in. */}
+            <div className="mt-2.5 flex flex-wrap gap-2.5">
+              <Action onClick={() => setEditing(true)} tone="outline">
+                <Pencil className="h-4 w-4" aria-hidden />
+                Revisi
+              </Action>
+              <Action onClick={retract} busy={busy === "answer"} tone="destructive">
+                <Undo2 className="h-4 w-4" aria-hidden />
+                Tarik jawaban
+              </Action>
+              <Action onClick={() => moderate(q.status === "hidden" ? "approved" : "hidden")} busy={busy === "moderate"} tone="outline">
+                {q.status === "hidden" ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
+                {q.status === "hidden" ? "Tampilkan" : "Sembunyikan"}
+              </Action>
+            </div>
+          </div>
+        )}
 
-      {/* One action bar per card, so the operator's thumb has a single place to go.
-          Hiding is a human click and it is reversible. Nothing here deletes. See ROADMAP.md §6. */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-border bg-background/40 px-4 py-3">
-        {q.status !== "approved" && (
-          <button
-            onClick={() => moderate("approved")}
-            disabled={busy !== null}
-            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-primary px-3 text-sm font-medium text-primary disabled:opacity-40"
-          >
-            {busy === "moderate" ? <Spinner /> : <Eye className="h-4 w-4" aria-hidden />}
-            Tampilkan
-          </button>
-        )}
-        {q.status !== "hidden" && (
-          <button
-            onClick={() => moderate("hidden")}
-            disabled={busy !== null}
-            className="flex min-h-[2.5rem] items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground disabled:opacity-40"
-          >
-            {busy === "moderate" ? <Spinner /> : <EyeOff className="h-4 w-4" aria-hidden />}
-            Sembunyikan
-          </button>
-        )}
-        {error && <span className="w-full text-sm text-destructive sm:w-auto">{error}</span>}
-        {/* Clearing the box retracts: the answer is withdrawn from display but kept in the
-            row and in answer_revisions. The fix path has to be as fast as the write path. */}
-        <button
-          onClick={save}
-          disabled={!dirty || busy !== null}
-          className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {busy === "answer" ? (
-            <Spinner />
-          ) : draft.trim() ? (
-            <Check className="h-4 w-4" aria-hidden />
-          ) : (
-            <Undo2 className="h-4 w-4" aria-hidden />
-          )}
-          {busy === "answer" ? "Menyimpan…" : draft.trim() ? "Simpan jawaban" : "Tarik jawaban"}
-        </button>
+        <div aria-live="polite">
+          {error && <p className="mt-2.5 text-sm font-medium text-destructive">{error}</p>}
+        </div>
       </div>
     </li>
   );
