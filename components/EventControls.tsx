@@ -1,15 +1,25 @@
 "use client";
 
+import { ExternalLink, Pencil, Presentation, SlidersHorizontal } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Check, ChevronDown, Settings2, X } from "lucide-react";
 import Segmented from "@/components/admin/Segmented";
 import Spinner from "@/components/Spinner";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Switch } from "@/components/ui/switch";
 import { updateEvent } from "@/lib/actions";
 import type { Event, EventStatus } from "@/lib/types";
 
 const STATUS = [
-  ["scheduled", "Akan datang"],
+  ["scheduled", "Terjadwal"],
   ["live", "Berlangsung"],
   ["archived", "Arsip"],
 ] as const satisfies readonly (readonly [EventStatus, string])[];
@@ -34,26 +44,41 @@ const draftOf = (e: Event): Draft => ({
 /** Whether questions are open, given a draft. One expression, mirroring accepting_questions(). */
 const isOpen = (d: Draft) => d.accepting ?? d.status === "live";
 
-function Setting({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+/** A labelled switch row. Two of these, and both are reversible with one tap. */
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
-    <div>
-      <p className="text-[0.9375rem] font-medium">{label}</p>
-      <p className="mb-2 mt-0.5 text-xs text-muted-foreground">{hint}</p>
-      {children}
-    </div>
+    <label className="flex min-h-14 cursor-pointer items-center justify-between gap-4 px-3.5 py-2.5">
+      <span className="min-w-0">
+        <span className="block text-[0.9375rem] font-medium">{label}</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span>
+      </span>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </label>
   );
 }
 
 /**
- * Settings live behind a summary line rather than above the questions: during a session the
- * operator is reading questions, not flipping switches.
+ * Session controls, behind a button rather than on the screen: during a majelis the operator
+ * is reading questions, not flipping switches, and REQUIREMENTS.md A5 says these must not
+ * compete with the queue for attention.
  *
  * Nothing here writes until Simpan. An earlier version saved on every tap, which meant one
- * mis-aimed thumb could archive a running majelis with no undo. The summary previews the draft
- * so a collapsed panel still shows what is pending, and says so when it is unsaved.
+ * mis-aimed thumb could archive a running majelis with no undo. The trigger shows a dot while
+ * a change is pending, so a closed sheet still admits it is holding something unsaved.
  */
 export default function EventControls({ event }: { event: Event }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState(() => draftOf(event));
@@ -81,146 +106,166 @@ export default function EventControls({ event }: { event: Event }) {
       });
       if (!res.ok) return setError(res.error);
       router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
+      setOpen(false);
     });
   }
 
-  // Questions normally follow the status; an explicit override is what keeps a finished session
-  // taking them. Showing the resolved value rather than the raw column avoids a control that
-  // reads "off" while the event is in fact open.
-  const open = isOpen(draft);
+  const openNow = isOpen(draft);
   const openByStatus = draft.status === "live";
   const overridden = draft.accepting !== null;
 
-  const summary = [
-    STATUS.find(([s]) => s === draft.status)![1],
-    open ? "terbuka" : "tertutup",
-    draft.moderation === "manual" ? "review manual" : "review otomatis",
-    // Only worth a word when it is the unusual case.
-    ...(draft.hidden ? ["disembunyikan"] : []),
-  ].join(" · ");
-
   return (
-    <details className="group rounded-xl border border-border bg-card" aria-busy={pending}>
-      <summary className="flex min-h-[3.25rem] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
-        <Settings2 className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[0.9375rem] font-medium">Pengaturan</span>
-          <span className="block truncate text-xs text-muted-foreground">{summary}</span>
-        </span>
-        {/* A collapsed panel must never hide an unsaved change. */}
-        {dirty && !pending && (
-          <span className="shrink-0 rounded-full border border-warn-border bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">
-            belum disimpan
-          </span>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger
+        className="relative flex min-h-9 items-center gap-1.5 rounded-lg border border-[#4a453d] px-3 text-[0.8125rem] font-semibold text-[#e8e5df] transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
+      >
+        <SlidersHorizontal className="h-4 w-4" aria-hidden />
+        Pengaturan
+        {dirty && (
+          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-warn-pill" aria-hidden />
         )}
-        {pending && <Spinner className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        <ChevronDown
-          className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-          aria-hidden
-        />
-      </summary>
+      </DrawerTrigger>
 
-      <div className="space-y-5 border-t border-border p-4">
-        <Setting label="Status" hint="Menentukan bagaimana majelis tampil untuk jamaah.">
-          <Segmented
-            label="Status majelis"
-            value={draft.status}
-            options={STATUS}
-            onChange={(status) => set({ status })}
-          />
-        </Setting>
+      <DrawerContent className="max-h-[92dvh]">
+        <DrawerHeader className="flex flex-row items-center justify-between gap-3 border-b border-border pb-3">
+          <DrawerTitle className="text-lg font-semibold">Kendali sesi</DrawerTitle>
+          <DrawerClose className="min-h-9 rounded-lg px-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+            Tutup
+          </DrawerClose>
+        </DrawerHeader>
 
-        <Setting
-          label="Menerima pertanyaan"
-          hint={
-            overridden
-              ? "Diatur manual, tidak mengikuti status."
-              : `Mengikuti status: ${openByStatus ? "terbuka selama berlangsung" : "tertutup"}.`
-          }
-        >
-          <Segmented
-            label="Menerima pertanyaan"
-            value={open ? "open" : "closed"}
-            options={[
-              ["open", "Buka"],
-              ["closed", "Tutup"],
-            ]}
-            onChange={(v) => set({ accepting: v === "open" })}
-          />
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+          <section>
+            <h3 className="mb-2 text-sm font-medium">Status sesi</h3>
+            <Segmented
+              label="Status sesi"
+              value={draft.status}
+              options={STATUS}
+              onChange={(status) => set({ status })}
+              activeClassName="bg-foreground text-background"
+            />
+          </section>
+
+          <div className="divide-y divide-border-soft rounded-xl border border-border bg-card">
+            <Toggle
+              label="Terima pertanyaan"
+              hint={
+                overridden
+                  ? "Diatur manual, tidak mengikuti status sesi."
+                  : `Mengikuti status sesi: ${openByStatus ? "terbuka" : "tertutup"}.`
+              }
+              checked={openNow}
+              onChange={(v) => set({ accepting: v })}
+            />
+            <Toggle
+              label="Arsip dapat diakses publik"
+              hint="Lewat tautan, tidak diindeks."
+              checked={!draft.hidden}
+              onChange={(v) => set({ hidden: !v })}
+            />
+          </div>
+
           {overridden && (
             <button
               type="button"
               onClick={() => set({ accepting: null })}
-              className="mt-2 min-h-[2.25rem] text-sm font-medium text-primary underline underline-offset-4"
+              className="min-h-9 text-sm font-medium text-primary underline underline-offset-4"
             >
-              Ikuti status lagi
+              Ikuti status sesi lagi
             </button>
           )}
-        </Setting>
 
-        <Setting
-          label="Review pertanyaan"
-          hint={
-            draft.moderation === "manual"
-              ? "Pertanyaan baru menunggu persetujuan sebelum tampil."
-              : "Pertanyaan baru langsung tampil."
-          }
-        >
-          <Segmented
-            label="Review pertanyaan"
-            value={draft.moderation}
-            options={[
-              ["auto", "Otomatis"],
-              ["manual", "Manual"],
-            ]}
-            onChange={(moderation) => set({ moderation })}
-          />
-        </Setting>
+          <section>
+            <h3 className="mb-2 text-sm font-medium">Mode review</h3>
+            <Segmented
+              label="Mode review"
+              value={draft.moderation}
+              options={[
+                ["auto", "Otomatis"],
+                ["manual", "Manual"],
+              ]}
+              onChange={(moderation) => set({ moderation })}
+              activeClassName={
+                draft.moderation === "manual" ? "bg-warn text-white" : "bg-foreground text-background"
+              }
+            />
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {draft.moderation === "manual"
+                ? "Manual: pertanyaan menunggu disetujui. Ganti ke otomatis bila antrean menumpuk."
+                : "Otomatis: pertanyaan langsung tampil. Ganti ke manual bila perlu disaring."}
+            </p>
+          </section>
 
-        <Setting
-          label="Tampil untuk publik"
-          hint={
-            draft.hidden
-              ? "Disembunyikan: tidak muncul di daftar, dan tautannya tidak bisa dibuka jamaah."
-              : "Muncul di daftar majelis dan bisa dibuka siapa saja."
-          }
-        >
-          <Segmented
-            label="Tampil untuk publik"
-            value={draft.hidden ? "hidden" : "public"}
-            options={[
-              ["public", "Tampil"],
-              ["hidden", "Sembunyikan"],
-            ]}
-            onChange={(v) => set({ hidden: v === "hidden" })}
-          />
-        </Setting>
+          {/* The other two things this majelis can do, kept off the queue screen. */}
+          <section className="border-t border-border-soft pt-4">
+            <h3 className="mb-2 text-sm font-medium">Sesi ini</h3>
+            <div className="grid gap-2">
+              <SheetLink href={`/admin/events/${event.id}/edit`} icon={<Pencil className="h-4 w-4" />}>
+                Ubah detail sesi
+              </SheetLink>
+              <SheetLink
+                href={`/admin/events/${event.id}/speaker`}
+                icon={<Presentation className="h-4 w-4" />}
+              >
+                Layar pemateri
+              </SheetLink>
+              <SheetLink
+                href={`/events/${event.id}`}
+                external
+                icon={<ExternalLink className="h-4 w-4" />}
+              >
+                Lihat halaman jamaah
+              </SheetLink>
+            </div>
+          </section>
 
-        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-
-        {dirty && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setDraft(saved)}
-              disabled={pending}
-              className="flex min-h-[2.75rem] items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground disabled:opacity-40"
-            >
-              <X className="h-4 w-4" aria-hidden />
-              Batal
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={pending}
-              className="ml-auto flex min-h-[2.75rem] items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              {pending ? <Spinner /> : <Check className="h-4 w-4" aria-hidden />}
-              {pending ? "Menyimpan…" : "Simpan"}
-            </button>
+          <div aria-live="polite">
+            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           </div>
-        )}
-      </div>
-    </details>
+        </div>
+
+        <div className="shrink-0 border-t border-border p-4 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={save}
+            disabled={!dirty || pending}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {pending && <Spinner />}
+            {pending ? "Menyimpan…" : dirty ? "Simpan perubahan" : "Tidak ada perubahan"}
+          </button>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function SheetLink({
+  href,
+  external,
+  icon,
+  children,
+}: {
+  href: string;
+  external?: boolean;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const className =
+    "flex min-h-12 items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 text-[0.9375rem] font-medium transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+  const inner = (
+    <>
+      <span className="text-muted-foreground">{icon}</span>
+      {children}
+    </>
+  );
+  return external ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {inner}
+    </a>
+  ) : (
+    <Link href={href} className={className}>
+      {inner}
+    </Link>
   );
 }
