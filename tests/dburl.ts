@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 
-// Same loader as db/env.mts, minus the pooled-host refusal — tests only read and write
-// their own scratch database, so the pooler is fine.
+// Same loader as db/env.mts, minus the pooled-host refusal — the pooler is fine for tests.
 try {
   const text = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
   for (const line of text.split("\n")) {
@@ -16,35 +15,34 @@ export function baseUrl(): string | null {
   return process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? null;
 }
 
-/**
- * postgres://host/ask → postgres://host/ask_test. Deterministic, so every worker agrees.
- *
- * Every path to a test database goes through here: global-setup.ts drops and recreates whatever
- * this returns, and setup.ts points lib/db.ts at it before the integration tests truncate. So
- * this is where the target gets checked, once, rather than in each caller.
- *
- * The check exists because both callers used to trust TEST_DATABASE_URL blindly, and this ran
- * against a production database. `_test` is required in the name so that a mistyped or
- * copy-pasted URL fails loudly here instead of at `drop database`.
- */
-export function scratchUrl(base: string): string {
-  const url = process.env.TEST_DATABASE_URL ?? withTestSuffix(base);
-  const name = decodeURIComponent(new URL(url).pathname.slice(1));
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
-  if (!/^[A-Za-z0-9_]+$/.test(name) || !name.endsWith("_test")) {
+/**
+ * The database the integration tests run against: the local one, directly.
+ *
+ * There used to be a third database. Every run derived `<name>_test`, created it, applied the
+ * schema and dropped it next time, which meant a scratch copy on whatever server DATABASE_URL
+ * named — including, once, the production Neon project, where it sat for a week. Two databases
+ * is the whole inventory now: production, and the local one that tests share with `next dev`.
+ *
+ * So the guard moves from the database's *name* to its *host*. `_test` in a name was a
+ * convention a copy-pasted URL could satisfy by accident; a hostname cannot be localhost by
+ * accident. These tests truncate on every file, so anything not on this machine is refused
+ * before the first statement rather than at the first `drop database`.
+ *
+ * The cost of sharing: `pnpm test` empties the local events, questions and answer_revisions.
+ * That is the trade for having no third database — reseed with `pnpm db:seed`.
+ */
+export function testUrl(base: string): string {
+  const url = new URL(base);
+  const host = url.hostname.toLowerCase();
+
+  if (!LOCAL_HOSTS.has(host)) {
     throw new Error(
-      `Refusing to run tests against database "${name}": the name must end in _test.\n` +
-        (process.env.TEST_DATABASE_URL
-          ? "TEST_DATABASE_URL points at a database these tests would drop and truncate. " +
-            "Point it at a scratch database whose name ends in _test, or unset it."
-          : "Derived from DATABASE_URL, which does not look like a database name we can suffix."),
+      `Refusing to run tests against "${host}": these tests truncate every table they touch, ` +
+        `and this is not a local database.\n` +
+        `Point DATABASE_URL (or TEST_DATABASE_URL) at your local Postgres before running them.`,
     );
   }
-  return url;
-}
-
-function withTestSuffix(base: string): string {
-  const u = new URL(base);
-  u.pathname = `${u.pathname.replace(/\/$/, "")}_test`;
-  return u.toString();
+  return url.toString();
 }

@@ -1,9 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
-import { baseUrl, scratchUrl } from "./dburl.ts";
+import { baseUrl, testUrl } from "./dburl.ts";
 
-// Runs once. Builds a throwaway database next to the app's (same credentials) and applies
-// db/schema.sql to it, so integration tests can truncate freely without touching real data.
+// Runs once, against the local database the app itself uses. It no longer builds a scratch
+// copy: db/schema.sql is written to be idempotent (`create table if not exists`, and each
+// migration a no-op on a database that already has it), so applying it here just means a fresh
+// clone can run `pnpm test` before it has run `pnpm setup`.
+//
+// testUrl() refuses anything that is not on this machine. Nothing below is safe to point at a
+// server someone else is using.
 export default async function globalSetup() {
   const base = baseUrl();
   if (!base) {
@@ -11,40 +16,14 @@ export default async function globalSetup() {
     return;
   }
 
-  const scratch = scratchUrl(base);
-  const name = decodeURIComponent(new URL(scratch).pathname.slice(1));
-  if (!/^[A-Za-z0-9_]+$/.test(name)) throw new Error(`unsafe test db name: ${name}`);
+  const url = testUrl(base);
+  const name = decodeURIComponent(new URL(url).pathname.slice(1));
 
-  const admin = new URL(base);
-  admin.pathname = "/postgres";
-  const bootstrap = new Pool({ connectionString: admin.toString() });
-  try {
-    // The pooler (pgbouncer) keeps a server-side connection to the scratch database open
-    // after the previous run's client disconnects, and `drop database` fails while any
-    // session is attached. Evict them first. Safe: `name` is validated above and by
-    // scratchUrl() to be a plain identifier ending in _test.
-    await bootstrap.query(
-      `select pg_terminate_backend(pid) from pg_stat_activity
-        where datname = $1 and pid <> pg_backend_pid()`,
-      [name],
-    );
-    await bootstrap.query(`drop database if exists "${name}"`);
-    await bootstrap.query(`create database "${name}"`);
-  } catch (e) {
-    throw new Error(
-      `Could not create scratch database "${name}". ` +
-        `If the credentials lack createdb rights, set TEST_DATABASE_URL to an existing empty database.`,
-      { cause: e },
-    );
-  } finally {
-    await bootstrap.end();
-  }
-
-  const target = new Pool({ connectionString: scratch });
+  const target = new Pool({ connectionString: url });
   try {
     await target.query(await readFile(new URL("../db/schema.sql", import.meta.url), "utf8"));
   } finally {
     await target.end();
   }
-  console.log(`[test] scratch database ready: ${name}`);
+  console.log(`[test] using local database: ${name} (its tables get truncated)`);
 }

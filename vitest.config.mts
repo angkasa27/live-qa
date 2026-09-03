@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "node",
     globalSetup: "./tests/global-setup.ts",
     setupFiles: "./tests/setup.ts",
-    // Both integration files share one scratch database; concurrent truncates deadlock.
+    // Both integration files share the local database; concurrent truncates deadlock.
     fileParallelism: false,
   },
 });
