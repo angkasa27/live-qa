@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import Confirm from "@/components/admin/Confirm";
 import { deleteEvent, updateEvent } from "@/lib/actions";
 import { isoToLocal, parseVideoId, slugDraft, type Event, type EventStatus } from "@/lib/types";
 
@@ -170,6 +171,7 @@ export default function SessionSettings({
     const res = await deleteEvent(event.id);
     if (!res.ok) {
       setDeleting(false);
+      setConfirming(false);
       return setError(res.error);
     }
     // Deliberately stays busy: the event is gone, so this component is about to unmount and
@@ -330,13 +332,41 @@ export default function SessionSettings({
               session's own name typed out — see ROADMAP.md §6 on why nothing else deletes. */}
           <FormSection label="Hapus sesi" />
 
-          {confirming ? (
-            <div className="space-y-2.5 rounded-xl border border-destructive-border bg-destructive-soft p-3.5">
-              <p className="text-sm leading-relaxed text-destructive">
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-destructive-border text-sm font-semibold text-destructive transition-colors hover:bg-destructive-soft"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden />
+            Hapus sesi
+          </button>
+
+          {/* The gate was already the right one — the session's own name, typed out — but it
+              sat inline at the bottom of a scrolling drawer, under the field that had just
+              scrolled it into view. In a modal it is the only thing on screen, which is what
+              the one irreversible act in this app is owed. */}
+          <Confirm
+            open={confirming}
+            onOpenChange={(v) => {
+              if (deleting) return;
+              setConfirming(v);
+              if (!v) setTyped("");
+            }}
+            title="Hapus sesi ini?"
+            description={
+              <>
                 Menghapus sesi ini beserta{" "}
-                <strong className="font-bold">{questionCount} pertanyaan</strong> dan seluruh
-                riwayat jawabannya. Tidak bisa dibatalkan.
-              </p>
+                <strong className="font-bold text-destructive">{questionCount} pertanyaan</strong>{" "}
+                dan seluruh riwayat jawabannya. Tidak bisa dibatalkan.
+              </>
+            }
+            confirmLabel="Hapus sesi"
+            busyLabel="Menghapus…"
+            busy={deleting}
+            disabled={typed.trim() !== event.name.trim()}
+            onConfirm={remove}
+          >
+            <div className="space-y-1.5">
               <Label htmlFor="confirm-name" className="block text-sm leading-relaxed">
                 Ketik <span className="font-semibold">{event.name}</span> untuk melanjutkan
               </Label>
@@ -346,39 +376,8 @@ export default function SessionSettings({
                 autoComplete="off"
                 onChange={(e) => setTyped(e.target.value)}
               />
-              <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirming(false);
-                    setTyped("");
-                  }}
-                  disabled={deleting}
-                  className="min-h-11 flex-1 rounded-xl border border-border bg-card text-sm font-semibold disabled:opacity-40"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={remove}
-                  disabled={typed.trim() !== event.name.trim() || deleting}
-                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-destructive text-sm font-semibold text-white disabled:opacity-40"
-                >
-                  {deleting ? <Spinner /> : <Trash2 className="h-4 w-4" aria-hidden />}
-                  {deleting ? "Menghapus…" : "Hapus"}
-                </button>
-              </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-destructive-border text-sm font-semibold text-destructive transition-colors hover:bg-destructive-soft"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-              Hapus sesi
-            </button>
-          )}
+          </Confirm>
 
           <div aria-live="polite">
             {error && (

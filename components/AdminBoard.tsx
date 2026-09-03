@@ -12,11 +12,13 @@ import {
   EyeOff,
   Inbox,
   Pencil,
+  Plus,
   Sparkles,
   Undo2,
   X,
 } from "lucide-react";
 import Clamp from "@/components/admin/Clamp";
+import Confirm from "@/components/admin/Confirm";
 import { Attribution } from "@/components/QuestionCard";
 import { Badge } from "@/components/ui/badge";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
@@ -151,29 +153,35 @@ function StateBadge({ q }: { q: Question }) {
 }
 
 /**
- * One button in a card's action row. Three tones, and they are the ones docs/DESIGN.md
- * allows: the act being offered, the alternative, and the withdrawal. Destructive is
- * outlined — retracting an answer is reversible and the history survives it.
+ * One button in a card's action row. Four tones, ranked by how much room the act deserves:
+ * `primary` is the publish, `outline` the act a card is offering, and `quiet` /
+ * `destructive` are the ones that used to be boxed alongside them — three bordered buttons
+ * per card read as three equal choices and cost a card's whole width. Quiet keeps the touch
+ * target and drops the border. Destructive is quiet too: retracting an answer is reversible
+ * and the history survives it, so it does not get a box either.
+ *
+ * `grow` is the only thing that stretches a button; a tone no longer decides its width.
  */
 function Action({
   onClick,
   busy,
   disabled,
-  tone,
+  tone = "quiet",
   grow,
   children,
 }: {
   onClick: () => void;
   busy?: boolean;
   disabled?: boolean;
-  tone: "primary" | "outline" | "destructive";
+  tone?: "primary" | "outline" | "quiet" | "destructive";
   grow?: boolean;
   children: React.ReactNode;
 }) {
   const style = {
-    primary: "flex-1 bg-primary text-primary-foreground hover:opacity-90",
-    outline: "flex-1 border border-border bg-card hover:border-primary",
-    destructive: "border border-destructive-border text-destructive hover:bg-destructive-soft",
+    primary: "rounded-xl bg-primary px-3 text-primary-foreground hover:opacity-90",
+    outline: "rounded-xl border border-border bg-card px-3 text-primary hover:border-primary",
+    quiet: "rounded-lg px-2 text-muted-foreground hover:bg-muted hover:text-foreground",
+    destructive: "rounded-lg px-2 text-destructive hover:bg-destructive-soft",
   }[tone];
   return (
     <button
@@ -182,7 +190,7 @@ function Action({
       disabled={busy || disabled}
       /* nowrap: "Terbitkan jawaban" wrapped to two lines inside an equal-width pair, which
          made the row taller than the textarea above it. Narrower padding buys the space. */
-      className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style} ${grow ? "flex-1" : ""}`}
+      className={`flex min-h-11 items-center justify-center gap-1.5 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${style} ${grow ? "flex-1" : ""}`}
     >
       {busy ? <Spinner /> : children}
     </button>
@@ -192,10 +200,15 @@ function Action({
 function Row({
   q,
   suggestion,
+  open,
+  onOpen,
   onChange,
 }: {
   q: Question;
   suggestion?: Proposal;
+  /** The board opens one editor at a time, so this is owned there rather than here. */
+  open: boolean;
+  onOpen: (open: boolean) => void;
   onChange: (next: Question) => void;
 }) {
   const [draft, setDraft] = useState(q.answer ?? "");
@@ -203,8 +216,11 @@ function Row({
   const [busy, setBusy] = useState<"answer" | "moderate" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
-  // A published answer shows as text until the operator asks to change it.
-  const [editing, setEditing] = useState(false);
+  /**
+   * Which confirmation is up, if any. One at a time by construction: a card offers retract and
+   * hide side by side and both are behind the same modal.
+   */
+  const [confirming, setConfirming] = useState<"retract" | "moderate" | null>(null);
   // Only set once the admin accepts a proposal, so an anchor is never written for text they
   // typed themselves.
   const [anchor, setAnchor] = useState<number | undefined>();
@@ -212,7 +228,22 @@ function Row({
   const dirty = draft.trim() !== (q.answer ?? "");
   const offered = suggestion && !dismissed && !q.answer;
   const answered = Boolean(q.answer) && !q.retracted;
-  const showEditor = !answered || editing;
+
+  /**
+   * Opening the box is what asks for the keyboard, so it also takes the caret — and puts it
+   * after the existing text, because the other way in here is "Revisi", where an operator is
+   * continuing a sentence rather than starting one.
+   *
+   * Closing never clears `draft`: the row stays mounted, so a half-typed answer set aside to
+   * approve something else is still there when the card is reopened.
+   */
+  const box = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = open ? box.current : null;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [open]);
 
   async function save() {
     setBusy("answer");
@@ -221,7 +252,7 @@ function Row({
       const res = await setAnswer(q.id, draft, anchor);
       if (!res.ok) throw new Error(res.error);
       onChange(res.data);
-      setEditing(false);
+      onOpen(false);
     } catch {
       setDraft(q.answer ?? ""); // roll back to what the server still believes
       setError("Gagal menyimpan. Coba lagi.");
@@ -238,7 +269,8 @@ function Row({
       if (!res.ok) throw new Error(res.error);
       onChange(res.data);
       setDraft("");
-      setEditing(false);
+      onOpen(false);
+      setConfirming(null);
     } catch {
       setError("Gagal menarik jawaban. Coba lagi.");
     } finally {
@@ -250,6 +282,7 @@ function Row({
     setBusy("moderate");
     const res = await setQuestionStatus(q.id, status);
     setBusy(null);
+    setConfirming(null);
     if (res.ok) onChange({ ...q, status });
     else setError(res.error);
   }
@@ -281,85 +314,105 @@ function Row({
             operator, and answering something that may yet be hidden is work done twice. */}
         {q.status === "submitted" ? (
           <div className="mt-3.5 flex gap-2.5">
-            <Action onClick={() => moderate("approved")} busy={busy === "moderate"} tone="primary">
+            <Action onClick={() => moderate("approved")} busy={busy === "moderate"} tone="primary" grow>
               <Check className="h-4 w-4" aria-hidden />
               Setujui
             </Action>
-            <Action onClick={() => moderate("hidden")} busy={busy === "moderate"} tone="outline">
+            <Action onClick={() => moderate("hidden")} busy={busy === "moderate"} tone="outline" grow>
               <EyeOff className="h-4 w-4" aria-hidden />
               Sembunyikan
             </Action>
           </div>
-        ) : showEditor ? (
-          <div className="mt-3.5">
-            {offered && (
-              <ProposalCard
-                proposal={suggestion}
-                onUse={() => {
-                  setDraft(suggestion.draft);
-                  setAnchor(suggestion.videoStart);
-                  setDismissed(true);
-                }}
-                onDismiss={() => setDismissed(true)}
-              />
-            )}
-            <label
-              htmlFor={`a-${q.id}`}
-              className="mb-1.5 flex items-center gap-1.5 text-[0.8125rem] font-medium text-muted-foreground"
-            >
-              <CornerDownRight className="h-4 w-4" aria-hidden />
-              Tulis jawaban
-              <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
-            </label>
-            <Textarea
-              id={`a-${q.id}`}
-              rows={3}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ringkas jawaban pemateri…"
-              className="resize-y bg-card"
-            />
-            <div className="mt-2.5 flex flex-wrap gap-2.5">
-              <Action onClick={save} busy={busy === "answer"} tone="primary" disabled={!dirty}>
-                <Check className="h-4 w-4" aria-hidden />
-                {q.answer ? "Simpan revisi" : "Terbitkan jawaban"}
-              </Action>
-              {q.answer ? (
-                <Action onClick={() => { setEditing(false); setDraft(q.answer ?? ""); }} tone="outline">
-                  <X className="h-4 w-4" aria-hidden />
-                  Batal
-                </Action>
-              ) : (
-                <Action onClick={() => moderate("hidden")} busy={busy === "moderate"} tone="outline">
-                  <EyeOff className="h-4 w-4" aria-hidden />
-                  Sembunyikan
-                </Action>
-              )}
-            </div>
-          </div>
         ) : (
           <div className="mt-3.5">
-            <div className="rounded-r-[10px] border-l-[3px] border-primary bg-accent px-3 py-2.5">
-              <Clamp className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap" lines={4}>
-                {q.answer}
-              </Clamp>
-            </div>
-            {/* A4: the correction path is never slower than the publication path, so revise
-                and retract sit on the answer itself rather than a screen further in. */}
-            <div className="mt-2.5 flex flex-wrap gap-2.5">
-              <Action onClick={() => setEditing(true)} tone="outline">
-                <Pencil className="h-4 w-4" aria-hidden />
-                Revisi
-              </Action>
-              <Action onClick={retract} busy={busy === "answer"} tone="destructive" grow>
-                <Undo2 className="h-4 w-4" aria-hidden />
-                Tarik jawaban
-              </Action>
-              <Action onClick={() => moderate(q.status === "hidden" ? "approved" : "hidden")} busy={busy === "moderate"} tone="outline">
-                {q.status === "hidden" ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
-                {q.status === "hidden" ? "Tampilkan" : "Sembunyikan"}
-              </Action>
-            </div>
+            {/* The published answer, whether or not the box is open under it: while revising,
+                what is currently live is the thing being compared against. */}
+            {answered && (
+              <div className="rounded-r-[10px] border-l-[3px] border-primary bg-accent px-3 py-2.5">
+                <Clamp className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap" lines={4}>
+                  {q.answer}
+                </Clamp>
+              </div>
+            )}
+
+            {open ? (
+              <div className={answered ? "mt-3" : undefined}>
+                {offered && (
+                  <ProposalCard
+                    proposal={suggestion}
+                    onUse={() => {
+                      setDraft(suggestion.draft);
+                      setAnchor(suggestion.videoStart);
+                      setDismissed(true);
+                    }}
+                    onDismiss={() => setDismissed(true)}
+                  />
+                )}
+                <label
+                  htmlFor={`a-${q.id}`}
+                  className="mb-1.5 flex items-center gap-1.5 text-[0.8125rem] font-medium text-muted-foreground"
+                >
+                  <CornerDownRight className="h-4 w-4" aria-hidden />
+                  {answered ? "Perbaiki jawaban" : "Tulis jawaban"}
+                  <span className="sr-only"> untuk: {q.body.slice(0, 60)}</span>
+                </label>
+                <Textarea
+                  ref={box}
+                  id={`a-${q.id}`}
+                  rows={3}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Ringkas jawaban pemateri…"
+                  className="resize-y bg-card"
+                />
+                {/* Only the two moves that belong to an open box. Hiding and retracting are
+                    still one tap away with it closed, and offering them mid-sentence was
+                    most of what made this row unreadable. */}
+                <div className="mt-2.5 flex gap-2.5">
+                  <Action onClick={save} busy={busy === "answer"} tone="primary" disabled={!dirty} grow>
+                    <Check className="h-4 w-4" aria-hidden />
+                    {q.answer ? "Simpan revisi" : "Terbitkan jawaban"}
+                  </Action>
+                  <Action onClick={() => { onOpen(false); setDraft(q.answer ?? ""); }}>
+                    <X className="h-4 w-4" aria-hidden />
+                    Batal
+                  </Action>
+                </div>
+              </div>
+            ) : (
+              /* Closed: the act this card is for, boxed, and everything else as text beside
+                 it. A4 still holds — revising is one tap, exactly like answering. */
+              <div className={`flex flex-wrap items-center gap-1.5 ${answered ? "mt-2.5" : ""}`}>
+                <Action onClick={() => onOpen(true)} tone="outline" grow>
+                  {answered ? (
+                    <>
+                      <Pencil className="h-4 w-4" aria-hidden />
+                      Revisi jawaban
+                    </>
+                  ) : offered ? (
+                    <>
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      Ada usulan dari rekaman
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" aria-hidden />
+                      Masukkan jawaban
+                    </>
+                  )}
+                </Action>
+                {answered && (
+                  <Action onClick={() => setConfirming("retract")} tone="destructive">
+                    <Undo2 className="h-4 w-4" aria-hidden />
+                    Tarik
+                  </Action>
+                )}
+                <Action onClick={() => setConfirming("moderate")}>
+                  {q.status === "hidden" ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
+                  {q.status === "hidden" ? "Tampilkan" : "Sembunyikan"}
+                </Action>
+              </div>
+            )}
           </div>
         )}
 
@@ -367,6 +420,34 @@ function Row({
           {error && <p className="mt-2.5 text-sm font-medium text-destructive">{error}</p>}
         </div>
       </div>
+
+      {/* Both of these change what a jamaah already sees on their own phone, which is the line
+          this app draws around a confirmation — an answer people have read disappearing, or a
+          question appearing in or vanishing from the public list. */}
+      <Confirm
+        open={confirming === "retract"}
+        onOpenChange={(v) => !v && setConfirming(null)}
+        title="Tarik jawaban ini?"
+        description="Jawaban ini hilang dari halaman jamaah, dan penanya kembali menunggu. Riwayatnya tersimpan, jadi Anda bisa menuliskannya lagi kapan saja."
+        confirmLabel="Tarik jawaban"
+        busyLabel="Menarik…"
+        busy={busy === "answer"}
+        onConfirm={retract}
+      />
+      <Confirm
+        open={confirming === "moderate"}
+        onOpenChange={(v) => !v && setConfirming(null)}
+        title={q.status === "hidden" ? "Tampilkan pertanyaan ini?" : "Sembunyikan pertanyaan ini?"}
+        description={
+          q.status === "hidden"
+            ? "Pertanyaan ini kembali tampil di daftar publik majelis, beserta jawabannya bila sudah ada."
+            : "Pertanyaan ini hilang dari daftar publik. Penanya masih melihatnya di “Pertanyaan saya”, dan Anda bisa menampilkannya lagi lewat filter Disembunyikan."
+        }
+        confirmLabel={q.status === "hidden" ? "Tampilkan" : "Sembunyikan"}
+        busyLabel="Menyimpan…"
+        busy={busy === "moderate"}
+        onConfirm={() => moderate(q.status === "hidden" ? "approved" : "hidden")}
+      />
     </li>
   );
 }
@@ -379,6 +460,13 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
   // Proposals live here and nowhere else: nothing is persisted until an admin saves an answer.
   const [suggestions, setSuggestions] = useState<Record<string, Proposal>>({});
   const [drafting, setDrafting] = useState(false);
+  /**
+   * One open answer box on the board, not one per card. Every card used to render its
+   * textarea and both its buttons whether or not anyone was writing in it, which made a
+   * queue of twenty questions a page of twenty forms. Held here because "only one" is a
+   * fact about the board; a card cannot know what the others are doing.
+   */
+  const [openId, setOpenId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState<{ tone: "info" | "error"; text: string } | null>(null);
 
   const load = useCallback(() => {
@@ -516,7 +604,14 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
       ) : (
         <ul className="space-y-3">
           {rows.map((q) => (
-            <Row key={q.id} q={q} suggestion={suggestions[q.id]} onChange={replace} />
+            <Row
+              key={q.id}
+              q={q}
+              suggestion={suggestions[q.id]}
+              open={openId === q.id}
+              onOpen={(v) => setOpenId(v ? q.id : null)}
+              onChange={replace}
+            />
           ))}
         </ul>
       )}
