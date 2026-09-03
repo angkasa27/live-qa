@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, ChevronDown, MessageCircleDashed, RefreshCw } from "lucide-react";
+import { ASK_OPEN, ASK_SENT } from "@/components/AskDrawer";
 import QuestionCard from "@/components/QuestionCard";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { relativeTime } from "@/lib/relativeTime";
@@ -35,6 +35,12 @@ export default function QuestionList({
     setLoading("refresh");
     applyFirstPage(await fetchPage(eventId, null));
   }, [eventId, applyFirstPage]);
+
+  useEffect(() => {
+    const onSent = () => void refresh();
+    window.addEventListener(ASK_SENT, onSent);
+    return () => window.removeEventListener(ASK_SENT, onSent);
+  }, [refresh]);
 
   // First load: no setState before the await, so nothing renders twice on mount.
   useEffect(() => {
@@ -91,13 +97,14 @@ export default function QuestionList({
           </EmptyHeader>
           {canAsk && (
             <EmptyContent>
-              <Link
-                href={`/events/${eventId}/tanya`}
-                className="text-sm font-semibold text-primary underline underline-offset-4"
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent(ASK_OPEN))}
+                className="min-h-9 text-sm font-semibold text-primary underline underline-offset-4"
               >
                 Kirim pertanyaan
                 <ArrowRight className="ml-1 inline h-4 w-4 align-[-2px]" aria-hidden />
-              </Link>
+              </button>
             </EmptyContent>
           )}
         </Empty>

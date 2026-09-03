@@ -1,6 +1,5 @@
-import { PenLine } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import AskDrawer from "@/components/AskDrawer";
 import EventHeader from "@/components/EventHeader";
 import StatusBadge from "@/components/StatusBadge";
 import Player from "@/components/Player";
@@ -80,16 +79,11 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
         </main>
       </MaybePlayer>
 
+      {/* A sheet over the majelis rather than a route: asking should not navigate away from
+          the thing being asked about, and the old page 404'd for any session that had since
+          stopped taking questions. */}
       {event.acceptingQuestions && (
-        <div className="sticky bottom-0 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
-          <Link
-            href={`/events/${event.id}/tanya`}
-            className="mx-auto flex min-h-[3.25rem] w-full max-w-3xl items-center justify-center gap-2 rounded-[14px] bg-primary font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <PenLine className="h-[18px] w-[18px]" aria-hidden />
-            Kirim pertanyaan
-          </Link>
-        </div>
+        <AskDrawer eventId={event.id} moderated={event.moderation === "manual"} />
       )}
     </>
   );

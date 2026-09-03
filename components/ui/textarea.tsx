@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
  * ring, no shadow, no dark-mode branches. Height is left at the generated `min-h-16`,
  * which is already well over the touch minimum.
  *
- * The question box in SubmitForm passes `font-serif` — a question is reading matter, not
+ * The question box in AskDrawer passes `font-serif` — a question is reading matter, not
  * interface chrome (docs/DESIGN.md § Type). The default here stays sans for the admin's
  * answer box.
  */
