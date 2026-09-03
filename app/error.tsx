@@ -24,7 +24,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
+    <main className="page flex flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Ada yang tidak beres</h1>
       <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-muted-foreground">
         Halaman ini gagal dimuat. Coba lagi sebentar lagi.

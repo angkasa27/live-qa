@@ -28,7 +28,6 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
 
   return (
     <AdminShell
-      wide
       back={{ href: "/admin", label: "Semua majelis" }}
       title={event.name}
       /* Three icons, three different kinds of thing. The speaker screen is a place to go — A7
@@ -50,7 +49,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
       }
       strip={
         <div className="border-t border-[#35302a] bg-[#26231f]">
-          <div className="mx-auto flex w-full max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
+          <div className="page flex items-center gap-2.5 px-4 py-2 sm:px-6">
             <span className="grid h-9 w-14 shrink-0 place-items-center overflow-hidden rounded bg-[#35302a]">
               {cover ? (
                 // eslint-disable-next-line @next/next/no-img-element -- remote covers, no loader configured

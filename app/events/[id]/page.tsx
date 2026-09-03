@@ -52,17 +52,19 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           <img src={cover} alt="" className="aspect-video w-full bg-border object-cover" />
         )}
 
-        <div className="border-b border-border-soft bg-card px-4 py-3 sm:px-6">
-          <p className="text-sm text-foreground">
-            {event.speaker} · {event.venue}
-          </p>
-          <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-            <LocalTime iso={event.startsAt} />
-            {event.moderation === "manual" && " · review manual"}
-          </p>
+        <div className="border-b border-border-soft bg-card">
+          <div className="page px-4 py-3 sm:px-6">
+            <p className="text-sm text-foreground">
+              {event.speaker} · {event.venue}
+            </p>
+            <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+              <LocalTime iso={event.startsAt} />
+              {event.moderation === "manual" && " · review manual"}
+            </p>
+          </div>
         </div>
 
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3.5 sm:px-6">
+        <main className="page flex-1 px-4 py-3.5 sm:px-6">
           {/* Whether questions are open is the event's own answer, not a guess from its status:
               an admin can keep an archived session taking questions. See ROADMAP.md §2. */}
           {!event.acceptingQuestions && event.status === "archived" && (

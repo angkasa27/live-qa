@@ -18,17 +18,19 @@ export default async function MyQuestionsPage() {
 
   return (
     <>
-      <header className="border-b border-border-soft bg-card px-4 pt-[18px] pb-3.5 sm:px-6">
-        <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight">
-          Pertanyaan saya
-        </h1>
-        <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-muted-foreground text-pretty">
-          Tersimpan di perangkat ini saja. Jika data peramban dihapus atau Anda berganti perangkat,
-          daftar ini hilang.
-        </p>
+      <header className="border-b border-border-soft bg-card">
+        <div className="page px-4 pt-[18px] pb-3.5 sm:px-6">
+          <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight">
+            Pertanyaan saya
+          </h1>
+          <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-muted-foreground text-pretty">
+            Tersimpan di perangkat ini saja. Jika data peramban dihapus atau Anda berganti
+            perangkat, daftar ini hilang.
+          </p>
+        </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3.5 sm:px-6">
+      <main className="page flex-1 px-4 py-3.5 sm:px-6">
         {mine.length === 0 ? (
           <Empty className="rounded-2xl">
             <EmptyMedia variant="icon">

@@ -22,7 +22,6 @@ export default function AdminShell({
   action,
   strip,
   footer,
-  wide,
   children,
 }: {
   back?: { href: string; label: string };
@@ -39,16 +38,13 @@ export default function AdminShell({
    * list the bar simply sat under the cards instead of staying under the thumb.
    */
   footer?: ReactNode;
-  wide?: boolean;
   children: ReactNode;
 }) {
-  const width = wide ? "max-w-5xl" : "max-w-3xl";
-
   return (
     <>
       <header className="sticky top-0 z-20 bg-foreground text-background">
         {back ? (
-          <div className={`mx-auto flex min-h-14 w-full ${width} items-center gap-2 px-2 sm:px-4`}>
+          <div className="page flex min-h-14 items-center gap-2 px-2 sm:px-4">
             <Link
               href={back.href}
               aria-label={back.label}
@@ -60,7 +56,7 @@ export default function AdminShell({
             <div className="shrink-0">{action ?? <SignOutButton />}</div>
           </div>
         ) : (
-          <div className={`mx-auto w-full ${width} px-4 pt-4 pb-3.5 sm:px-6`}>
+          <div className="page px-4 pt-4 pb-3.5 sm:px-6">
             <div className="flex items-start gap-3">
               <h1 className="min-w-0 flex-1 font-serif text-[1.625rem] leading-tight font-medium tracking-tight">
                 {title}
@@ -73,14 +69,14 @@ export default function AdminShell({
         {strip}
       </header>
 
-      <main className={`mx-auto w-full ${width} flex-1 px-4 pt-4 ${footer ? "pb-4" : "pb-20"} sm:px-6`}>
+      <main className={`page flex-1 px-4 pt-4 ${footer ? "pb-4" : "pb-20"} sm:px-6`}>
         {children}
       </main>
 
       {footer && (
         <div className="sticky bottom-0 border-t border-border-soft bg-background/90 backdrop-blur">
           <div
-            className={`mx-auto w-full ${width} px-4 py-3 sm:px-6 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]`}
+            className="page px-4 py-3 sm:px-6 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]"
           >
             {footer}
           </div>

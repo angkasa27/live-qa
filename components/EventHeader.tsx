@@ -26,7 +26,7 @@ export default function EventHeader({
         dark ? "border-[#35302a] bg-foreground text-background" : "border-border-soft bg-card"
       }`}
     >
-      <div className="mx-auto flex min-h-14 w-full max-w-3xl items-center gap-1 py-1 pr-3 pl-1 sm:px-4">
+      <div className="page flex min-h-14 items-center gap-1 py-1 pr-3 pl-1 sm:px-4">
         <Link
           href={backHref}
           aria-label={backLabel}

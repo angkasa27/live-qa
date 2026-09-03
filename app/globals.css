@@ -92,6 +92,19 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* One column for the whole app. Every bar, band, sheet and <main> centres on the same
+   `page`, so a header's title stays over the cards under it once the viewport outgrows the
+   column — which is the entire difference a tablet makes. Jamaah and admin share it: an
+   admin screen is the same reading of the same questions, and an earlier 64rem admin
+   variant only meant the two sides drifted apart on a tablet. Horizontal padding stays
+   with the caller: a nav bar and a list of cards do not gutter the same. Change the width
+   here, and never put a bare `max-w-*` on a layout element. */
+@utility page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 48rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

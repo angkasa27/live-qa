@@ -111,7 +111,7 @@ export default function AskDrawer({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mx-auto flex min-h-13 w-full max-w-3xl items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="page flex min-h-13 items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <PenLine className="h-[18px] w-[18px]" aria-hidden />
           Kirim pertanyaan
