@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminBoard from "@/components/AdminBoard";
 import AdminShell from "@/components/admin/Shell";
+import QrDrawer from "@/components/admin/QrDrawer";
 import SessionSettings from "@/components/SessionSettings";
 import { countQuestions, getEvent } from "@/lib/queries";
 import { requireSession } from "@/lib/guard";
@@ -30,9 +31,10 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
       wide
       back={{ href: "/admin", label: "Semua majelis" }}
       title={event.name}
-      /* Two icons, and they are two different kinds of thing. The speaker screen is a place
-         to go — A7 wants it opened from the session the admin is already running — and the
-         sliders open the one place the session is configured. Neither is inside the other. */
+      /* Three icons, three different kinds of thing. The speaker screen is a place to go — A7
+         wants it opened from the session the admin is already running — the QR is the session
+         handed to the room, and the sliders open the one place it is configured. None of them
+         is inside the others. */
       action={
         <div className="flex items-center">
           <Link
@@ -42,6 +44,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
           >
             <Presentation className="h-5 w-5" aria-hidden />
           </Link>
+          <QrDrawer eventId={event.id} name={event.name} />
           <SessionSettings event={event} questionCount={await countQuestions(id)} />
         </div>
       }
