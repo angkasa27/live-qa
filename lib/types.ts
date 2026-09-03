@@ -134,5 +134,19 @@ export function slugify(name: string) {
     .slice(0, 48);
 }
 
+/**
+ * slugify() for a box someone is still typing in. Identical except that it keeps a trailing
+ * hyphen, without which "kajian-" collapses to "kajian" on every keystroke and the second word
+ * can never be reached. The server runs the real slugify() over whatever this produces.
+ */
+export function slugDraft(input: string) {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, 48);
+}
+
 export const MAX_BODY = 500;
 export const PAGE_SIZE = 10;

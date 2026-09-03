@@ -11,11 +11,16 @@ import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createEvent } from "@/lib/actions";
-import { isoToLocal, parseVideoId } from "@/lib/types";
+import { isoToLocal, parseVideoId, slugDraft, slugify } from "@/lib/types";
 
 export default function NewEventForm() {
   const router = useRouter();
   const [name, setName] = useState("");
+  // The address follows the name until someone types in it, then it is theirs. Tracking that
+  // with a flag rather than comparing to slugify(name) means clearing the box keeps it cleared
+  // instead of snapping back to the name on the next keystroke.
+  const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
   const [startsAt, setStartsAt] = useState(() => isoToLocal(new Date().toISOString()));
   const [venue, setVenue] = useState("");
   const [speaker, setSpeaker] = useState("");
@@ -47,6 +52,7 @@ export default function NewEventForm() {
         moderation,
         video,
         image,
+        slug: slug || undefined,
       });
       if (!res.ok) return setError(res.error);
       router.push(`/admin/events/${res.data.id}`);
@@ -65,9 +71,32 @@ export default function NewEventForm() {
           label="Nama sesi"
           required
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (!slugEdited) setSlug(slugify(e.target.value));
+          }}
           placeholder="mis. Kajian Ahad Pagi: Adab Menuntut Ilmu"
         />
+
+        <Field
+          id="slug"
+          label="Alamat sesi"
+          value={slug}
+          inputMode="url"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(e) => {
+            setSlugEdited(true);
+            setSlug(slugDraft(e.target.value));
+          }}
+          placeholder="kajian-ahad-pagi"
+          hint="Bagian akhir tautan yang dibagikan. Ikut nama sesi sampai Anda mengubahnya."
+        >
+          <p className="mt-1 truncate font-mono text-xs text-faint">
+            /events/{slug || "…"}
+          </p>
+        </Field>
 
         <DateTimeField value={startsAt} onChange={setStartsAt} />
 

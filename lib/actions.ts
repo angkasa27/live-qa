@@ -204,6 +204,13 @@ export type EventDetails = {
   speaker: string;
   video?: string;
   image?: string;
+  /**
+   * The address the majelis lives at, which is also its primary key. Absent means "derive it
+   * from the name" on create and "leave it alone" on edit; whatever arrives is run through
+   * slugify() rather than rejected, so an admin who types spaces or capitals gets the URL they
+   * meant instead of a validation error.
+   */
+  slug?: string;
 };
 
 type CleanDetails = {
@@ -213,6 +220,7 @@ type CleanDetails = {
   speaker: string;
   youtubeId: string | null;
   image: string | null;
+  slug: string | null;
 };
 
 /**
@@ -233,6 +241,10 @@ function validateDetails(input: EventDetails): Result<CleanDetails> {
   const youtubeId = video ? parseVideoId(video) : null;
   if (video && !youtubeId) return fail("Tautan YouTube tidak dikenali.");
 
+  const asked = input.slug?.trim();
+  const slug = asked ? slugify(asked) : null;
+  if (asked && !slug) return fail("Alamat sesi hanya boleh huruf, angka dan tanda hubung.");
+
   return done({
     name,
     startsAt: input.startsAt,
@@ -240,6 +252,7 @@ function validateDetails(input: EventDetails): Result<CleanDetails> {
     speaker,
     youtubeId,
     image: input.image?.trim() || null,
+    slug,
   });
 }
 
@@ -262,7 +275,7 @@ export async function updateEvent(
      */
     details?: EventDetails;
   },
-): Promise<Result> {
+): Promise<Result<{ id: string }>> {
   await requireAdmin();
   if (patch.status && !STATUSES.includes(patch.status)) return fail("Status tidak dikenal.");
 
@@ -273,10 +286,15 @@ export async function updateEvent(
     clean = checked.data;
   }
 
-  // The id is deliberately absent from this statement. It is the slug, and it is in every public
-  // URL, every share link and every student's history; renaming a majelis must not break them.
-  const row = await one<{ id: string }>(
-    `update events set
+  // The id is the slug, and it is in every shared link, so it moves only when an admin asks for
+  // it by name — a rename of the majelis leaves it alone. questions.event_id follows through
+  // `on update cascade` (db/schema.sql); what does not follow is a link somebody already sent,
+  // which is why the UI says so before the save.
+  let row: { id: string } | null;
+  try {
+    row = await one<{ id: string }>(
+      `update events set
+       id                  = coalesce($14, id),
        status              = coalesce($2, status),
        accepting_questions = case when $3 then $4 else accepting_questions end,
        moderation          = coalesce($5, moderation),
@@ -290,27 +308,34 @@ export async function updateEvent(
        image               = case when $7 then $13 else image end
      where id = $1
      returning id`,
-    [
-      eventId,
-      patch.status ?? null,
-      "acceptingQuestions" in patch,
-      patch.acceptingQuestions ?? null,
-      patch.moderation ?? null,
-      patch.hidden ?? null,
-      clean !== null,
-      clean?.name ?? null,
-      clean?.startsAt ?? null,
-      clean?.venue ?? null,
-      clean?.speaker ?? null,
-      clean?.youtubeId ?? null,
-      clean?.image ?? null,
-    ],
-  );
+      [
+        eventId,
+        patch.status ?? null,
+        "acceptingQuestions" in patch,
+        patch.acceptingQuestions ?? null,
+        patch.moderation ?? null,
+        patch.hidden ?? null,
+        clean !== null,
+        clean?.name ?? null,
+        clean?.startsAt ?? null,
+        clean?.venue ?? null,
+        clean?.speaker ?? null,
+        clean?.youtubeId ?? null,
+        clean?.image ?? null,
+        clean?.slug ?? null,
+      ],
+    );
+  } catch (e) {
+    // The primary key is the only unique thing on the table, so this can only be the slug.
+    if ((e as { code?: string }).code === "23505") return fail("Alamat sesi itu sudah dipakai.");
+    throw e;
+  }
   if (!row) return fail("Sesi tidak ditemukan.");
   revalidatePath("/admin");
   revalidatePath(`/events/${eventId}`);
+  if (row.id !== eventId) revalidatePath(`/events/${row.id}`);
   revalidatePath("/"); // name and cover feed the public list
-  return done(undefined);
+  return done({ id: row.id });
 }
 
 /**
@@ -346,23 +371,31 @@ export async function createEvent(
   if (!STATUSES.includes(input.status)) return fail("Status tidak dikenal.");
   const checked = validateDetails(input);
   if (!checked.ok) return checked;
-  const { name, venue, speaker, youtubeId, image } = checked.data;
+  const { name, venue, speaker, youtubeId, image, slug } = checked.data;
 
-  const base = slugify(name) || "majelis";
-  // Two majelis can legitimately share a name across terms, so the id gets a suffix rather than
-  // the creation failing on a collision the organiser can do nothing about.
-  const [{ id }] = await query<{ id: string }>(
-    `insert into events (id, name, starts_at, venue, speaker, status, moderation, youtube_id, image, created_by)
-     select case when exists (select 1 from events where id = $1)
-                 then $1 || '-' || substr(md5(random()::text), 1, 4)
-                 else $1 end,
+  const base = slug || slugify(name) || "majelis";
+  // A name-derived id gets a suffix on collision: two majelis can legitimately share a name
+  // across terms and the organiser can do nothing about it. An id the admin typed out is
+  // different — silently handing back a different address than the one they chose is worse
+  // than saying it is taken.
+  let rows: { id: string }[];
+  try {
+    rows = await query<{ id: string }>(
+      `insert into events (id, name, starts_at, venue, speaker, status, moderation, youtube_id, image, created_by)
+     select case when $11 or not exists (select 1 from events where id = $1)
+                 then $1
+                 else $1 || '-' || substr(md5(random()::text), 1, 4) end,
             $2, $3, $4, $5, $6, $7, $8, $9, $10
      returning id`,
-    [base, name, input.startsAt, venue, speaker, input.status, input.moderation,
-     youtubeId, image, user.id],
-  );
+      [base, name, input.startsAt, venue, speaker, input.status, input.moderation,
+       youtubeId, image, user.id, slug !== null],
+    );
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") return fail("Alamat sesi itu sudah dipakai.");
+    throw e;
+  }
 
   revalidatePath("/admin");
   revalidatePath("/");
-  return done({ id });
+  return done({ id: rows[0].id });
 }

@@ -224,6 +224,28 @@ suite("actions (integration)", () => {
       expect(e?.startsAt).toBe("2026-10-01T02:00:00.000Z");
     });
 
+    it("moves the id when a new slug is asked for, and takes the questions with it", async () => {
+      const eventId = await seedEvent();
+      await addQuestion({ eventId, body: "ikut pindah", author: null });
+
+      const res = await updateEvent(eventId, { details: details({ slug: "Alamat Baru!" }) });
+      expect(res).toEqual({ ok: true, data: { id: "alamat-baru" } });
+
+      expect(await getEvent(eventId)).toBe(null);
+      expect((await getEvent("alamat-baru"))?.name).toBe("Nama Baru");
+      // on update cascade, or the rename would have been refused by the foreign key.
+      const rows = await query(`select event_id from questions`);
+      expect(rows).toEqual([{ event_id: "alamat-baru" }]);
+    });
+
+    it("refuses a slug another majelis already holds", async () => {
+      const taken = await seedEvent();
+      const eventId = await seedEvent();
+      expect(errorOf(await updateEvent(eventId, { details: details({ slug: taken }) })))
+        .toMatch(/sudah dipakai/);
+      expect((await getEvent(eventId))?.id).toBe(eventId);
+    });
+
     it("sets and then clears the youtube link", async () => {
       const eventId = await seedEvent();
       await updateEvent(eventId, { details: details({ video: "https://youtu.be/dQw4w9WgXcQ" }) });
@@ -385,6 +407,16 @@ suite("actions (integration)", () => {
       expect(errorOf(await createEvent(input({ speaker: " " })))).toMatch(/pemateri/);
       expect(errorOf(await createEvent(input({ startsAt: "next friday" })))).toMatch(/Waktu mulai/);
       expect(errorOf(await createEvent(input({ video: "not-a-link" })))).toMatch(/YouTube/);
+    });
+
+    it("takes the id from an explicit slug rather than the name", async () => {
+      const result = await createEvent(input({ slug: "Kajian Malam Rabu" }));
+      expect(result).toEqual({ ok: true, data: { id: "kajian-malam-rabu" } });
+    });
+
+    it("refuses a chosen slug that is taken instead of quietly suffixing it", async () => {
+      await createEvent(input({ slug: "bentrok" }));
+      expect(errorOf(await createEvent(input({ slug: "bentrok" })))).toMatch(/sudah dipakai/);
     });
 
     it("survives an id collision by suffixing instead of failing", async () => {

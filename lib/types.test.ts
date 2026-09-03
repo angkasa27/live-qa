@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coverFor, isoToLocal, MAX_BODY, parseVideoId, slugify, timecode } from "./types.ts";
+import { coverFor, isoToLocal, MAX_BODY, parseVideoId, slugDraft, slugify, timecode } from "./types.ts";
 
 describe("isoToLocal", () => {
   it("round-trips through the picker without shifting the instant", () => {
@@ -45,6 +45,14 @@ describe("parseVideoId", () => {
     // A playlist or channel link has no video id in it.
     expect(parseVideoId("https://www.youtube.com/playlist?list=PL1234567890")).toBeNull();
     expect(parseVideoId("https://www.youtube.com/@kajian")).toBeNull();
+  });
+});
+
+describe("slugDraft", () => {
+  it("keeps the trailing hyphen so a second word can be typed", () => {
+    expect(slugDraft("Kajian ")).toBe("kajian-");
+    expect(slugDraft("Kajian Ahad")).toBe("kajian-ahad");
+    expect(slugDraft("--kajian")).toBe("kajian");
   });
 });
 

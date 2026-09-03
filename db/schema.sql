@@ -103,3 +103,10 @@ alter table events add column if not exists hidden boolean not null default fals
 create or replace function accepting_questions(e events) returns boolean
   language sql immutable as
 $$ select coalesce(e.accepting_questions, e.status = 'live') $$;
+
+-- The event id is the slug and admins can now edit it, so the child rows have to follow the
+-- rename instead of blocking it. `drop constraint if exists` + `add` is the only idempotent
+-- shape available: there is no `alter constraint ... on update`.
+alter table questions drop constraint if exists questions_event_id_fkey;
+alter table questions add constraint questions_event_id_fkey
+  foreign key (event_id) references events(id) on update cascade on delete cascade;

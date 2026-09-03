@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { deleteEvent, updateEvent } from "@/lib/actions";
-import { isoToLocal, parseVideoId, type Event, type EventStatus } from "@/lib/types";
+import { isoToLocal, parseVideoId, slugDraft, type Event, type EventStatus } from "@/lib/types";
 
 const STATUS = [
   ["scheduled", "Terjadwal"],
@@ -42,6 +42,7 @@ type Draft = {
   moderation: "auto" | "manual";
   hidden: boolean;
   name: string;
+  slug: string;
   startsAt: string;
   venue: string;
   speaker: string;
@@ -57,6 +58,7 @@ const draftOf = (e: Event): Draft => ({
   moderation: e.moderation,
   hidden: e.hidden,
   name: e.name,
+  slug: e.id,
   startsAt: isoToLocal(e.startsAt),
   venue: e.venue,
   speaker: e.speaker,
@@ -135,6 +137,7 @@ export default function SessionSettings({
     if (Number.isNaN(Date.parse(draft.startsAt))) {
       return setError("Tanggal dan waktu belum lengkap.");
     }
+    if (!draft.slug.trim()) return setError("Alamat sesi wajib diisi.");
     start(async () => {
       const res = await updateEvent(event.id, {
         status: draft.status,
@@ -143,6 +146,7 @@ export default function SessionSettings({
         hidden: draft.hidden,
         details: {
           name: draft.name,
+          slug: draft.slug,
           // The picker gives local time with no zone; the server stores timestamptz.
           startsAt: new Date(draft.startsAt).toISOString(),
           venue: draft.venue,
@@ -152,8 +156,11 @@ export default function SessionSettings({
         },
       });
       if (!res.ok) return setError(res.error);
-      router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
       setOpen(false);
+      // The id is in the URL of the page this drawer is on, so a rename has to move the page
+      // too, or the next refresh 404s on an address that no longer exists.
+      if (res.data.id !== event.id) return router.replace(`/admin/events/${res.data.id}`);
+      router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
     });
   }
 
@@ -266,8 +273,32 @@ export default function SessionSettings({
             required
             value={draft.name}
             onChange={(e) => set({ name: e.target.value })}
-            hint="Alamat sesi tidak ikut berubah, tautan yang sudah dibagikan tetap berfungsi."
+            hint="Alamat sesi punya kolomnya sendiri di bawah, jadi mengganti nama tidak memutus tautan."
           />
+
+          <Field
+            id="slug"
+            label="Alamat sesi"
+            required
+            value={draft.slug}
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            onChange={(e) => set({ slug: slugDraft(e.target.value) })}
+          >
+            <p className="mt-1 truncate font-mono text-xs text-faint">/events/{draft.slug || "…"}</p>
+            {/* Renaming the address is the one edit here that reaches outside the app: every
+                poster, QR and WhatsApp forward carries the old one. Say it before Simpan. */}
+            {draft.slug !== saved.slug && (
+              <Alert variant="warn" className="mt-2 rounded-xl text-[0.8125rem]">
+                <AlertDescription>
+                  Tautan lama <span className="font-mono">/events/{saved.slug}</span> akan berhenti
+                  berfungsi. Pertanyaan yang sudah masuk tetap ikut pindah.
+                </AlertDescription>
+              </Alert>
+            )}
+          </Field>
 
           <DateTimeField value={draft.startsAt} onChange={(startsAt) => set({ startsAt })} />
 
