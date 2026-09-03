@@ -101,17 +101,39 @@ export async function getEvent(id: string, { includeHidden = false } = {}) {
   return row && toEvent(row);
 }
 
-/** The session list, with the count of what's publicly visible on each. */
+/**
+ * The session list, with the count of what's publicly visible on each.
+ *
+ * Ordered so the row a jamaah came for is first: whatever is running, else the next session to
+ * start, then everything else newest-first. `lead` marks that first row when it is one of those
+ * two, so the page can single it out without doing date arithmetic during render — "now" is the
+ * database's, evaluated once per request, and React's purity rule keeps it out of a component.
+ *
+ * The old `starts_at desc` alone led with the session furthest in the future, which is the one
+ * nobody is looking for.
+ */
 export async function listEvents() {
-  const rows = await query<EventRow & { question_count: string }>(
+  const rows = await query<EventRow & { question_count: string; lead: boolean }>(
     `select ${EVENT_COLS},
             (select count(*) from questions q
-              where q.event_id = e.id and q.status = 'approved') as question_count
+              where q.event_id = e.id and q.status = 'approved') as question_count,
+            (e.status = 'live'
+              or (e.status = 'scheduled' and e.starts_at >= now())) as lead
        from events e
       where not e.hidden
-      order by e.starts_at desc`,
+      order by case when e.status = 'live' then 0
+                    when e.status = 'scheduled' and e.starts_at >= now() then 1
+                    else 2 end,
+               -- Soonest first among sessions still to come; newest first in the archive.
+               case when e.status = 'scheduled' and e.starts_at >= now()
+                    then e.starts_at end asc,
+               e.starts_at desc`,
   );
-  return rows.map((r) => ({ ...toEvent(r), questionCount: Number(r.question_count) }));
+  return rows.map((r) => ({
+    ...toEvent(r),
+    questionCount: Number(r.question_count),
+    lead: r.lead,
+  }));
 }
 
 // --- rate limiting -----------------------------------------------------------------------
