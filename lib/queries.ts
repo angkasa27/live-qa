@@ -212,8 +212,41 @@ export async function fetchPage(
   return { items, nextCursor: rows.length > limit ? items[items.length - 1].id : null };
 }
 
-/** The admin session list: every event, with the counts an operator actually triages on. */
-export async function listEventsForAdmin() {
+/**
+ * Whether this admin may administer this majelis: they created it, or they are the superadmin.
+ *
+ * A predicate rather than a `createdBy` field on `Event`, deliberately. Event crosses to the
+ * browser on the public page, and the creator's user id has no business going with it — the
+ * same reason `contact` and `ip_hash` are not in PUBLIC_COLS.
+ */
+export async function ownsEvent(eventId: string, ownerId: string | null) {
+  if (ownerId === null) return true; // superadmin
+  const row = await one<{ ok: boolean }>(
+    `select created_by = $2 as ok from events where id = $1`,
+    [eventId, ownerId],
+  );
+  return row?.ok === true;
+}
+
+/** The same question asked from a question id, for the actions that only carry one. */
+export async function ownsQuestion(questionId: string, ownerId: string | null) {
+  if (ownerId === null) return true;
+  const row = await one<{ ok: boolean }>(
+    `select e.created_by = $2 as ok
+       from questions q join events e on e.id = q.event_id
+      where q.id = $1::uuid`,
+    [questionId, ownerId],
+  );
+  return row?.ok === true;
+}
+
+/**
+ * The admin session list, with the counts an operator actually triages on.
+ *
+ * `ownerId` is the signed-in admin, and `null` means a superadmin: no filter, every majelis.
+ * Passing the id is not optional anywhere — an admin sees only what they created.
+ */
+export async function listEventsForAdmin(ownerId: string | null) {
   const rows = await query<EventRow & { total: string; pending: string; unanswered: string }>(
     `select ${EVENT_COLS},
             count(q.id)                                       as total,
@@ -222,11 +255,13 @@ export async function listEventsForAdmin() {
                                   and q.status <> 'hidden')    as unanswered
        from events e
        left join questions q on q.event_id = e.id
+      where ($1::text is null or e.created_by = $1)
       group by e.id
       order by
         -- Live sessions first: during a dauroh that is the only row anyone wants.
         case e.status when 'live' then 0 when 'scheduled' then 1 else 2 end,
         e.starts_at desc`,
+    [ownerId],
   );
   return rows.map((r) => ({
     ...toEvent(r),

@@ -81,7 +81,7 @@ try {
   // --- the list queries actually execute ---
   // These join and aggregate, which the type checker cannot see into: an unqualified column or a
   // bad group-by is a runtime error only, and it takes out the whole page when it fires.
-  const admin = await listEventsForAdmin();
+  const admin = await listEventsForAdmin(null); // null = superadmin: no owner filter
   const row = admin.find((e) => e.id === EVENT);
   assert.ok(row, "the admin list dropped an event that exists");
   assert.equal(row.total, 28, "admin total count is wrong");

@@ -19,7 +19,7 @@ or the one in a Coolify/Dokploy stack; nothing here is host-specific.
 npm install
 cp .env.example .env.local        # fill in DATABASE_URL and BETTER_AUTH_SECRET
 npm run setup                     # schema + auth tables + demo data
-npm run admin:create -- "Nama" you@example.com "password-min-12-chars"
+npm run admin:create -- "Nama" you@example.com "password-min-12-chars"   # the superadmin
 npm run dev
 ```
 
@@ -34,8 +34,14 @@ request, and `next dev` moves off port 3000 whenever it's taken; a hardcoded por
 matching surfaces as a 403 on sign-in, which reads like a wrong password. **Set it in
 production.** It's what the origin check compares against.
 
-**There is no sign-up page.** An account is an admin account, so `admin:create` is the only way
-in, including for a forgotten password until email lands in step 4.
+**There is no sign-up page.** An account is an admin account. `admin:create` makes the
+superadmin — run it against an existing email and it promotes that account instead — and every
+other admin is made from **Pengguna** on the admin home, which only the superadmin can see.
+
+**Each majelis belongs to whoever created it.** An admin sees, opens and edits only their own;
+the superadmin sees all of them. That boundary is `events.created_by`, enforced in the server
+actions (`lib/actions.ts`) and again on the pages (`lib/guard.ts`), not in the UI. Deleting an
+admin keeps their sessions and hands them to the superadmin.
 
 Every script reads `.env.local` itself and refuses to run without `DATABASE_URL`. That matters
 more than it sounds: `psql $DATABASE_URL` with the variable unset connects to whatever default
@@ -79,8 +85,10 @@ Everything under `/admin` is guarded twice: `proxy.ts` does a cheap cookie-prese
 every protected page calls `requireSession()` in `lib/guard.ts`. Only the second is a real
 authorization boundary. Next's own docs are explicit that Proxy isn't one.
 
-Every admin sees every majelis. Organisation ownership is deferred until a second lembaga shares
-a deployment. See [§4](ROADMAP.md#4-data-model).
+An admin sees only the majelis they created; the superadmin sees all of them and is the only one
+who can reach `/admin/pengguna`. A majelis that isn't yours 404s exactly as one that doesn't
+exist. Organisation ownership stays deferred — with one lembaga per deployment, per-creator
+ownership is the whole of what was missing. See [§4](ROADMAP.md#4-data-model).
 
 ## How it fits together
 

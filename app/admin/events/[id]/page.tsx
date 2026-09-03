@@ -1,12 +1,11 @@
 import { ExternalLink, ImageOff, Presentation } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import AdminBoard from "@/components/AdminBoard";
 import AdminShell from "@/components/admin/Shell";
 import QrDrawer from "@/components/admin/QrDrawer";
 import SessionSettings from "@/components/SessionSettings";
-import { countQuestions, getEvent } from "@/lib/queries";
-import { requireSession } from "@/lib/guard";
+import { countQuestions } from "@/lib/queries";
+import { requireOwnEvent } from "@/lib/guard";
 import { coverFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +18,8 @@ const STATE = { live: "Live", scheduled: "Terjadwal", archived: "Arsip" } as con
 
 export default async function AdminEventPage({ params }: PageProps<"/admin/events/[id]">) {
   const { id } = await params;
-  await requireSession(`/admin/events/${id}`);
-
-  const event = await getEvent(id, { includeHidden: true });
-  if (!event) notFound();
+  // 404s a majelis this admin didn't create, exactly as it 404s one that doesn't exist.
+  const { event } = await requireOwnEvent(`/admin/events/${id}`, id);
 
   const cover = coverFor(event);
 

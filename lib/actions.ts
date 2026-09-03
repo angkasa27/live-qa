@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { auth } from "./auth.ts";
+import { auth, isSuperadmin } from "./auth.ts";
 import { one, query } from "./db.ts";
 import { askerToken, ensureAskerToken, ipHash } from "./asker.ts";
 import { draftFromVideo } from "./gemini.ts";
@@ -13,6 +13,8 @@ import {
   listAllQuestions,
   listEventsForAdmin,
   listRevisions,
+  ownsEvent,
+  ownsQuestion,
   rateLimited,
 } from "./queries.ts";
 import {
@@ -36,6 +38,29 @@ async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Unauthorized");
   return session.user;
+}
+
+/** `null` is the superadmin: every ownership predicate reads it as "no filter". */
+const scope = (user: { id: string }) => (isSuperadmin(user) ? null : user.id);
+
+/**
+ * Signed in *and* entitled to this majelis. An admin only ever administers what they created;
+ * the superadmin administers everything. Every action below that names an event or a question
+ * goes through one of these two rather than through requireAdmin alone — an id in a request body
+ * is not evidence of anything, and this is the only boundary between one organiser and another.
+ *
+ * Throws like requireAdmin does, so the failure mode is the one callers already handle.
+ */
+async function requireEventAccess(eventId: string) {
+  const user = await requireAdmin();
+  if (!(await ownsEvent(eventId, scope(user)))) throw new Error("Unauthorized");
+  return user;
+}
+
+async function requireQuestionAccess(questionId: string) {
+  const user = await requireAdmin();
+  if (!(await ownsQuestion(questionId, scope(user)))) throw new Error("Unauthorized");
+  return user;
 }
 
 // --- student ------------------------------------------------------------------------------
@@ -100,14 +125,14 @@ export async function fetchPage(eventId: string, cursor: string | null): Promise
  * reach the screen the room is looking at. That is the entire point of moderation.
  */
 export async function fetchApproved(eventId: string, cursor: string | null): Promise<Page> {
-  await requireAdmin();
+  await requireEventAccess(eventId);
   return readPage(eventId, cursor, null, { includeHidden: true });
 }
 
 // --- admin --------------------------------------------------------------------------------
 
 export async function adminList(eventId: string): Promise<Question[]> {
-  await requireAdmin();
+  await requireEventAccess(eventId);
   return listAllQuestions(eventId);
 }
 
@@ -123,7 +148,7 @@ export async function setAnswer(
   answer: string,
   videoStart?: number,
 ): Promise<Result<Question>> {
-  const user = await requireAdmin();
+  const user = await requireQuestionAccess(id);
   const text = answer.trim();
   const retracted = text.length === 0;
   const anchor = !retracted && Number.isInteger(videoStart) && videoStart! >= 0 ? videoStart! : null;
@@ -149,7 +174,7 @@ export async function setAnswer(
 }
 
 export async function setQuestionStatus(id: string, status: QuestionStatus): Promise<Result> {
-  await requireAdmin();
+  await requireQuestionAccess(id);
   const row = await one<{ id: string }>(
     `update questions set status = $2 where id = $1::uuid returning id`,
     [id, status],
@@ -167,7 +192,7 @@ export async function setQuestionStatus(id: string, status: QuestionStatus): Pro
  * going unmatched is the ordinary outcome, not a failure.
  */
 export async function draftAnswers(eventId: string): Promise<Result<Record<string, Proposal>>> {
-  await requireAdmin();
+  await requireEventAccess(eventId);
 
   const event = await getEvent(eventId, { includeHidden: true });
   if (!event) return fail("Majelis tidak ditemukan.");
@@ -190,8 +215,8 @@ export async function draftAnswers(eventId: string): Promise<Result<Record<strin
 }
 
 export async function adminEvents() {
-  await requireAdmin();
-  return listEventsForAdmin();
+  const user = await requireAdmin();
+  return listEventsForAdmin(scope(user));
 }
 
 const STATUSES: EventStatus[] = ["scheduled", "live", "archived"];
@@ -276,7 +301,7 @@ export async function updateEvent(
     details?: EventDetails;
   },
 ): Promise<Result<{ id: string }>> {
-  await requireAdmin();
+  await requireEventAccess(eventId);
   if (patch.status && !STATUSES.includes(patch.status)) return fail("Status tidak dikenal.");
 
   let clean: CleanDetails | null = null;
@@ -349,7 +374,7 @@ export async function updateEvent(
  * staring at a test majelis forever. The confirmation lives in the UI, not here.
  */
 export async function deleteEvent(eventId: string): Promise<Result> {
-  await requireAdmin();
+  await requireEventAccess(eventId);
   const row = await one<{ id: string }>(`delete from events where id = $1 returning id`, [eventId]);
   if (!row) return fail("Sesi tidak ditemukan.");
   revalidatePath("/admin");
@@ -359,7 +384,7 @@ export async function deleteEvent(eventId: string): Promise<Result> {
 
 /** Every version an answer has had. Admin only; this never reaches a student's browser. */
 export async function answerHistory(questionId: string): Promise<Revision[]> {
-  await requireAdmin();
+  await requireQuestionAccess(questionId);
   return listRevisions(questionId);
 }
 

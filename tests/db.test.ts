@@ -198,7 +198,7 @@ suite("queries (integration)", () => {
       await seedQ(eventId, "h1", { status: "hidden", answer: "x" });
       await seedQ(eventId, "r1", { answer: "was wrong", retracted: true });
 
-      const row = (await listEventsForAdmin()).find((e) => e.id === eventId)!;
+      const row = (await listEventsForAdmin(null)).find((e) => e.id === eventId)!;
       expect(row.total).toBe(5);
       expect(row.pending).toBe(1);
       // hidden has an answer so not unanswered; retracted keeps its answer row; only a1/a2/p1 count.

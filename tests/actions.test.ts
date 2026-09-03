@@ -15,24 +15,37 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9" }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+
+// Who is signed in, and mutable: ownership is the one thing these actions decide differently
+// for a superadmin and a plain admin, so the suite has to be able to be either. Default is the
+// superadmin, which is what every test written before ownership existed assumes.
+const who = vi.hoisted(() => ({ user: { id: "admin-1", role: "superadmin" } }));
 vi.mock("../lib/auth.ts", () => ({
-  auth: { api: { getSession: async () => ({ user: { id: "admin-1" } }) } },
+  auth: { api: { getSession: async () => ({ user: who.user }) } },
+  isSuperadmin: (u: { role?: string }) => u.role === "superadmin",
 }));
 
-const { addQuestion, answerHistory, createEvent, deleteEvent, fetchApproved, fetchPage,
-        setAnswer, updateEvent } = await import("../lib/actions.ts");
+/** Signs the suite in as somebody else for one test. */
+function signedInAs(id: string, role: "superadmin" | "admin") {
+  who.user = { id, role };
+}
+
+const { addQuestion, adminEvents, adminList, answerHistory, createEvent, deleteEvent,
+        draftAnswers, fetchApproved, fetchPage, setAnswer, setQuestionStatus,
+        updateEvent } = await import("../lib/actions.ts");
 const { pool, query } = await import("../lib/db.ts");
 const { getEvent, listEvents, listMine } = await import("../lib/queries.ts");
 import { MAX_BODY } from "../lib/types.ts";
 
 async function seedEvent(
-  patch: Partial<{ status: string; moderation: string; hidden: boolean }> = {},
+  patch: Partial<{ status: string; moderation: string; hidden: boolean; owner: string }> = {},
 ) {
   const id = `act-${randomUUID().slice(0, 8)}`;
   await query(
-    `insert into events (id, name, starts_at, venue, speaker, status, moderation, hidden)
-     values ($1, 'test event', now(), 'test venue', 'test speaker', $2, $3, $4)`,
-    [id, patch.status ?? "live", patch.moderation ?? "auto", patch.hidden ?? false],
+    `insert into events (id, name, starts_at, venue, speaker, status, moderation, hidden, created_by)
+     values ($1, 'test event', now(), 'test venue', 'test speaker', $2, $3, $4, $5)`,
+    [id, patch.status ?? "live", patch.moderation ?? "auto", patch.hidden ?? false,
+     patch.owner ?? null],
   );
   return id;
 }
@@ -48,6 +61,7 @@ suite("actions (integration)", () => {
   beforeEach(async () => {
     await query(`truncate events, questions, answer_revisions cascade`);
     jar.clear();
+    signedInAs("admin-1", "superadmin");
   });
 
   afterAll(async () => {
@@ -425,6 +439,94 @@ suite("actions (integration)", () => {
       expect(first).toEqual({ ok: true, data: { id: "kajian-ahad-pagi" } });
       expect(again.ok).toBe(true);
       if (again.ok) expect(again.data.id.startsWith("kajian-ahad-pagi-")).toBe(true);
+    });
+  });
+
+  // --- ownership ----------------------------------------------------------------------------
+  //
+  // The only boundary between one organiser and another. Every action that names an event or a
+  // question goes through it, so each one is checked rather than a representative sample: a
+  // guard is only as good as the action that forgot to call it.
+  describe("ownership", () => {
+    const MINE = "admin-mine";
+    const THEIRS = "admin-theirs";
+
+    /** An event owned by someone else, with one question on it. */
+    async function seedTheirs() {
+      const eventId = await seedEvent({ owner: THEIRS });
+      const [q] = await query<{ id: string }>(
+        `insert into questions (event_id, body) values ($1, 'their question') returning id`,
+        [eventId],
+      );
+      signedInAs(MINE, "admin");
+      return { eventId, questionId: q.id };
+    }
+
+    it("hides another admin's majelis from every event action", async () => {
+      const { eventId } = await seedTheirs();
+      await expect(adminList(eventId)).rejects.toThrow(/Unauthorized/);
+      await expect(fetchApproved(eventId, null)).rejects.toThrow(/Unauthorized/);
+      await expect(updateEvent(eventId, { status: "archived" })).rejects.toThrow(/Unauthorized/);
+      await expect(deleteEvent(eventId)).rejects.toThrow(/Unauthorized/);
+      await expect(draftAnswers(eventId)).rejects.toThrow(/Unauthorized/);
+
+      // And nothing was touched on the way past the guard.
+      expect((await getEvent(eventId))?.status).toBe("live");
+    });
+
+    it("hides another admin's questions from every question action", async () => {
+      const { questionId } = await seedTheirs();
+      await expect(setAnswer(questionId, "not yours")).rejects.toThrow(/Unauthorized/);
+      await expect(setQuestionStatus(questionId, "hidden")).rejects.toThrow(/Unauthorized/);
+      await expect(answerHistory(questionId)).rejects.toThrow(/Unauthorized/);
+
+      const [row] = await query<{ answer: string | null; status: string }>(
+        `select answer, status from questions where id = $1::uuid`,
+        [questionId],
+      );
+      expect(row).toEqual({ answer: null, status: "approved" });
+    });
+
+    it("lets an admin do all of that to a majelis they created", async () => {
+      const eventId = await seedEvent({ owner: MINE });
+      signedInAs(MINE, "admin");
+      expect((await adminList(eventId)).length).toBe(0);
+      expect((await updateEvent(eventId, { status: "archived" })).ok).toBe(true);
+      expect((await deleteEvent(eventId)).ok).toBe(true);
+    });
+
+    it("stamps the creator on a new majelis so they can reach it", async () => {
+      signedInAs(MINE, "admin");
+      const created = await createEvent({
+        name: "Milik saya",
+        startsAt: new Date().toISOString(),
+        venue: "Masjid",
+        speaker: "Ustadz",
+        status: "scheduled",
+        moderation: "auto",
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+      expect((await updateEvent(created.data.id, { status: "live" })).ok).toBe(true);
+    });
+
+    it("lists only your own to an admin, and everything to a superadmin", async () => {
+      const mine = await seedEvent({ owner: MINE });
+      const theirs = await seedEvent({ owner: THEIRS });
+      const ownerless = await seedEvent();
+
+      signedInAs(MINE, "admin");
+      expect((await adminEvents()).map((e) => e.id)).toEqual([mine]);
+
+      signedInAs("admin-1", "superadmin");
+      expect((await adminEvents()).map((e) => e.id).sort()).toEqual(
+        [mine, theirs, ownerless].sort(),
+      );
+    });
+
+    it("refuses an event that does not exist, the same way it refuses someone else's", async () => {
+      signedInAs(MINE, "admin");
+      await expect(updateEvent("ghost", { status: "live" })).rejects.toThrow(/Unauthorized/);
     });
   });
 });

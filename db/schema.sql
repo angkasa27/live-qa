@@ -1,9 +1,10 @@
 -- Sual: application schema. See ROADMAP.md §4.
 --
 -- better-auth owns its own tables ("user", session, account, verification) and creates them
--- itself: `npm run auth:migrate`. Nothing here references them by foreign key except
--- events.created_by, which is deliberately ON DELETE SET NULL; deleting an admin must never
--- cascade into deleting a majelis.
+-- itself: `npm run auth:migrate`. Nothing here references them by foreign key at all, including
+-- events.created_by: deleting an admin must never cascade into deleting a majelis, and this
+-- file is applied before those tables exist on a fresh database. The consequence is that the
+-- column is cleared in application code (lib/admins.ts:deleteAdmin), not by the database.
 
 create table if not exists events (
   id                  text primary key,
@@ -33,6 +34,9 @@ create table if not exists events (
   image               text,
   youtube_id          text,
 
+  -- The admin who created it, and with that who may administer it: an admin sees only their own
+  -- majelis, the superadmin sees all (lib/queries.ts). NULL means nobody, which is the
+  -- superadmin alone — that is where a deleted admin's sessions land.
   created_by          text,
   created_at          timestamptz not null default now()
 );
@@ -110,3 +114,6 @@ $$ select coalesce(e.accepting_questions, e.status = 'live') $$;
 alter table questions drop constraint if exists questions_event_id_fkey;
 alter table questions add constraint questions_event_id_fkey
   foreign key (event_id) references events(id) on update cascade on delete cascade;
+
+-- Every admin list read filters on the owner now.
+create index if not exists events_owner_idx on events (created_by);

@@ -188,10 +188,20 @@ something after it's been answered.
 
 Auth is [better-auth](https://better-auth.com): email and password for now, Google and magic link
 later, both configuration rather than a migration. **Sign-up is closed.** An account is an admin
-account, and a public sign-up endpoint on an admin-only system is a hole; the only way in is
-`npm run admin:create`. A student is not an account at all, just an opaque token in a cookie.
+account, and a public sign-up endpoint on an admin-only system is a hole; accounts are made by
+the superadmin, and the first one by `npm run admin:create`. A student is not an account at all,
+just an opaque token in a cookie.
 
-Events carry `created_by` and nothing else. **Every admin sees every majelis.**
+Two roles, on better-auth's own admin plugin: a **superadmin** who mints accounts and sees every
+majelis, and an **admin** who sees only the ones they created. `events.created_by` is what says
+which, and it was already being written before anything read it. The plugin's `/admin/*`
+endpoints are mapped so only the superadmin passes them (`lib/auth.ts`); the majelis boundary is
+ours and lives in `lib/actions.ts` and `lib/guard.ts`, both of which answer "not yours" and
+"doesn't exist" identically so one organiser cannot probe for another's sessions by URL.
+
+Roles rather than organisations, still, for the reason below: one lembaga per deployment, and an
+org filter would return the same list every time. Ownership is the smaller thing that was
+actually missing.
 
 §5 originally put organisation ownership in step 2, alongside event creation. Building it there
 turned out to be scaffolding: the syaikh already signs in on a shared admin account, so accounts

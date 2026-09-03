@@ -4,7 +4,8 @@ import AdminShell from "@/components/admin/Shell";
 import { EventRowCard, LiveEventCard } from "@/components/admin/EventCards";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { listEventsForAdmin } from "@/lib/queries";
-import { requireSession } from "@/lib/guard";
+import { requireSession, scopeOf } from "@/lib/guard";
+import { isSuperadmin } from "@/lib/auth";
 import type { EventStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,29 @@ const GROUPS = [
 
 export default async function AdminHome() {
   const session = await requireSession("/admin");
-  const events = await listEventsForAdmin();
+  // An admin sees the majelis they created and nothing else; scopeOf gives the superadmin null,
+  // which the query reads as "no filter".
+  const events = await listEventsForAdmin(scopeOf(session.user));
 
   return (
     <AdminShell
       title="Admin Sual"
-      subtitle={session.user.email}
+      subtitle={
+        <div className="flex items-center gap-2">
+          <span className="truncate">{session.user.email}</span>
+          {isSuperadmin(session.user) && (
+            <>
+              <span aria-hidden>·</span>
+              <Link
+                href="/admin/pengguna"
+                className="shrink-0 font-medium text-[#b8b1a6] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
+              >
+                Pengguna
+              </Link>
+            </>
+          )}
+        </div>
+      }
       /* Under the thumb rather than beside the way out: making a session is the one thing
          this screen does that is not reading. */
       footer={
