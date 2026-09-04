@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { APIError } from "better-auth/api";
 import { auth, isSuperadmin } from "./auth.ts";
 import { pool, query } from "./db.ts";
-import { adminEventIds, eventAdmins } from "./queries.ts";
+import { adminEventIds } from "./queries.ts";
 import type { Result } from "./actions.ts";
 
 /**
@@ -137,8 +137,10 @@ export async function setAdminActive(userId: string, active: boolean): Promise<R
  * Removes the account. Their majelis survive — deleting an admin must never destroy a session or
  * the questions on it — and are handed back to nobody, which leaves them with the superadmin.
  *
- * `events.created_by` carries no foreign key, so nothing clears it for us; a stale user id would
- * strand those events with an owner who can never sign in again. Clear it first, then delete.
+ * `events.created_by` and `event_admins.user_id` carry no foreign key, so nothing clears them
+ * for us. The account goes first and the rows after: a leftover grant naming an id that no
+ * longer exists is inert — no session can ever carry it — whereas clearing first and then
+ * failing to remove the account leaves a live admin silently stripped of every session.
  */
 export async function deleteAdmin(userId: string): Promise<Result> {
   const ctx = await superadminHeaders();
@@ -146,11 +148,9 @@ export async function deleteAdmin(userId: string): Promise<Result> {
   if (userId === ctx.self) return fail("Anda tidak bisa menghapus akun sendiri.");
 
   try {
-    await query(`update events set created_by = null where created_by = $1`, [userId]);
-    // Their grants go with them. Nothing cascades: event_admins carries no foreign key to
-    // "user", for the same reason events.created_by doesn't.
-    await query(`delete from event_admins where user_id = $1`, [userId]);
     await auth.api.removeUser({ headers: ctx.headers, body: { userId } });
+    await query(`update events set created_by = null where created_by = $1`, [userId]);
+    await query(`delete from event_admins where user_id = $1`, [userId]);
     revalidatePath("/admin/pengguna");
     revalidatePath("/admin");
     return done(undefined);
@@ -164,13 +164,6 @@ export async function deleteAdmin(userId: string): Promise<Result> {
 // Who staffs which majelis. The same relation from both ends, because both questions get asked:
 // "who is running this session?" while looking at the session, and "which sessions is this
 // person on?" while looking at the account. One table, two screens, no second source of truth.
-
-/** The admins staffing this majelis. Superadmins are omitted: they are on every session. */
-export async function getEventAdmins(eventId: string): Promise<Result<string[]>> {
-  const ctx = await superadminHeaders();
-  if (!ctx) return fail("Tidak diizinkan.");
-  return done(await eventAdmins(eventId));
-}
 
 /** The majelis this admin is staffing. */
 export async function getAdminEvents(userId: string): Promise<Result<string[]>> {
@@ -197,7 +190,12 @@ export async function setEventAdmins(eventId: string, userIds: string[]): Promis
 export async function setAdminEvents(userId: string, eventIds: string[]): Promise<Result> {
   const ctx = await superadminHeaders();
   if (!ctx) return fail("Tidak diizinkan.");
-  return replaceGrants("user_id", userId, "event_id", eventIds, ["/admin", "/admin/pengguna"]);
+  return replaceGrants("user_id", userId, "event_id", eventIds, [
+    "/admin",
+    "/admin/pengguna",
+    // The sessions themselves, so the pair stays symmetric with setEventAdmins.
+    ...eventIds.map((id) => `/admin/events/${id}`),
+  ]);
 }
 
 async function replaceGrants(
@@ -220,7 +218,10 @@ async function replaceGrants(
     }
     await client.query("commit");
   } catch (err) {
-    await client.query("rollback");
+    // The rollback is itself a query, and a connection broken mid-transaction fails it too.
+    // Postgres discards the transaction when the connection goes, so there is nothing to
+    // salvage and nothing to report: the original failure is the one worth returning.
+    await client.query("rollback").catch(() => {});
     // A grant naming a majelis or an account that has since been deleted is the likely cause,
     // and the screen the operator is looking at is simply stale.
     return fail(`Gagal menyimpan akses: ${err instanceof Error ? err.message : "coba muat ulang."}`);

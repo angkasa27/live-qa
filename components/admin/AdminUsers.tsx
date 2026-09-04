@@ -316,12 +316,20 @@ function EventsModal({
   onSubmit: (eventIds: string[]) => void;
 }) {
   const [picked, setPicked] = useState<string[] | null>(null);
+  // Kept apart from `picked === null`. A read that failed and an admin with no majelis yet look
+  // identical as an empty list, and saving that empty list is what would wipe the grants the
+  // read never managed to show.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let live = true;
-    getAdminEvents(admin.id).then((res) => {
-      if (live) setPicked(res.ok ? res.data : []);
-    });
+    getAdminEvents(admin.id)
+      .then((res) => {
+        if (!live) return;
+        if (res.ok) setPicked(res.data);
+        else setFailed(true);
+      })
+      .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
@@ -329,7 +337,11 @@ function EventsModal({
 
   return (
     <Modal open onClose={onClose} title={`Majelis ${admin.name}`}>
-      {picked === null ? (
+      {failed ? (
+        <p className="text-sm text-destructive">
+          Gagal memuat akses admin ini. Tutup dan coba lagi.
+        </p>
+      ) : picked === null ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner />
           Memuat…

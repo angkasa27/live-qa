@@ -8,11 +8,11 @@ import { pool } from "./db.ts";
  * in their own browser (lib/asker.ts), which is why sign-up is closed: a public sign-up endpoint
  * on an admin-only system is a hole, not a feature.
  *
- * Two roles. A `superadmin` mints the others and sees every majelis; an `admin` only ever sees
- * the ones they created (lib/queries.ts, lib/actions.ts). The role map below is what does the
- * authorization on better-auth's own /admin/* endpoints: the plugin looks the role up in
- * `roles`, so `admin` -> userAc (no statements) is refused by all of them and only a superadmin
- * can create, list, ban or delete an account.
+ * Two roles. A `superadmin` mints the others, owns every majelis and answers its questions; an
+ * `admin` is assigned to a session and runs it (lib/queries.ts, lib/actions.ts). The role map
+ * below is what does the authorization on better-auth's own /admin/* endpoints: the plugin
+ * looks the role up in `roles`, so `admin` -> userAc (no statements) is refused by all of them
+ * and only a superadmin can create, list, ban or delete an account.
  *
  * Create the first superadmin with `npm run admin:create`.
  */

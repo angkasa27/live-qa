@@ -19,7 +19,7 @@ const STATE = { live: "Live", scheduled: "Terjadwal", archived: "Arsip" } as con
 
 export default async function AdminEventPage({ params }: PageProps<"/admin/events/[id]">) {
   const { id } = await params;
-  // 404s a majelis this admin didn't create, exactly as it 404s one that doesn't exist.
+  // 404s a majelis this admin is not staffing, exactly as it 404s one that doesn't exist.
   const { event, canEdit } = await requireEventAccess(`/admin/events/${id}`, id);
 
   // The staff picker is the superadmin's, so the accounts behind it are only read for them.

@@ -98,6 +98,37 @@ create table if not exists event_admins (
 -- The admin list reads "which majelis am I on", so the user side needs its own index.
 create index if not exists event_admins_user_idx on event_admins (user_id);
 
+-- One-time migration off the model this replaced, where an admin's access to a majelis *was*
+-- having created it. Without this, applying the file to a database that predates event_admins
+-- silently strips every such admin of every session they ran: /admin goes empty and their own
+-- majelis 404s at their own URL.
+--
+-- Three things it has to be careful about, hence the block.
+--
+-- Superadmins are excluded: they reach every majelis without a row, so granting them one states
+-- something no screen shows and nobody can revoke. That check needs "user", which better-auth
+-- creates *after* this file runs on a fresh database — so the table's existence is tested first
+-- and the insert goes through EXECUTE, which is what keeps it from being parsed until then.
+--
+-- And it is gated on event_admins being empty, which is the point of the whole block. Running
+-- unconditionally would re-grant, on every deploy, an admin the superadmin had deliberately
+-- revoked; a schema file quietly handing back access is worse than the problem it fixes. Once
+-- one grant exists this is a no-op forever. The gap that leaves: revoke every grant in the
+-- deployment and re-run, and creators come back. Revoke again.
+do $migrate$
+begin
+  if to_regclass('public."user"') is null then return; end if;
+  if exists (select 1 from event_admins) then return; end if;
+  execute $q$
+    insert into event_admins (event_id, user_id)
+    select e.id, e.created_by
+      from events e join "user" u on u.id = e.created_by
+     where coalesce(u.role, 'admin') <> 'superadmin'
+    on conflict do nothing
+  $q$;
+end
+$migrate$;
+
 -- Every answer edit, kept forever. Answers publish directly and are edited in place, so this is
 -- the only record of what was previously attributed to the speaker. Nothing is ever deleted.
 create table if not exists answer_revisions (

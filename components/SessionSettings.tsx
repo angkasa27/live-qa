@@ -188,15 +188,25 @@ export default function SessionSettings({
       });
       if (!res.ok) return setError(res.error);
 
-      if (canEdit && key(draft.staff) !== key(saved.staff)) {
-        const granted = await setEventAdmins(res.data.id, draft.staff);
-        if (!granted.ok) return setError(granted.error);
-      }
-      setOpen(false);
+      const granted =
+        canEdit && key(draft.staff) !== key(saved.staff)
+          ? await setEventAdmins(res.data.id, draft.staff)
+          : null;
+
+      // The event edit has landed whatever the grants did, so the page is moved or refreshed
+      // first and the failure reported after. Returning early instead left the sheet showing
+      // pre-save props — and, if the address had just been renamed, sitting on an id that no
+      // longer exists, where the obvious retry saves to the old one and fails as "not found".
+      //
       // The id is in the URL of the page this drawer is on, so a rename has to move the page
       // too, or the next refresh 404s on an address that no longer exists.
-      if (res.data.id !== event.id) return router.replace(`/admin/events/${res.data.id}`);
-      router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
+      if (res.data.id !== event.id) router.replace(`/admin/events/${res.data.id}`);
+      else router.refresh(); // the server is the truth; `saved` re-derives from the fresh event
+
+      // Stays open on a failed grant: the staff list is the one thing that did not save, and
+      // closing the sheet over that message is how it goes unnoticed.
+      if (granted && !granted.ok) return setError(granted.error);
+      setOpen(false);
     });
   }
 

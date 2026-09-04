@@ -19,8 +19,8 @@ const GROUPS = [
 
 export default async function AdminHome() {
   const session = await requireSession("/admin");
-  // An admin sees the majelis they created and nothing else; scopeOf gives the superadmin null,
-  // which the query reads as "no filter".
+  // An admin sees the majelis they are staffing and nothing else; scopeOf gives the superadmin
+  // null, which the query reads as "no filter".
   const events = await listEventsForAdmin(scopeOf(session.user));
 
   return (
