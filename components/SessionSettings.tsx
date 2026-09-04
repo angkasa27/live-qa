@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import Confirm from "@/components/admin/Confirm";
 import { deleteEvent, updateEvent } from "@/lib/actions";
 import { setEventAdmins } from "@/lib/admins";
-import { isoToLocal, parseVideoId, slugDraft, type Event, type EventStatus } from "@/lib/types";
+import { isoToLocal, localToIso, parseVideoId, slugDraft, type Event, type EventStatus } from "@/lib/types";
 
 const STATUS = [
   ["scheduled", "Terjadwal"],
@@ -160,7 +160,7 @@ export default function SessionSettings({
   function save() {
     setError(null);
     if (canEdit) {
-      if (Number.isNaN(Date.parse(draft.startsAt))) {
+      if (!localToIso(draft.startsAt)) {
         return setError("Tanggal dan waktu belum lengkap.");
       }
       if (!draft.slug.trim()) return setError("Alamat sesi wajib diisi.");
@@ -177,8 +177,7 @@ export default function SessionSettings({
           details: {
             name: draft.name,
             slug: draft.slug,
-            // The picker gives local time with no zone; the server stores timestamptz.
-            startsAt: new Date(draft.startsAt).toISOString(),
+            startsAt: localToIso(draft.startsAt),
             venue: draft.venue,
             speaker: draft.speaker,
             video: draft.video,

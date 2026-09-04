@@ -1,18 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { coverFor, isoToLocal, MAX_BODY, parseVideoId, slugDraft, slugify, timecode } from "./types.ts";
+import { coverFor, isoToLocal, localToIso, MAX_BODY, parseVideoId, slugDraft, slugify, timecode } from "./types.ts";
 
 describe("isoToLocal", () => {
+  it("shows the majelis wall clock, whatever zone the machine is in", () => {
+    // 02:00Z is 09:00 WIB, and stays 09:00 on a laptop in London or Jakarta.
+    expect(isoToLocal("2026-09-06T02:00:00.000Z")).toBe("2026-09-06T09:00");
+  });
+
   it("round-trips through the picker without shifting the instant", () => {
     const iso = "2026-09-06T02:00:00.000Z";
-    const local = isoToLocal(iso);
-    // What the picker shows is local time, so it only equals the UTC string at offset zero.
-    expect(local).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
-    // The round trip the edit form performs: parse the local string back to an instant.
-    expect(new Date(local).toISOString()).toBe(iso);
+    expect(localToIso(isoToLocal(iso))).toBe(iso);
   });
 
   it("is empty for an unparseable date rather than throwing", () => {
     expect(isoToLocal("besok")).toBe("");
+    expect(localToIso("besok")).toBe("");
   });
 });
 

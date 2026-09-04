@@ -11,7 +11,7 @@ import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createEvent } from "@/lib/actions";
-import { isoToLocal, parseVideoId, slugDraft, slugify } from "@/lib/types";
+import { isoToLocal, localToIso, parseVideoId, slugDraft, slugify } from "@/lib/types";
 
 export default function NewEventForm() {
   const router = useRouter();
@@ -34,7 +34,8 @@ export default function NewEventForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (Number.isNaN(Date.parse(startsAt))) {
+    const startsAtIso = localToIso(startsAt);
+    if (!startsAtIso) {
       return setError("Tanggal dan waktu belum lengkap.");
     }
     setBusy(true);
@@ -42,8 +43,7 @@ export default function NewEventForm() {
     try {
       const res = await createEvent({
         name,
-        // The picker gives local time with no zone; the server stores timestamptz.
-        startsAt: new Date(startsAt).toISOString(),
+        startsAt: startsAtIso,
         venue,
         speaker,
         // A new session is always scheduled. Going live is a deliberate act taken from the

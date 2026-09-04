@@ -14,8 +14,16 @@ export function relativeTime(iso: string, now = Date.now()) {
   return unit ? RTF.format(Math.round(secs / unit[1]), unit[0]) : "just now";
 }
 
+/**
+ * Every session time is the majelis' wall clock, not the reader's and not the server's.
+ * Left unpinned this rendered three different strings for one instant: UTC on a server
+ * pass, the visitor's zone on a client navigation, and the admin's zone in the edit form.
+ */
+export const EVENT_TZ = "Asia/Jakarta";
+
 export function eventDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
+    timeZone: EVENT_TZ,
     weekday: "short",
     day: "numeric",
     month: "short",

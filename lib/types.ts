@@ -113,15 +113,27 @@ export function parseVideoId(input: string): string | null {
 }
 
 /**
- * An instant → the "YYYY-MM-DDTHH:mm" **local** time `<input type="datetime-local">` wants.
+ * The majelis runs on WIB and Indonesia has never observed DST, so the picker's wall clock
+ * is a fixed offset from UTC. Reading it off the admin's own machine instead meant a phone
+ * left on another zone saved an event hours from the one it displayed.
+ */
+const TZ_OFFSET = "+07:00";
+
+/**
+ * An instant → the "YYYY-MM-DDTHH:mm" the date and time inputs want, in majelis time.
  * toISOString() alone would hand the picker UTC and silently shift every event by the offset.
  * Seconds are dropped because the picker has no place to put them.
  */
 export function isoToLocal(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset(), 0, 0);
-  return d.toISOString().slice(0, 16);
+  return new Date(d.getTime() + 7 * 3_600_000).toISOString().slice(0, 16);
+}
+
+/** The inverse: what the picker holds, read as majelis time. Empty when it is not a date. */
+export function localToIso(local: string) {
+  const ms = Date.parse(`${local}:00${TZ_OFFSET}`);
+  return Number.isNaN(ms) ? "" : new Date(ms).toISOString();
 }
 
 /** "Kajian Ahad Pagi" → "kajian-ahad-pagi". Ids are in URLs, so they stay readable. */

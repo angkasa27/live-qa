@@ -1,12 +1,6 @@
-"use client";
-
 import { eventDate } from "@/lib/relativeTime";
 
-/** Server renders UTC (its own zone); the client re-renders in the visitor's zone. */
+/** Session times are pinned to the majelis' zone, so server and client agree. */
 export default function LocalTime({ iso }: { iso: string }) {
-  return (
-    <time dateTime={iso} suppressHydrationWarning>
-      {eventDate(iso)}
-    </time>
-  );
+  return <time dateTime={iso}>{eventDate(iso)}</time>;
 }

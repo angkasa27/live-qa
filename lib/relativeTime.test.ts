@@ -18,7 +18,7 @@ describe("relativeTime", () => {
 
 describe("eventDate", () => {
   it("formats weekday, day, month and clock time", () => {
-    // Time-of-day depends on the machine's timezone, so only the shape is asserted.
-    expect(eventDate("2026-01-03T09:05:00Z")).toMatch(/^Sat 3 Jan, \d{2}:\d{2}$/);
+    // Pinned to WIB, so the clock time is asserted too: 09:05Z is 16:05 in Jakarta.
+    expect(eventDate("2026-01-03T09:05:00Z")).toBe("Sat 3 Jan, 16:05");
   });
 });
