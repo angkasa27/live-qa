@@ -79,6 +79,25 @@ create index if not exists questions_page_idx  on questions (event_id, created_a
 create index if not exists questions_rate_idx  on questions (ip_hash, created_at desc);
 create index if not exists questions_asker_idx on questions (asker_token, created_at desc);
 
+-- Who may run a majelis they did not create.
+--
+-- Access is a grant, not authorship. A superadmin creates the session, writes its details and
+-- answers its questions; an admin is handed the room — approve or reject what comes in, move the
+-- session through its states, open and close submissions — and nothing else. `created_by` stays
+-- as provenance and no longer decides anything.
+--
+-- No foreign key to "user": better-auth owns that table and creates it after this file runs. The
+-- rows are cleared in application code when an account is deleted (lib/admins.ts).
+create table if not exists event_admins (
+  event_id   text not null references events(id) on update cascade on delete cascade,
+  user_id    text not null,
+  created_at timestamptz not null default now(),
+  primary key (event_id, user_id)
+);
+
+-- The admin list reads "which majelis am I on", so the user side needs its own index.
+create index if not exists event_admins_user_idx on event_admins (user_id);
+
 -- Every answer edit, kept forever. Answers publish directly and are edited in place, so this is
 -- the only record of what was previously attributed to the speaker. Nothing is ever deleted.
 create table if not exists answer_revisions (

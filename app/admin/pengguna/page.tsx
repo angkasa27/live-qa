@@ -1,6 +1,7 @@
 import AdminShell from "@/components/admin/Shell";
 import AdminUsers from "@/components/admin/AdminUsers";
 import { listAdmins } from "@/lib/admins";
+import { listEventsForAdmin } from "@/lib/queries";
 import { requireSuperadmin } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,14 @@ export const dynamic = "force-dynamic";
 export default async function AdminUsersPage() {
   const session = await requireSuperadmin("/admin/pengguna");
   const admins = await listAdmins();
+  // The same grants the event's own settings sheet edits, from the account's side. Every
+  // majelis, because a superadmin is on all of them.
+  const events = (await listEventsForAdmin(null)).map((e) => ({ id: e.id, name: e.name }));
 
   return (
     <AdminShell back={{ href: "/admin", label: "Semua majelis" }} title="Pengguna">
       {admins.ok ? (
-        <AdminUsers admins={admins.data} self={session.user.id} />
+        <AdminUsers admins={admins.data} self={session.user.id} events={events} />
       ) : (
         <p className="text-sm text-destructive">{admins.error}</p>
       )}

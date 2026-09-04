@@ -1,7 +1,7 @@
 "use client";
 
-import { KeyRound, Trash2, UserPlus, UserX, UserCheck } from "lucide-react";
-import { useState } from "react";
+import { CalendarCheck, KeyRound, Trash2, UserPlus, UserX, UserCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import Confirm from "@/components/admin/Confirm";
 import Field from "@/components/admin/Field";
 import FormSection from "@/components/admin/FormSection";
@@ -13,11 +13,14 @@ import { Button } from "@/components/ui/button";
 import {
   createAdmin,
   deleteAdmin,
+  getAdminEvents,
   listAdmins,
   resetAdminPassword,
   setAdminActive,
+  setAdminEvents,
   type Admin,
 } from "@/lib/admins";
+import { Switch } from "@/components/ui/switch";
 import type { Result } from "@/lib/actions";
 
 /**
@@ -28,13 +31,23 @@ import type { Result } from "@/lib/actions";
  * this list is a handful of rows read once by one person, and a reconciliation dance to save a
  * round trip would be more code than the round trip.
  */
-export default function AdminUsers({ admins, self }: { admins: Admin[]; self: string }) {
+export default function AdminUsers({
+  admins,
+  self,
+  events,
+}: {
+  admins: Admin[];
+  self: string;
+  /** Every majelis, for assigning them. The same grants the event's settings sheet edits. */
+  events: { id: string; name: string }[];
+}) {
   const [rows, setRows] = useState(admins);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [resetting, setResetting] = useState<Admin | null>(null);
   const [removing, setRemoving] = useState<Admin | null>(null);
+  const [assigning, setAssigning] = useState<Admin | null>(null);
 
   /** Every write takes this shape: run it, show the message or take the fresh list. */
   async function run(key: string, act: () => Promise<Result<unknown>>) {
@@ -88,6 +101,13 @@ export default function AdminUsers({ admins, self }: { admins: Admin[]; self: st
                   you are signed in as is the one move with no way back, so it isn't offered. */}
               {!isSelf && (
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {/* A superadmin is on every majelis already, so there is nothing to assign. */}
+                  {!superadmin && (
+                    <Button size="sm" variant="outline" onClick={() => setAssigning(a)}>
+                      <CalendarCheck className="h-4 w-4" aria-hidden />
+                      Majelis
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => setResetting(a)}>
                     <KeyRound className="h-4 w-4" aria-hidden />
                     Kata sandi
@@ -142,6 +162,21 @@ export default function AdminUsers({ admins, self }: { admins: Admin[]; self: st
             setResetting(null);
         }}
       />
+
+      {/* Mounted only while it is open, and keyed by the account: the grant list is fetched on
+          mount, so remounting is what makes "open a different admin" a fresh read. */}
+      {assigning && (
+      <EventsModal
+        key={assigning.id}
+        admin={assigning}
+        events={events}
+        onClose={() => setAssigning(null)}
+        busy={busy === "events"}
+        onSubmit={async (ids) => {
+          if (await run("events", () => setAdminEvents(assigning.id, ids))) setAssigning(null);
+        }}
+      />
+      )}
 
       <Confirm
         open={removing !== null}
@@ -258,6 +293,84 @@ function PasswordModal({
           {busy ? "Menyimpan…" : "Simpan kata sandi"}
         </Button>
       </form>
+    </Modal>
+  );
+}
+
+/**
+ * Which majelis this admin is staffing. Loaded when the modal opens rather than with the page:
+ * it is one read per account, and the page would otherwise fetch a grant list for every row
+ * nobody is going to open.
+ */
+function EventsModal({
+  admin,
+  events,
+  onClose,
+  busy,
+  onSubmit,
+}: {
+  admin: Admin;
+  events: { id: string; name: string }[];
+  onClose: () => void;
+  busy: boolean;
+  onSubmit: (eventIds: string[]) => void;
+}) {
+  const [picked, setPicked] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    getAdminEvents(admin.id).then((res) => {
+      if (live) setPicked(res.ok ? res.data : []);
+    });
+    return () => {
+      live = false;
+    };
+  }, [admin.id]);
+
+  return (
+    <Modal open onClose={onClose} title={`Majelis ${admin.name}`}>
+      {picked === null ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner />
+          Memuat…
+        </p>
+      ) : (
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(picked);
+          }}
+        >
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Admin dapat menyetujui pertanyaan, mengubah status sesi, dan membuka layar pemateri
+            pada majelis yang dicentang. Menulis jawaban dan mengubah detail tetap di superadmin.
+          </p>
+          {events.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Belum ada majelis.</p>
+          ) : (
+            <ul className="divide-y divide-border-soft rounded-xl border border-border">
+              {events.map((e) => (
+                <li key={e.id}>
+                  <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4 px-3 py-2">
+                    <span className="min-w-0 truncate text-[0.9375rem]">{e.name}</span>
+                    <Switch
+                      checked={picked.includes(e.id)}
+                      onCheckedChange={(v) =>
+                        setPicked(v ? [...picked, e.id] : picked.filter((id) => id !== e.id))
+                      }
+                    />
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy && <Spinner />}
+            {busy ? "Menyimpan…" : "Simpan akses"}
+          </Button>
+        </form>
+      )}
     </Modal>
   );
 }

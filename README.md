@@ -38,10 +38,16 @@ production.** It's what the origin check compares against.
 superadmin — run it against an existing email and it promotes that account instead — and every
 other admin is made from **Pengguna** on the admin home, which only the superadmin can see.
 
-**Each majelis belongs to whoever created it.** An admin sees, opens and edits only their own;
-the superadmin sees all of them. That boundary is `events.created_by`, enforced in the server
-actions (`lib/actions.ts`) and again on the pages (`lib/guard.ts`), not in the UI. Deleting an
-admin keeps their sessions and hands them to the superadmin.
+**Access to a majelis is granted, not owned.** The superadmin creates sessions, writes their
+details and answers their questions. An admin is assigned to a session and gets the room:
+approve or reject what comes in, move it between terjadwal/live/arsip, open and close
+submissions, switch review mode, open the speaker deck. Nothing else — not the details, not the
+public toggle, not the answers, not deleting it.
+
+Assign from either end: **Petugas** in the session's settings sheet, or **Majelis** on the
+account in Pengguna. Both edit the same `event_admins` rows. The boundary is enforced in the
+server actions (`lib/actions.ts`) and again on the pages (`lib/guard.ts`); the UI only hides
+what it already refuses.
 
 Every script reads `.env.local` itself and refuses to run without `DATABASE_URL`. That matters
 more than it sounds: `psql $DATABASE_URL` with the variable unset connects to whatever default
@@ -85,10 +91,11 @@ Everything under `/admin` is guarded twice: `proxy.ts` does a cheap cookie-prese
 every protected page calls `requireSession()` in `lib/guard.ts`. Only the second is a real
 authorization boundary. Next's own docs are explicit that Proxy isn't one.
 
-An admin sees only the majelis they created; the superadmin sees all of them and is the only one
-who can reach `/admin/pengguna`. A majelis that isn't yours 404s exactly as one that doesn't
-exist. Organisation ownership stays deferred — with one lembaga per deployment, per-creator
-ownership is the whole of what was missing. See [§4](ROADMAP.md#4-data-model).
+An admin sees only the majelis they are staffing; the superadmin sees all of them and is the
+only one who can reach `/admin/pengguna` or `/admin/events/new`. A majelis you are not on 404s
+exactly as one that doesn't exist. Organisation ownership stays deferred — with one lembaga per
+deployment, per-session grants are the whole of what was missing. See
+[§4](ROADMAP.md#4-data-model).
 
 ## How it fits together
 

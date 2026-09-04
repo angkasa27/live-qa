@@ -43,8 +43,10 @@ export default async function AdminHome() {
         </div>
       }
       /* Under the thumb rather than beside the way out: making a session is the one thing
-         this screen does that is not reading. */
+         this screen does that is not reading — and it is the superadmin's. An admin is handed
+         sessions to run; they do not start them. */
       footer={
+        !isSuperadmin(session.user) ? undefined : (
         <Link
           href="/admin/events/new"
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold text-primary transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -52,6 +54,7 @@ export default async function AdminHome() {
           <Plus className="h-[18px] w-[18px]" aria-hidden />
           Sesi baru
         </Link>
+        )
       }
     >
       {events.length === 0 ? (
@@ -59,7 +62,11 @@ export default async function AdminHome() {
           <EmptyMedia variant="icon">
             <CalendarOff aria-hidden />
           </EmptyMedia>
-          <EmptyDescription>Belum ada majelis.</EmptyDescription>
+          <EmptyDescription>
+            {isSuperadmin(session.user)
+              ? "Belum ada majelis."
+              : "Belum ada majelis yang ditugaskan kepada Anda."}
+          </EmptyDescription>
         </Empty>
       ) : (
         <div className="space-y-6">

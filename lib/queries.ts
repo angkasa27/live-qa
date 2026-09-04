@@ -213,40 +213,61 @@ export async function fetchPage(
 }
 
 /**
- * Whether this admin may administer this majelis: they created it, or they are the superadmin.
+ * Whether this admin may work on this majelis: they hold a grant on it, or they are the
+ * superadmin (`adminId === null`, which every predicate here reads as "no filter").
  *
- * A predicate rather than a `createdBy` field on `Event`, deliberately. Event crosses to the
- * browser on the public page, and the creator's user id has no business going with it — the
- * same reason `contact` and `ip_hash` are not in PUBLIC_COLS.
+ * A predicate rather than a field on `Event`, deliberately. Event crosses to the browser on the
+ * public page, and who staffs a majelis has no business going with it — the same reason
+ * `contact` and `ip_hash` are not in PUBLIC_COLS.
+ *
+ * Access is not the same as authority: this says an admin may open the session, not that they
+ * may edit or answer it. What a grant actually permits is in lib/actions.ts.
  */
-export async function ownsEvent(eventId: string, ownerId: string | null) {
-  if (ownerId === null) return true; // superadmin
+export async function canWorkOn(eventId: string, adminId: string | null) {
+  if (adminId === null) return true; // superadmin
   const row = await one<{ ok: boolean }>(
-    `select created_by = $2 as ok from events where id = $1`,
-    [eventId, ownerId],
+    `select exists (select 1 from event_admins where event_id = $1 and user_id = $2) as ok`,
+    [eventId, adminId],
   );
   return row?.ok === true;
 }
 
 /** The same question asked from a question id, for the actions that only carry one. */
-export async function ownsQuestion(questionId: string, ownerId: string | null) {
-  if (ownerId === null) return true;
+export async function canWorkOnQuestion(questionId: string, adminId: string | null) {
+  if (adminId === null) return true;
   const row = await one<{ ok: boolean }>(
-    `select e.created_by = $2 as ok
-       from questions q join events e on e.id = q.event_id
-      where q.id = $1::uuid`,
-    [questionId, ownerId],
+    `select exists (select 1 from event_admins a join questions q on q.event_id = a.event_id
+                     where q.id = $1::uuid and a.user_id = $2) as ok`,
+    [questionId, adminId],
   );
   return row?.ok === true;
+}
+
+/** The admins staffing one majelis. Superadmins are not listed: they are on every session. */
+export async function eventAdmins(eventId: string) {
+  const rows = await query<{ user_id: string }>(
+    `select user_id from event_admins where event_id = $1`,
+    [eventId],
+  );
+  return rows.map((r) => r.user_id);
+}
+
+/** The majelis one admin is staffing, for the per-account view of the same grants. */
+export async function adminEventIds(userId: string) {
+  const rows = await query<{ event_id: string }>(
+    `select event_id from event_admins where user_id = $1`,
+    [userId],
+  );
+  return rows.map((r) => r.event_id);
 }
 
 /**
  * The admin session list, with the counts an operator actually triages on.
  *
- * `ownerId` is the signed-in admin, and `null` means a superadmin: no filter, every majelis.
- * Passing the id is not optional anywhere — an admin sees only what they created.
+ * `adminId` is the signed-in admin, and `null` means a superadmin: no filter, every majelis.
+ * Passing the id is not optional anywhere — an admin sees only the sessions they are staffing.
  */
-export async function listEventsForAdmin(ownerId: string | null) {
+export async function listEventsForAdmin(adminId: string | null) {
   const rows = await query<EventRow & { total: string; pending: string; unanswered: string }>(
     `select ${EVENT_COLS},
             count(q.id)                                       as total,
@@ -255,13 +276,15 @@ export async function listEventsForAdmin(ownerId: string | null) {
                                   and q.status <> 'hidden')    as unanswered
        from events e
        left join questions q on q.event_id = e.id
-      where ($1::text is null or e.created_by = $1)
+      where ($1::text is null
+             or exists (select 1 from event_admins a
+                         where a.event_id = e.id and a.user_id = $1))
       group by e.id
       order by
         -- Live sessions first: during a dauroh that is the only row anyone wants.
         case e.status when 'live' then 0 when 'scheduled' then 1 else 2 end,
         e.starts_at desc`,
-    [ownerId],
+    [adminId],
   );
   return rows.map((r) => ({
     ...toEvent(r),

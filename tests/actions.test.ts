@@ -59,7 +59,7 @@ function errorOf(r: { ok: true } | { ok: false; error: string }): string {
 
 suite("actions (integration)", () => {
   beforeEach(async () => {
-    await query(`truncate events, questions, answer_revisions cascade`);
+    await query(`truncate events, questions, answer_revisions, event_admins cascade`);
     jar.clear();
     signedInAs("admin-1", "superadmin");
   });
@@ -442,91 +442,113 @@ suite("actions (integration)", () => {
     });
   });
 
-  // --- ownership ----------------------------------------------------------------------------
+  // --- access and authority -------------------------------------------------------------
   //
-  // The only boundary between one organiser and another. Every action that names an event or a
-  // question goes through it, so each one is checked rather than a representative sample: a
-  // guard is only as good as the action that forgot to call it.
-  describe("ownership", () => {
-    const MINE = "admin-mine";
-    const THEIRS = "admin-theirs";
+  // Two different questions, and the gap between them is the whole model. A grant hands an
+  // admin the room: moderate the queue, move the session, open and close it. It does not hand
+  // them what the session *is* — its details, its visibility, its answers — which stays with
+  // the superadmin. Every action is checked rather than a representative sample: a boundary is
+  // only as good as the action that forgot to call it.
+  describe("access", () => {
+    const STAFF = "admin-staff";
+    const OTHER = "admin-other";
 
-    /** An event owned by someone else, with one question on it. */
-    async function seedTheirs() {
-      const eventId = await seedEvent({ owner: THEIRS });
+    /** A majelis with one question, staffed by STAFF, signed in as STAFF. */
+    async function seedStaffed(who: string = STAFF) {
+      const eventId = await seedEvent();
+      await query(`insert into event_admins (event_id, user_id) values ($1, $2)`, [eventId, STAFF]);
       const [q] = await query<{ id: string }>(
-        `insert into questions (event_id, body) values ($1, 'their question') returning id`,
+        `insert into questions (event_id, body) values ($1, 'a question') returning id`,
         [eventId],
       );
-      signedInAs(MINE, "admin");
+      signedInAs(who, "admin");
       return { eventId, questionId: q.id };
     }
 
-    it("hides another admin's majelis from every event action", async () => {
-      const { eventId } = await seedTheirs();
+    it("hides a majelis nobody granted them from every action that names one", async () => {
+      const { eventId } = await seedStaffed(OTHER);
       await expect(adminList(eventId)).rejects.toThrow(/Unauthorized/);
       await expect(fetchApproved(eventId, null)).rejects.toThrow(/Unauthorized/);
       await expect(updateEvent(eventId, { status: "archived" })).rejects.toThrow(/Unauthorized/);
-      await expect(deleteEvent(eventId)).rejects.toThrow(/Unauthorized/);
-      await expect(draftAnswers(eventId)).rejects.toThrow(/Unauthorized/);
-
-      // And nothing was touched on the way past the guard.
       expect((await getEvent(eventId))?.status).toBe("live");
     });
 
-    it("hides another admin's questions from every question action", async () => {
-      const { questionId } = await seedTheirs();
-      await expect(setAnswer(questionId, "not yours")).rejects.toThrow(/Unauthorized/);
+    it("hides its questions too", async () => {
+      const { questionId } = await seedStaffed(OTHER);
       await expect(setQuestionStatus(questionId, "hidden")).rejects.toThrow(/Unauthorized/);
       await expect(answerHistory(questionId)).rejects.toThrow(/Unauthorized/);
-
-      const [row] = await query<{ answer: string | null; status: string }>(
-        `select answer, status from questions where id = $1::uuid`,
-        [questionId],
-      );
-      expect(row).toEqual({ answer: null, status: "approved" });
     });
 
-    it("lets an admin do all of that to a majelis they created", async () => {
-      const eventId = await seedEvent({ owner: MINE });
-      signedInAs(MINE, "admin");
-      expect((await adminList(eventId)).length).toBe(0);
+    it("lets a staffed admin run the session: moderate, move it, open and close it", async () => {
+      const { eventId, questionId } = await seedStaffed();
+
+      expect((await adminList(eventId)).length).toBe(1);
+      expect((await setQuestionStatus(questionId, "hidden")).ok).toBe(true);
       expect((await updateEvent(eventId, { status: "archived" })).ok).toBe(true);
-      expect((await deleteEvent(eventId)).ok).toBe(true);
+      expect((await updateEvent(eventId, { acceptingQuestions: true })).ok).toBe(true);
+      expect((await updateEvent(eventId, { moderation: "manual" })).ok).toBe(true);
+
+      const e = await getEvent(eventId);
+      expect(e?.status).toBe("archived");
+      expect(e?.acceptingQuestions).toBe(true);
+      expect(e?.moderation).toBe("manual");
+      expect(await answerHistory(questionId)).toEqual([]);
     });
 
-    it("stamps the creator on a new majelis so they can reach it", async () => {
-      signedInAs(MINE, "admin");
-      const created = await createEvent({
-        name: "Milik saya",
-        startsAt: new Date().toISOString(),
-        venue: "Masjid",
-        speaker: "Ustadz",
-        status: "scheduled",
-        moderation: "auto",
-      });
-      expect(created.ok).toBe(true);
-      if (!created.ok) return;
-      expect((await updateEvent(created.data.id, { status: "live" })).ok).toBe(true);
+    it("refuses a staffed admin the things a grant does not cover", async () => {
+      const { eventId, questionId } = await seedStaffed();
+
+      // Answering in the speaker's name, and taking an answer back.
+      await expect(setAnswer(questionId, "jawaban")).rejects.toThrow(/Unauthorized/);
+      await expect(draftAnswers(eventId)).rejects.toThrow(/Unauthorized/);
+      // Rewriting what the majelis is, and whether the public can see it.
+      await expect(
+        updateEvent(eventId, {
+          details: {
+            name: "Diganti", startsAt: new Date().toISOString(),
+            venue: "v", speaker: "s",
+          },
+        }),
+      ).rejects.toThrow(/Unauthorized/);
+      await expect(updateEvent(eventId, { hidden: true })).rejects.toThrow(/Unauthorized/);
+      // Starting one, and destroying one.
+      await expect(
+        createEvent({
+          name: "Baru", startsAt: new Date().toISOString(), venue: "v", speaker: "s",
+          status: "scheduled", moderation: "auto",
+        }),
+      ).rejects.toThrow(/Unauthorized/);
+      await expect(deleteEvent(eventId)).rejects.toThrow(/Unauthorized/);
+
+      const e = await getEvent(eventId, { includeHidden: true });
+      expect(e?.name).toBe("test event");
+      expect(e?.hidden).toBe(false);
+      const [row] = await query<{ answer: string | null }>(
+        `select answer from questions where id = $1::uuid`, [questionId]);
+      expect(row.answer).toBeNull();
     });
 
-    it("lists only your own to an admin, and everything to a superadmin", async () => {
-      const mine = await seedEvent({ owner: MINE });
-      const theirs = await seedEvent({ owner: THEIRS });
-      const ownerless = await seedEvent();
+    it("lists only staffed majelis to an admin, and everything to a superadmin", async () => {
+      const { eventId: staffed } = await seedStaffed();
+      const unstaffed = await seedEvent();
 
-      signedInAs(MINE, "admin");
-      expect((await adminEvents()).map((e) => e.id)).toEqual([mine]);
+      expect((await adminEvents()).map((e) => e.id)).toEqual([staffed]);
 
       signedInAs("admin-1", "superadmin");
-      expect((await adminEvents()).map((e) => e.id).sort()).toEqual(
-        [mine, theirs, ownerless].sort(),
-      );
+      expect((await adminEvents()).map((e) => e.id).sort()).toEqual([staffed, unstaffed].sort());
     });
 
-    it("refuses an event that does not exist, the same way it refuses someone else's", async () => {
-      signedInAs(MINE, "admin");
+    it("refuses a majelis that does not exist the same way it refuses an unstaffed one", async () => {
+      signedInAs(STAFF, "admin");
       await expect(updateEvent("ghost", { status: "live" })).rejects.toThrow(/Unauthorized/);
+    });
+
+    it("revoking a grant closes the door again", async () => {
+      const { eventId } = await seedStaffed();
+      expect((await adminList(eventId)).length).toBe(1);
+
+      await query(`delete from event_admins where event_id = $1 and user_id = $2`, [eventId, STAFF]);
+      await expect(adminList(eventId)).rejects.toThrow(/Unauthorized/);
     });
   });
 });

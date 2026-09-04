@@ -201,6 +201,7 @@ function Row({
   q,
   suggestion,
   open,
+  canAnswer,
   onOpen,
   onChange,
 }: {
@@ -208,6 +209,14 @@ function Row({
   suggestion?: Proposal;
   /** The board opens one editor at a time, so this is owned there rather than here. */
   open: boolean;
+  /**
+   * Whether this account may write in the speaker's name. A granted admin moderates the queue
+   * and runs the session; the answer itself is the superadmin's, so for them the card ends at
+   * Setujui / Sembunyikan and the published answer stays readable but untouchable.
+   *
+   * Rendering only — setAnswer refuses them anyway.
+   */
+  canAnswer: boolean;
   onOpen: (open: boolean) => void;
   onChange: (next: Question) => void;
 }) {
@@ -335,7 +344,7 @@ function Row({
               </div>
             )}
 
-            {open ? (
+            {open && canAnswer ? (
               <div className={answered ? "mt-3" : undefined}>
                 {offered && (
                   <ProposalCard
@@ -383,6 +392,7 @@ function Row({
               /* Closed: the act this card is for, boxed, and everything else as text beside
                  it. A4 still holds — revising is one tap, exactly like answering. */
               <div className={`flex flex-wrap items-center gap-1.5 ${answered ? "mt-2.5" : ""}`}>
+                {canAnswer && (
                 <Action onClick={() => onOpen(true)} tone="outline" grow>
                   {answered ? (
                     <>
@@ -401,13 +411,14 @@ function Row({
                     </>
                   )}
                 </Action>
-                {answered && (
+                )}
+                {canAnswer && answered && (
                   <Action onClick={() => setConfirming("retract")} tone="destructive">
                     <Undo2 className="h-4 w-4" aria-hidden />
                     Tarik
                   </Action>
                 )}
-                <Action onClick={() => setConfirming("moderate")}>
+                <Action onClick={() => setConfirming("moderate")} grow={!canAnswer}>
                   {q.status === "hidden" ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
                   {q.status === "hidden" ? "Tampilkan" : "Sembunyikan"}
                 </Action>
@@ -452,7 +463,16 @@ function Row({
   );
 }
 
-export default function AdminBoard({ eventId, youtubeId }: { eventId: string; youtubeId?: string }) {
+export default function AdminBoard({
+  eventId,
+  youtubeId,
+  canAnswer,
+}: {
+  eventId: string;
+  youtubeId?: string;
+  /** Superadmin. A granted admin gets the queue and the moderation calls, not the answers. */
+  canAnswer: boolean;
+}) {
   const [all, setAll] = useState<Question[]>([]);
   const [loaded, setLoaded] = useState(false);
   // Null until the first load says what is actually here; see `filter` below.
@@ -574,7 +594,7 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
 
       {/* Outside the sticky strip on purpose: this is a once-per-session action, and it would
           scroll out of reach inside a horizontally scrolling row of chips. */}
-      {youtubeId && (
+      {youtubeId && canAnswer && (
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
           <button
             onClick={draft}
@@ -609,6 +629,7 @@ export default function AdminBoard({ eventId, youtubeId }: { eventId: string; yo
               q={q}
               suggestion={suggestions[q.id]}
               open={openId === q.id}
+              canAnswer={canAnswer}
               onOpen={(v) => setOpenId(v ? q.id : null)}
               onChange={replace}
             />

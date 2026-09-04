@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { APIError } from "better-auth/api";
 import { auth, isSuperadmin } from "./auth.ts";
-import { query } from "./db.ts";
+import { pool, query } from "./db.ts";
+import { adminEventIds, eventAdmins } from "./queries.ts";
 import type { Result } from "./actions.ts";
 
 /**
@@ -146,6 +147,9 @@ export async function deleteAdmin(userId: string): Promise<Result> {
 
   try {
     await query(`update events set created_by = null where created_by = $1`, [userId]);
+    // Their grants go with them. Nothing cascades: event_admins carries no foreign key to
+    // "user", for the same reason events.created_by doesn't.
+    await query(`delete from event_admins where user_id = $1`, [userId]);
     await auth.api.removeUser({ headers: ctx.headers, body: { userId } });
     revalidatePath("/admin/pengguna");
     revalidatePath("/admin");
@@ -153,4 +157,76 @@ export async function deleteAdmin(userId: string): Promise<Result> {
   } catch (err) {
     return fail(reason(err));
   }
+}
+
+// --- grants -------------------------------------------------------------------------------
+//
+// Who staffs which majelis. The same relation from both ends, because both questions get asked:
+// "who is running this session?" while looking at the session, and "which sessions is this
+// person on?" while looking at the account. One table, two screens, no second source of truth.
+
+/** The admins staffing this majelis. Superadmins are omitted: they are on every session. */
+export async function getEventAdmins(eventId: string): Promise<Result<string[]>> {
+  const ctx = await superadminHeaders();
+  if (!ctx) return fail("Tidak diizinkan.");
+  return done(await eventAdmins(eventId));
+}
+
+/** The majelis this admin is staffing. */
+export async function getAdminEvents(userId: string): Promise<Result<string[]>> {
+  const ctx = await superadminHeaders();
+  if (!ctx) return fail("Tidak diizinkan.");
+  return done(await adminEventIds(userId));
+}
+
+/**
+ * Replaces the staff list wholesale rather than adding and removing one at a time: the screen
+ * shows a set of checkboxes and saves once, so the set it hands back *is* the intent. Doing it
+ * in a transaction keeps a half-applied list from ever being the thing an admin is refused by.
+ */
+export async function setEventAdmins(eventId: string, userIds: string[]): Promise<Result> {
+  const ctx = await superadminHeaders();
+  if (!ctx) return fail("Tidak diizinkan.");
+  return replaceGrants("event_id", eventId, "user_id", userIds, [
+    "/admin",
+    `/admin/events/${eventId}`,
+  ]);
+}
+
+/** The same grant from the account's side. */
+export async function setAdminEvents(userId: string, eventIds: string[]): Promise<Result> {
+  const ctx = await superadminHeaders();
+  if (!ctx) return fail("Tidak diizinkan.");
+  return replaceGrants("user_id", userId, "event_id", eventIds, ["/admin", "/admin/pengguna"]);
+}
+
+async function replaceGrants(
+  keyCol: "event_id" | "user_id",
+  key: string,
+  otherCol: "event_id" | "user_id",
+  others: string[],
+  paths: string[],
+): Promise<Result> {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query(`delete from event_admins where ${keyCol} = $1`, [key]);
+    if (others.length) {
+      await client.query(
+        `insert into event_admins (${keyCol}, ${otherCol})
+         select $1, unnest($2::text[])`,
+        [key, others],
+      );
+    }
+    await client.query("commit");
+  } catch (err) {
+    await client.query("rollback");
+    // A grant naming a majelis or an account that has since been deleted is the likely cause,
+    // and the screen the operator is looking at is simply stale.
+    return fail(`Gagal menyimpan akses: ${err instanceof Error ? err.message : "coba muat ulang."}`);
+  } finally {
+    client.release();
+  }
+  for (const path of paths) revalidatePath(path);
+  return done(undefined);
 }

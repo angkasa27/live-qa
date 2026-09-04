@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Confirm from "@/components/admin/Confirm";
 import { deleteEvent, updateEvent } from "@/lib/actions";
+import { setEventAdmins } from "@/lib/admins";
 import { isoToLocal, parseVideoId, slugDraft, type Event, type EventStatus } from "@/lib/types";
 
 const STATUS = [
@@ -38,6 +39,8 @@ const STATUS = [
  * separate page for no reason a user could see.
  */
 type Draft = {
+  /** Who is staffing the session. Superadmin-only; empty and unread for everyone else. */
+  staff: string[];
   status: EventStatus;
   accepting: boolean | null;
   moderation: "auto" | "manual";
@@ -51,7 +54,8 @@ type Draft = {
   image: string;
 };
 
-const draftOf = (e: Event): Draft => ({
+const draftOf = (e: Event, staff: string[]): Draft => ({
+  staff,
   status: e.status,
   // getEvent resolves accepting_questions through coalesce, so the raw null is not on the wire.
   // It is recoverable: an event whose resolved value already matches its status is following it.
@@ -69,6 +73,9 @@ const draftOf = (e: Event): Draft => ({
 
 /** Whether questions are open, given a draft. One expression, mirroring accepting_questions(). */
 const isOpen = (d: Draft) => d.accepting ?? d.status === "live";
+
+/** A staff list compared as a set: the order checkboxes happen to produce is not a change. */
+const key = (ids: string[]) => [...ids].sort().join(",");
 
 /** A labelled switch row. Both of these are reversible with one tap. */
 function Toggle({
@@ -112,21 +119,38 @@ function Toggle({
 export default function SessionSettings({
   event,
   questionCount,
+  canEdit,
+  admins = [],
+  staff = [],
 }: {
   event: Event;
   questionCount: number;
+  /**
+   * The superadmin. Everyone else here holds a grant on this majelis, which buys running it —
+   * its state, whether it takes questions, whether they queue for review — and not rewriting
+   * it. So the details, the public toggle, the delete and the staff list are all behind this.
+   *
+   * Rendering only. lib/actions.ts refuses the same fields whatever this says.
+   */
+  canEdit: boolean;
+  /** Every non-superadmin account, for the staff picker. Empty unless canEdit. */
+  admins?: { id: string; name: string; email: string }[];
+  /** Who is staffing this majelis right now. */
+  staff?: string[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState(() => draftOf(event));
+  const [draft, setDraft] = useState(() => draftOf(event, staff));
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  const saved = draftOf(event);
-  const dirty = (Object.keys(saved) as (keyof Draft)[]).some((k) => draft[k] !== saved[k]);
+  const saved = draftOf(event, staff);
+  const dirty = (Object.keys(saved) as (keyof Draft)[]).some((k) =>
+    k === "staff" ? key(draft.staff) !== key(saved.staff) : draft[k] !== saved[k],
+  );
 
   const set = (patch: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -135,28 +159,39 @@ export default function SessionSettings({
 
   function save() {
     setError(null);
-    if (Number.isNaN(Date.parse(draft.startsAt))) {
-      return setError("Tanggal dan waktu belum lengkap.");
+    if (canEdit) {
+      if (Number.isNaN(Date.parse(draft.startsAt))) {
+        return setError("Tanggal dan waktu belum lengkap.");
+      }
+      if (!draft.slug.trim()) return setError("Alamat sesi wajib diisi.");
     }
-    if (!draft.slug.trim()) return setError("Alamat sesi wajib diisi.");
     start(async () => {
+      // Running the session, which a grant covers, and being it, which only the superadmin does.
+      // Sending the second half as an admin is refused by updateEvent, so it isn't sent.
       const res = await updateEvent(event.id, {
         status: draft.status,
         acceptingQuestions: draft.accepting,
         moderation: draft.moderation,
-        hidden: draft.hidden,
-        details: {
-          name: draft.name,
-          slug: draft.slug,
-          // The picker gives local time with no zone; the server stores timestamptz.
-          startsAt: new Date(draft.startsAt).toISOString(),
-          venue: draft.venue,
-          speaker: draft.speaker,
-          video: draft.video,
-          image: draft.image,
-        },
+        ...(canEdit && {
+          hidden: draft.hidden,
+          details: {
+            name: draft.name,
+            slug: draft.slug,
+            // The picker gives local time with no zone; the server stores timestamptz.
+            startsAt: new Date(draft.startsAt).toISOString(),
+            venue: draft.venue,
+            speaker: draft.speaker,
+            video: draft.video,
+            image: draft.image,
+          },
+        }),
       });
       if (!res.ok) return setError(res.error);
+
+      if (canEdit && key(draft.staff) !== key(saved.staff)) {
+        const granted = await setEventAdmins(res.data.id, draft.staff);
+        if (!granted.ok) return setError(granted.error);
+      }
       setOpen(false);
       // The id is in the URL of the page this drawer is on, so a rename has to move the page
       // too, or the next refresh 404s on an address that no longer exists.
@@ -227,12 +262,14 @@ export default function SessionSettings({
               checked={openNow}
               onChange={(v) => set({ accepting: v })}
             />
-            <Toggle
-              label="Arsip dapat diakses publik"
-              hint="Lewat tautan, tidak diindeks."
-              checked={!draft.hidden}
-              onChange={(v) => set({ hidden: !v })}
-            />
+            {canEdit && (
+              <Toggle
+                label="Arsip dapat diakses publik"
+                hint="Lewat tautan, tidak diindeks."
+                checked={!draft.hidden}
+                onChange={(v) => set({ hidden: !v })}
+              />
+            )}
           </div>
 
           {overridden && (
@@ -266,7 +303,49 @@ export default function SessionSettings({
             </p>
           </section>
 
+          {canEdit && (
+            <>
+              <FormSection label="Petugas" />
+              <p className="-mt-2 text-xs leading-relaxed text-muted-foreground">
+                Admin yang dipilih dapat menyetujui pertanyaan, mengubah status sesi, dan membuka
+                layar pemateri. Menulis jawaban dan mengubah detail tetap di superadmin.
+              </p>
+              {admins.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Belum ada admin. Tambahkan di <span className="font-medium">Pengguna</span>.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border-soft rounded-xl border border-border bg-card">
+                  {admins.map((a) => (
+                    <li key={a.id}>
+                      <label className="flex min-h-14 cursor-pointer items-center justify-between gap-4 px-3.5 py-2.5">
+                        <span className="min-w-0">
+                          <span className="block truncate text-[0.9375rem] font-medium">{a.name}</span>
+                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                            {a.email}
+                          </span>
+                        </span>
+                        <Switch
+                          checked={draft.staff.includes(a.id)}
+                          onCheckedChange={(v) =>
+                            set({
+                              staff: v
+                                ? [...draft.staff, a.id]
+                                : draft.staff.filter((id) => id !== a.id),
+                            })
+                          }
+                        />
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
           {/* What the session is. Same errand, same sheet, same Simpan. */}
+          {canEdit && (
+          <>
           <FormSection label="Detail sesi" />
 
           <Field
@@ -378,6 +457,8 @@ export default function SessionSettings({
               />
             </div>
           </Confirm>
+          </>
+          )}
 
           <div aria-live="polite">
             {error && (

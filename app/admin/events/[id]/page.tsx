@@ -4,8 +4,9 @@ import AdminBoard from "@/components/AdminBoard";
 import AdminShell from "@/components/admin/Shell";
 import QrDrawer from "@/components/admin/QrDrawer";
 import SessionSettings from "@/components/SessionSettings";
-import { countQuestions } from "@/lib/queries";
-import { requireOwnEvent } from "@/lib/guard";
+import { countQuestions, eventAdmins } from "@/lib/queries";
+import { requireEventAccess } from "@/lib/guard";
+import { listAdmins } from "@/lib/admins";
 import { coverFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,18 @@ const STATE = { live: "Live", scheduled: "Terjadwal", archived: "Arsip" } as con
 export default async function AdminEventPage({ params }: PageProps<"/admin/events/[id]">) {
   const { id } = await params;
   // 404s a majelis this admin didn't create, exactly as it 404s one that doesn't exist.
-  const { event } = await requireOwnEvent(`/admin/events/${id}`, id);
+  const { event, canEdit } = await requireEventAccess(`/admin/events/${id}`, id);
+
+  // The staff picker is the superadmin's, so the accounts behind it are only read for them.
+  // Superadmins are left out of the list: they are on every majelis already.
+  const staff = canEdit ? await eventAdmins(id) : [];
+  const accounts = canEdit ? await listAdmins() : null;
+  const admins =
+    accounts?.ok
+      ? accounts.data
+          .filter((a) => a.role !== "superadmin")
+          .map(({ id, name, email }) => ({ id, name, email }))
+      : [];
 
   const cover = coverFor(event);
 
@@ -41,7 +53,13 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
             <Presentation className="h-5 w-5" aria-hidden />
           </Link>
           <QrDrawer eventId={event.id} name={event.name} />
-          <SessionSettings event={event} questionCount={await countQuestions(id)} />
+          <SessionSettings
+            event={event}
+            questionCount={await countQuestions(id)}
+            canEdit={canEdit}
+            admins={admins}
+            staff={staff}
+          />
         </div>
       }
       strip={
@@ -79,7 +97,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
         </div>
       }
     >
-      <AdminBoard eventId={event.id} youtubeId={event.youtubeId} />
+      <AdminBoard eventId={event.id} youtubeId={event.youtubeId} canAnswer={canEdit} />
     </AdminShell>
   );
 }

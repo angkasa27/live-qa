@@ -13,8 +13,8 @@ import {
   listAllQuestions,
   listEventsForAdmin,
   listRevisions,
-  ownsEvent,
-  ownsQuestion,
+  canWorkOn,
+  canWorkOnQuestion,
   rateLimited,
 } from "./queries.ts";
 import {
@@ -40,26 +40,39 @@ async function requireAdmin() {
   return session.user;
 }
 
-/** `null` is the superadmin: every ownership predicate reads it as "no filter". */
+/** `null` is the superadmin: every grant predicate reads it as "no filter". */
 const scope = (user: { id: string }) => (isSuperadmin(user) ? null : user.id);
 
 /**
- * Signed in *and* entitled to this majelis. An admin only ever administers what they created;
- * the superadmin administers everything. Every action below that names an event or a question
- * goes through one of these two rather than through requireAdmin alone — an id in a request body
- * is not evidence of anything, and this is the only boundary between one organiser and another.
+ * Two different questions, and the whole authorization model is the gap between them.
  *
- * Throws like requireAdmin does, so the failure mode is the one callers already handle.
+ * `requireEventAccess` asks whether this admin may *work on* the majelis: they hold a grant, or
+ * they are the superadmin. That buys the room — moderating what comes in, moving the session
+ * between terjadwal/live/arsip, opening and closing submissions, the speaker deck.
+ *
+ * `requireOwner` asks whether they may *change what the majelis is*: create it, rewrite its
+ * details, hide it, delete it, answer in the speaker's name. Only the superadmin, always. An
+ * answer published under a scholar's name is the thing this app is shaped around (ROADMAP §3),
+ * and it is not something a grant hands out.
+ *
+ * Both throw like requireAdmin does, so the failure mode is the one callers already handle.
  */
 async function requireEventAccess(eventId: string) {
   const user = await requireAdmin();
-  if (!(await ownsEvent(eventId, scope(user)))) throw new Error("Unauthorized");
+  if (!(await canWorkOn(eventId, scope(user)))) throw new Error("Unauthorized");
   return user;
 }
 
 async function requireQuestionAccess(questionId: string) {
   const user = await requireAdmin();
-  if (!(await ownsQuestion(questionId, scope(user)))) throw new Error("Unauthorized");
+  if (!(await canWorkOnQuestion(questionId, scope(user)))) throw new Error("Unauthorized");
+  return user;
+}
+
+/** Superadmin, full stop. */
+async function requireOwner() {
+  const user = await requireAdmin();
+  if (!isSuperadmin(user)) throw new Error("Unauthorized");
   return user;
 }
 
@@ -148,7 +161,7 @@ export async function setAnswer(
   answer: string,
   videoStart?: number,
 ): Promise<Result<Question>> {
-  const user = await requireQuestionAccess(id);
+  const user = await requireOwner();
   const text = answer.trim();
   const retracted = text.length === 0;
   const anchor = !retracted && Number.isInteger(videoStart) && videoStart! >= 0 ? videoStart! : null;
@@ -192,7 +205,7 @@ export async function setQuestionStatus(id: string, status: QuestionStatus): Pro
  * going unmatched is the ordinary outcome, not a failure.
  */
 export async function draftAnswers(eventId: string): Promise<Result<Record<string, Proposal>>> {
-  await requireEventAccess(eventId);
+  await requireOwner();
 
   const event = await getEvent(eventId, { includeHidden: true });
   if (!event) return fail("Majelis tidak ditemukan.");
@@ -301,7 +314,14 @@ export async function updateEvent(
     details?: EventDetails;
   },
 ): Promise<Result<{ id: string }>> {
-  await requireEventAccess(eventId);
+  const user = await requireEventAccess(eventId);
+  // What a grant covers is the session's *running*: its state, whether it takes questions, and
+  // whether they queue for review. What it is — name, address, time, venue, speaker, recording,
+  // cover — and whether the public can see it at all stay with the superadmin. Checked here
+  // rather than by hiding the fields: the form is a convenience, this is the boundary.
+  if (!isSuperadmin(user) && (patch.details || "hidden" in patch)) {
+    throw new Error("Unauthorized");
+  }
   if (patch.status && !STATUSES.includes(patch.status)) return fail("Status tidak dikenal.");
 
   let clean: CleanDetails | null = null;
@@ -374,7 +394,7 @@ export async function updateEvent(
  * staring at a test majelis forever. The confirmation lives in the UI, not here.
  */
 export async function deleteEvent(eventId: string): Promise<Result> {
-  await requireEventAccess(eventId);
+  await requireOwner();
   const row = await one<{ id: string }>(`delete from events where id = $1 returning id`, [eventId]);
   if (!row) return fail("Sesi tidak ditemukan.");
   revalidatePath("/admin");
@@ -391,7 +411,7 @@ export async function answerHistory(questionId: string): Promise<Revision[]> {
 export async function createEvent(
   input: EventDetails & { status: EventStatus; moderation: "auto" | "manual" },
 ): Promise<Result<{ id: string }>> {
-  const user = await requireAdmin();
+  const user = await requireOwner();
 
   if (!STATUSES.includes(input.status)) return fail("Status tidak dikenal.");
   const checked = validateDetails(input);

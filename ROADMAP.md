@@ -192,16 +192,27 @@ account, and a public sign-up endpoint on an admin-only system is a hole; accoun
 the superadmin, and the first one by `npm run admin:create`. A student is not an account at all,
 just an opaque token in a cookie.
 
-Two roles, on better-auth's own admin plugin: a **superadmin** who mints accounts and sees every
-majelis, and an **admin** who sees only the ones they created. `events.created_by` is what says
-which, and it was already being written before anything read it. The plugin's `/admin/*`
-endpoints are mapped so only the superadmin passes them (`lib/auth.ts`); the majelis boundary is
-ours and lives in `lib/actions.ts` and `lib/guard.ts`, both of which answer "not yours" and
-"doesn't exist" identically so one organiser cannot probe for another's sessions by URL.
+Two roles, on better-auth's own admin plugin. A **superadmin** mints accounts and owns the
+sessions: creating them, writing their details, publishing them, answering their questions. An
+**admin** is assigned to a session and runs it — approving or rejecting what comes in, moving it
+between terjadwal/live/arsip, opening and closing submissions, switching review mode, working the
+speaker deck.
 
-Roles rather than organisations, still, for the reason below: one lembaga per deployment, and an
-org filter would return the same list every time. Ownership is the smaller thing that was
-actually missing.
+The split is deliberate and it is the same one §3 draws around answers: **a wrong ruling
+published under a scholar's name is the failure this app is shaped around**, so writing one is
+not something a grant hands out. Everything reversible in an evening — a question approved by
+mistake, a session left open — is. That is the line: an admin can be wrong for ten minutes, not
+in perpetuity.
+
+`event_admins` carries the grants and is edited from either end, the session's settings sheet or
+the account in Pengguna. `events.created_by` is provenance now and decides nothing. The plugin's
+`/admin/*` endpoints are mapped so only the superadmin passes them (`lib/auth.ts`); the majelis
+boundary is ours, in `lib/actions.ts` and `lib/guard.ts`, both of which answer "you are not on
+it" and "it doesn't exist" identically so one organiser cannot probe for another's sessions by
+URL.
+
+Grants rather than organisations, still, for the reason below: one lembaga per deployment, and an
+org filter would return the same list every time.
 
 §5 originally put organisation ownership in step 2, alongside event creation. Building it there
 turned out to be scaffolding: the syaikh already signs in on a shared admin account, so accounts

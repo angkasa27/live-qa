@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth, isSuperadmin } from "./auth.ts";
-import { getEvent, ownsEvent } from "./queries.ts";
+import { canWorkOn, getEvent } from "./queries.ts";
 
 /**
  * The real check. proxy.ts does a cheap cookie-presence redirect so signed-out visitors don't
@@ -31,15 +31,19 @@ export async function requireSuperadmin(returnTo: string) {
 }
 
 /**
- * A majelis this admin may administer, or a 404. Same answer for "doesn't exist" and "isn't
- * yours", which is the point: an admin cannot probe for other people's sessions by URL.
+ * A majelis this admin is staffing, or a 404. Same answer for "doesn't exist" and "you are not
+ * on it", which is the point: an admin cannot probe for other people's sessions by URL.
  *
- * Returns the event so the page doesn't fetch it twice. Hidden events are included — an admin
- * has to be able to open their own draft.
+ * Returns the event so the page doesn't fetch it twice, and `canEdit` so the screen can tell the
+ * difference between running a session and owning it — an admin moderates and moves the session,
+ * the superadmin writes it and answers it. That flag is a convenience for rendering; the
+ * boundary itself is re-checked in every action (lib/actions.ts).
+ *
+ * Hidden events are included: a session can be staffed before it is announced.
  */
-export async function requireOwnEvent(returnTo: string, id: string) {
+export async function requireEventAccess(returnTo: string, id: string) {
   const session = await requireSession(returnTo);
   const event = await getEvent(id, { includeHidden: true });
-  if (!event || !(await ownsEvent(id, scopeOf(session.user)))) notFound();
-  return { session, event };
+  if (!event || !(await canWorkOn(id, scopeOf(session.user)))) notFound();
+  return { session, event, canEdit: isSuperadmin(session.user) };
 }
