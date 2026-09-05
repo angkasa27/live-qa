@@ -149,7 +149,12 @@ if you hand it a pooled host with no direct one set.
 | `DATABASE_URL_UNPOOLED` | Neon **direct** connection string |
 | `BETTER_AUTH_SECRET` | 32 random bytes: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
 | `BETTER_AUTH_URL` | Your deployed origin, e.g. `https://sual.online`. **Required in production** |
+| `NEXT_PUBLIC_SITE_URL` | The same origin, no trailing slash. What QR codes encode and the slug field shows |
 | `IP_HASH_SALT` | 16 random bytes, same generator |
+
+`NEXT_PUBLIC_SITE_URL` is read in the browser and inlined at build time, so changing it needs a
+redeploy, not just a restart. Unset, the app falls back to whatever origin the admin is on — fine
+in development, wrong on a preview deploy, where it prints QR codes pointing at the preview.
 
 `BETTER_AUTH_URL` is the one that will bite you: unset, better-auth infers the origin per request
 and sign-in fails with a 403 that reads like a wrong password. It must match the origin the

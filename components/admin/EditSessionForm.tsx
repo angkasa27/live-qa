@@ -17,6 +17,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { deleteEvent, updateEvent } from "@/lib/actions";
+import { eventUrlPrefix, useSiteOrigin } from "@/lib/site";
 import { isoToLocal, localToIso, parseVideoId, type Event } from "@/lib/types";
 
 /**
@@ -60,6 +61,7 @@ export default function EditSessionForm({
   questionCount: number;
 }) {
   const router = useRouter();
+  const origin = useSiteOrigin();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState(() => draftOf(event));
@@ -204,7 +206,8 @@ export default function EditSessionForm({
       <p className="mt-3 flex min-h-12 items-center gap-2.5 rounded-sm border-[1.5px] border-dashed border-border bg-background px-3.5 text-md text-muted-foreground">
         <Lock className="size-4 shrink-0 stroke-faint stroke-[1.9]" aria-hidden />
         <span className="min-w-0 truncate">
-          /events/<strong className="font-semibold text-foreground">{event.id}</strong>
+          {eventUrlPrefix(origin)}
+          <strong className="font-semibold text-foreground">{event.id}</strong>
         </span>
       </p>
       <FieldDescription>Dikunci. QR yang sudah dicetak mengarah ke sini.</FieldDescription>

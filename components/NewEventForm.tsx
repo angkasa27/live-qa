@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createEvent } from "@/lib/actions";
+import { eventUrlPrefix, useSiteOrigin } from "@/lib/site";
 import { isoToLocal, localToIso, parseVideoId, slugDraft } from "@/lib/types";
 
 /**
@@ -23,6 +24,7 @@ import { isoToLocal, localToIso, parseVideoId, slugDraft } from "@/lib/types";
  */
 export default function NewEventForm() {
   const router = useRouter();
+  const origin = useSiteOrigin();
   const [name, setName] = useState("");
   // The address follows the name until someone types in it, then it is theirs. Tracking that
   // with a flag rather than comparing to slugify(name) means clearing the box keeps it cleared
@@ -155,7 +157,9 @@ export default function NewEventForm() {
         </p>
 
         <div className="mt-3 flex min-h-12 items-center overflow-hidden rounded-sm border-[1.5px] border-input bg-card focus-within:border-ring">
-          <span className="shrink-0 pl-3.5 text-base whitespace-nowrap text-faint">/events/</span>
+          <span className="shrink-0 pl-3.5 text-base whitespace-nowrap text-faint">
+            {eventUrlPrefix(origin)}
+          </span>
           <input
             id="slug"
             value={slug}

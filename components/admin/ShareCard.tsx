@@ -3,7 +3,9 @@
 import { Check, ChevronRight, Copy, Download, MonitorPlay, Share2 } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+
+import { eventUrl, eventUrlPrefix, useSiteOrigin } from "@/lib/site";
 
 import { Button } from "@/components/ui/button";
 import { Item, ItemContent, ItemMedia, ItemTitle, ItemDescription } from "@/components/ui/item";
@@ -18,18 +20,11 @@ import { Item, ItemContent, ItemMedia, ItemTitle, ItemDescription } from "@/comp
  * One 1024px PNG serves both the preview and the download: it scales down without a second
  * encode, and it is large enough to print at poster size.
  */
-const noop = () => () => {};
-
 export default function ShareCard({ eventId, name }: { eventId: string; name: string }) {
-  /**
-   * The public origin is whatever the admin actually reached this page on, which is right on
-   * localhost, on a preview deploy and in production alike — no env var to get wrong. Read
-   * through a store rather than an effect: it is a client-only value with a known server
-   * snapshot (empty), which is exactly what this hook is for, and writing it with setState
-   * inside an effect is a cascading render.
-   */
-  const origin = useSyncExternalStore(noop, () => window.location.origin, () => "");
-  const url = origin ? `${origin}/events/${eventId}` : "";
+  // NEXT_PUBLIC_SITE_URL when it is set, the current origin when it is not. See lib/site.ts
+  // for why a printed QR must not encode whichever host the admin happened to be on.
+  const origin = useSiteOrigin();
+  const url = eventUrl(origin, eventId);
 
   const [png, setPng] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -82,9 +77,9 @@ export default function ShareCard({ eventId, name }: { eventId: string; name: st
       </div>
 
       <p className="mt-3.5 text-center text-md break-all text-muted-foreground">
-        {url ? (
+        {origin ? (
           <>
-            {url.replace(/\/events\/.*$/, "/events/")}
+            {eventUrlPrefix(origin)}
             <strong className="font-bold text-foreground">{eventId}</strong>
           </>
         ) : (
