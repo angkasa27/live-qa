@@ -1,11 +1,19 @@
-import { CalendarOff, Plus } from "lucide-react";
+import { CalendarDays, CalendarOff, Check, Clock, MapPin, Pencil, Plus, User, Users } from "lucide-react";
 import Link from "next/link";
-import AdminShell from "@/components/admin/Shell";
-import { EventRowCard, LiveEventCard } from "@/components/admin/EventCards";
+
+import LocalTime from "@/components/LocalTime";
+import PageShell from "@/components/PageShell";
+import SignOutButton from "@/components/SignOutButton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
-import { listEventsForAdmin } from "@/lib/queries";
-import { requireSession, scopeOf } from "@/lib/guard";
+import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
+import { MetaItem, MetaList } from "@/components/MetaList";
+import { Toolbar, ToolbarTitle } from "@/components/ui/toolbar";
 import { isSuperadmin } from "@/lib/auth";
+import { requireSession, scopeOf } from "@/lib/guard";
+import { listEventsForAdmin } from "@/lib/queries";
+import { daysUntil } from "@/lib/relativeTime";
 import type { EventStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -17,85 +25,139 @@ const GROUPS = [
   ["archived", "Arsip"],
 ] as const satisfies readonly (readonly [EventStatus, string])[];
 
+type Row = Awaited<ReturnType<typeof listEventsForAdmin>>[number];
+
+/**
+ * The one thing this row wants from you, as a single tag. Ranked, because a row gets one:
+ * a running session outranks a queue, and a queue outranks a date. Anything with nothing
+ * outstanding says so quietly rather than saying nothing, so a scanned list has no gaps.
+ */
+function StateTag({ e }: { e: Row }) {
+  if (e.status === "live") {
+    return (
+      <Badge variant="live">
+        <span className="size-2 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
+        Live
+      </Badge>
+    );
+  }
+  // Two kinds of outstanding work, and they are not the same job: `pending` needs a
+  // decision, `unanswered` needs writing. Either one means this session is not finished,
+  // so "Selesai" has to wait for both to be zero — an archived majelis with seven
+  // unanswered questions calling itself done is how they stay unanswered.
+  if (e.pending > 0 || e.unanswered > 0) {
+    return (
+      <Badge variant={e.pending > 0 ? "warning" : "accent"}>
+        <Pencil aria-hidden />
+        {e.pending > 0 ? e.pending : e.unanswered}
+      </Badge>
+    );
+  }
+  if (e.status === "scheduled") {
+    const days = daysUntil(e.startsAt);
+    return (
+      <Badge variant="muted">
+        <CalendarDays aria-hidden />
+        {days <= 0 ? "hari ini" : `${days} hari`}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="muted">
+      <Check aria-hidden />
+      Selesai
+    </Badge>
+  );
+}
+
 export default async function AdminHome() {
   const session = await requireSession("/admin");
   // An admin sees the majelis they are staffing and nothing else; scopeOf gives the superadmin
   // null, which the query reads as "no filter".
   const events = await listEventsForAdmin(scopeOf(session.user));
+  const superadmin = isSuperadmin(session.user);
 
   return (
-    <AdminShell
-      title="Admin Sual"
-      subtitle={
-        <div className="flex items-center gap-2">
-          <span className="truncate">{session.user.email}</span>
-          {isSuperadmin(session.user) && (
-            <>
-              <span aria-hidden>·</span>
-              <Link
-                href="/admin/pengguna"
-                className="shrink-0 font-medium text-[#b8b1a6] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8e5df]"
-              >
-                Pengguna
-              </Link>
-            </>
-          )}
-        </div>
-      }
-      /* Under the thumb rather than beside the way out: making a session is the one thing
-         this screen does that is not reading — and it is the superadmin's. An admin is handed
-         sessions to run; they do not start them. */
-      footer={
-        !isSuperadmin(session.user) ? undefined : (
-        <Link
-          href="/admin/events/new"
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold text-primary transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <Plus className="h-[18px] w-[18px]" aria-hidden />
-          Sesi baru
-        </Link>
-        )
-      }
-    >
-      {events.length === 0 ? (
-        <Empty>
-          <EmptyMedia variant="icon">
-            <CalendarOff aria-hidden />
-          </EmptyMedia>
-          <EmptyDescription>
-            {isSuperadmin(session.user)
-              ? "Belum ada majelis."
-              : "Belum ada majelis yang ditugaskan kepada Anda."}
-          </EmptyDescription>
-        </Empty>
-      ) : (
-        <div className="space-y-6">
-          {GROUPS.map(([status, label]) => {
+    <>
+      <Toolbar variant="ink">
+        <ToolbarTitle>Sesi Anda</ToolbarTitle>
+        {superadmin && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Orang"
+            className="text-on-bar active:bg-white/12"
+            render={<Link href="/admin/pengguna" />}
+          >
+            <Users aria-hidden />
+          </Button>
+        )}
+        <SignOutButton />
+      </Toolbar>
+
+      <PageShell
+        padded={false}
+        /* Under the thumb rather than beside the way out: making a session is the one thing
+           this screen does that is not reading — and it is the superadmin's. An admin is
+           handed sessions to run; they do not start them. */
+        action={
+          superadmin ? (
+            <Button variant="outline" size="lg" render={<Link href="/admin/events/new" />}>
+              <Plus aria-hidden />
+              Sesi baru
+            </Button>
+          ) : undefined
+        }
+      >
+        {events.length === 0 ? (
+          <Empty className="m-4">
+            <EmptyMedia variant="icon">
+              <CalendarOff aria-hidden />
+            </EmptyMedia>
+            <EmptyDescription>
+              {superadmin
+                ? "Belum ada majelis."
+                : "Belum ada majelis yang ditugaskan kepada Anda."}
+            </EmptyDescription>
+          </Empty>
+        ) : (
+          GROUPS.map(([status, label]) => {
             const rows = events.filter((e) => e.status === status);
             if (rows.length === 0) return null;
             return (
               <section key={status}>
-                <h2 className="mb-2 flex items-center gap-2 font-mono text-[0.6875rem] tracking-[0.12em] text-faint uppercase">
-                  {status === "live" && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-live" aria-hidden />
-                  )}
-                  {label}
-                </h2>
-                <ul className="space-y-2.5">
-                  {rows.map((e) => (
-                    <li key={e.id}>
-                      {/* Live gets the full card; everything else is a row, because during a
-                          session the running majelis is the only one anyone opens. */}
-                      {status === "live" ? <LiveEventCard e={e} /> : <EventRowCard e={e} />}
-                    </li>
-                  ))}
-                </ul>
+                <p className="px-5 pt-4 pb-2 text-base font-bold text-muted-foreground">{label}</p>
+                {rows.map((e) => (
+                  <Item key={e.id} render={<Link href={`/admin/events/${e.id}`} />} size="sm">
+                    <ItemContent>
+                      <ItemTitle className="block">{e.name}</ItemTitle>
+                      <MetaList layout="inline">
+                        {e.status === "archived" ? (
+                          <MetaItem icon={User}>{e.speaker}</MetaItem>
+                        ) : (
+                          <MetaItem icon={MapPin}>{e.venue}</MetaItem>
+                        )}
+                        <MetaItem icon={Clock}>
+                          <LocalTime iso={e.startsAt} />
+                        </MetaItem>
+                        {/* Only when it is not already the tag on the right. */}
+                        {e.status === "live" && e.pending > 0 && (
+                          <MetaItem icon={Pencil} className="font-bold text-warn [&_svg]:stroke-current">
+                            {e.pending} perlu review
+                          </MetaItem>
+                        )}
+                      </MetaList>
+                    </ItemContent>
+                    <ItemActions>
+                      <StateTag e={e} />
+                    </ItemActions>
+                  </Item>
+                ))}
               </section>
             );
-          })}
-        </div>
-      )}
-
-    </AdminShell>
+          })
+        )}
+      </PageShell>
+    </>
   );
 }

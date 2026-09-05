@@ -31,3 +31,19 @@ export function eventDate(iso: string) {
     minute: "2-digit",
   });
 }
+
+/**
+ * Whole days from now until `iso`, in the majelis' own timezone — 0 once the day has
+ * arrived, negative once it is past. Calendar days, not 24-hour blocks: a session tomorrow
+ * at 08.00 is "1 hari" whether you ask at 07.00 or at 23.00 today, which is what an
+ * operator scanning a list means by it.
+ *
+ * Pass `now` to keep it deterministic in tests.
+ */
+export function daysUntil(iso: string, now = Date.now()) {
+  const dayIn = (ms: number) =>
+    new Date(ms).toLocaleDateString("en-CA", { timeZone: EVENT_TZ });
+  const start = Date.parse(dayIn(now) + "T00:00:00Z");
+  const target = Date.parse(dayIn(Date.parse(iso)) + "T00:00:00Z");
+  return Math.round((target - start) / 86_400_000);
+}

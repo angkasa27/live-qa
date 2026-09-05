@@ -1,18 +1,26 @@
 "use client";
 
+import { Image as ImageIcon, MapPin, Tag, User, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
 import CoverField from "@/components/admin/CoverField";
 import DateTimeField from "@/components/admin/DateTimeField";
-import Field from "@/components/admin/Field";
-import FormSection from "@/components/admin/FormSection";
-import Segmented from "@/components/admin/Segmented";
-import Spinner from "@/components/Spinner";
 import VideoField from "@/components/admin/VideoField";
+import PageShell from "@/components/PageShell";
+import Spinner from "@/components/Spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { createEvent } from "@/lib/actions";
-import { isoToLocal, localToIso, parseVideoId, slugDraft, slugify } from "@/lib/types";
+import { isoToLocal, localToIso, parseVideoId, slugDraft } from "@/lib/types";
 
+/**
+ * Four facts and a name. Everything else about a session is set later, from the session
+ * itself: a majelis is always created scheduled, and going live is a deliberate act taken
+ * from its own controls — never a dropdown chosen while typing the venue.
+ */
 export default function NewEventForm() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -24,7 +32,6 @@ export default function NewEventForm() {
   const [startsAt, setStartsAt] = useState(() => isoToLocal(new Date().toISOString()));
   const [venue, setVenue] = useState("");
   const [speaker, setSpeaker] = useState("");
-  const [moderation, setModeration] = useState<"auto" | "manual">("auto");
   const [video, setVideo] = useState("");
   const [image, setImage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +42,8 @@ export default function NewEventForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const startsAtIso = localToIso(startsAt);
-    if (!startsAtIso) {
-      return setError("Tanggal dan waktu belum lengkap.");
-    }
+    if (!startsAtIso) return setError("Tanggal dan waktu belum lengkap.");
+
     setBusy(true);
     setError(null);
     try {
@@ -46,10 +52,10 @@ export default function NewEventForm() {
         startsAt: startsAtIso,
         venue,
         speaker,
-        // A new session is always scheduled. Going live is a deliberate act taken from the
-        // session's own controls, not a dropdown chosen while typing the venue.
         status: "scheduled",
-        moderation,
+        // Review mode is a live control now; it lives on the board with the other thing an
+        // operator flips mid-majelis. New sessions start on the safe side of it.
+        moderation: "manual",
         video,
         image,
         slug: slug || undefined,
@@ -65,109 +71,120 @@ export default function NewEventForm() {
 
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col">
-      <div className="flex-1 space-y-4">
-        <Field
-          id="name"
-          label="Nama sesi"
-          required
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (!slugEdited) setSlug(slugify(e.target.value));
-          }}
-          placeholder="mis. Kajian Ahad Pagi: Adab Menuntut Ilmu"
-        />
-
-        <Field
-          id="slug"
-          label="Alamat sesi"
-          value={slug}
-          inputMode="url"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          onChange={(e) => {
-            setSlugEdited(true);
-            setSlug(slugDraft(e.target.value));
-          }}
-          placeholder="kajian-ahad-pagi"
-          hint="Bagian akhir tautan yang dibagikan. Ikut nama sesi sampai Anda mengubahnya."
-        >
-          <p className="mt-1 truncate font-mono text-xs text-faint">
-            /events/{slug || "…"}
-          </p>
+      <PageShell
+        action={
+          <Button type="submit" size="lg" disabled={busy}>
+            {busy && <Spinner />}
+            {busy ? "Membuat…" : "Buat sesi"}
+          </Button>
+        }
+      >
+        <Field className="gap-2">
+          <FieldLabel htmlFor="name">
+            <Tag aria-hidden />
+            Nama sesi
+          </FieldLabel>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (!slugEdited) setSlug(slugDraft(e.target.value));
+            }}
+            placeholder="mis. Kajian Ahad Pagi: Adab Menuntut Ilmu"
+          />
         </Field>
 
-        <DateTimeField value={startsAt} onChange={setStartsAt} />
-
-        <Field
-          id="venue"
-          label="Tempat"
-          required
-          value={venue}
-          onChange={(e) => setVenue(e.target.value)}
-          placeholder="mis. Masjid Al-Ikhlas, Bandung"
-        />
-
-        <Field
-          id="speaker"
-          label="Pemateri"
-          required
-          value={speaker}
-          onChange={(e) => setSpeaker(e.target.value)}
-          placeholder="mis. Ust. Abdul Hakim"
-        />
-
-        <FormSection label="Opsional" />
-
-        <CoverField
-          value={image}
-          onChange={setImage}
-          fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
-        />
-
-        <VideoField value={video} onChange={setVideo} />
-
-        <div>
-          <p className="mb-1.5 text-sm font-medium">Mode review awal</p>
-          <Segmented
-            label="Mode review awal"
-            value={moderation}
-            options={[
-              ["auto", "Otomatis"],
-              ["manual", "Manual"],
-            ]}
-            onChange={setModeration}
-            activeClassName={
-              moderation === "manual" ? "bg-warn text-white" : "bg-foreground text-background"
-            }
-          />
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {moderation === "manual"
-              ? "Pertanyaan menunggu disetujui sebelum tampil. Bisa diubah kapan saja."
-              : "Pertanyaan langsung tampil. Bisa diubah kapan saja."}
-          </p>
+        <div className="mt-4">
+          <DateTimeField value={startsAt} onChange={setStartsAt} />
         </div>
+
+        <Field className="mt-4 gap-2">
+          <FieldLabel htmlFor="venue">
+            <MapPin aria-hidden />
+            Tempat
+          </FieldLabel>
+          <Input
+            id="venue"
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+            placeholder="mis. Masjid Al-Ikhlas, Bandung"
+          />
+        </Field>
+
+        <Field className="mt-4 gap-2">
+          <FieldLabel htmlFor="speaker">
+            <User aria-hidden />
+            Pemateri
+          </FieldLabel>
+          <Input
+            id="speaker"
+            value={speaker}
+            onChange={(e) => setSpeaker(e.target.value)}
+            placeholder="mis. Ustadz Abdul Hakim"
+          />
+        </Field>
+
+        <Field className="mt-4 gap-2">
+          <FieldLabel>
+            <ImageIcon aria-hidden />
+            Poster <span className="font-normal text-muted-foreground">— boleh dikosongkan</span>
+          </FieldLabel>
+          <CoverField
+            value={image}
+            onChange={setImage}
+            fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
+          />
+        </Field>
+
+        <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
+          Setelah majelis
+        </p>
+
+        <Field className="mt-3 gap-2">
+          <FieldLabel htmlFor="video">
+            <Video aria-hidden />
+            Rekaman YouTube
+          </FieldLabel>
+          <VideoField value={video} onChange={setVideo} />
+          <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
+        </Field>
+
+        <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
+          Alamat halaman
+        </p>
+
+        <div className="mt-3 flex min-h-12 items-center overflow-hidden rounded-sm border-[1.5px] border-input bg-card focus-within:border-ring">
+          <span className="shrink-0 pl-3.5 text-base whitespace-nowrap text-faint">/events/</span>
+          <input
+            id="slug"
+            value={slug}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            inputMode="url"
+            aria-label="Alamat halaman"
+            onChange={(e) => {
+              setSlugEdited(true);
+              setSlug(slugDraft(e.target.value));
+            }}
+            placeholder="kajian-ahad-pagi"
+            className="min-h-12 min-w-0 flex-1 border-0 bg-transparent py-0 pr-3.5 pl-px text-base outline-none placeholder:text-faint"
+          />
+        </div>
+        <FieldDescription className="mt-1.5">
+          Terisi dari nama sesi — ubah sekarang kalau perlu. Setelah sesi dibuat alamat ini
+          dikunci, karena QR yang sudah dicetak harus tetap hidup.
+        </FieldDescription>
 
         <div aria-live="polite">
           {error && (
-            <Alert variant="destructive" className="rounded-xl">
+            <Alert variant="destructive" className="mt-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
         </div>
-      </div>
-
-      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border-soft bg-background/90 px-4 pt-3 backdrop-blur sm:-mx-6 sm:px-6 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
-        <button
-          type="submit"
-          disabled={busy}
-          className="flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          {busy && <Spinner />}
-          {busy ? "Menyimpan…" : "Simpan sesi"}
-        </button>
-      </div>
+      </PageShell>
     </form>
   );
 }
