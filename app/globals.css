@@ -111,16 +111,32 @@
   /* The type ramp is literal pixels, not rem multiples, because the design was drawn in
      them — and every step is scaled by --step so the whole ramp moves from one number if a
      size control is ever wired up. Names are Tailwind's; the sizes are Sual's, so `text-sm`
-     here is 12.5px, not 14px. There is one ramp in this product; this is it. */
+     here is 12.5px, not 14px. There is one ramp in this product; this is it.
+
+     Every step carries its own line-height, which is the part worth insisting on: leading is
+     a property of a size, not a decision each call site makes. Reaching for leading-snug or
+     leading-relaxed per element is how nine sizes turned into nineteen leadings, all of them
+     slightly wrong. Set the size and the leading comes with it; override only where the
+     content genuinely reads differently, which in this product is exactly one place — an
+     answer body, which is looser on purpose because it is the longest prose here. */
   --text-2xs: calc(11.5px * var(--step)); /* live flag, tags, count pills, roles */
+  --text-2xs--line-height: 1.45;
   --text-xs: calc(12px * var(--step)); /* bylines, question meta, help text */
+  --text-xs--line-height: 1.55;
   --text-sm: calc(12.5px * var(--step)); /* row meta, toggles */
+  --text-sm--line-height: 1.5;
   --text-base: calc(13px * var(--step)); /* alerts, section rules, body copy */
+  --text-base--line-height: 1.5;
   --text-md: calc(13.5px * var(--step)); /* answer bodies, back links, form labels */
+  --text-md--line-height: 1.55;
   --text-lg: calc(14.5px * var(--step)); /* the question itself */
+  --text-lg--line-height: 1.5;
   --text-xl: calc(15.5px * var(--step)); /* row and card titles */
+  --text-xl--line-height: 1.3;
   --text-2xl: calc(18px * var(--step)); /* detail and form headings */
+  --text-2xl--line-height: 1.28;
   --text-3xl: calc(21px * var(--step)); /* page headings */
+  --text-3xl--line-height: 1.1;
 }
 
 /* One column for the whole app. Every bar, band, sheet and <main> centres on the same

@@ -46,7 +46,7 @@ export default function VideoField({
             alt=""
             className="h-10 w-[4.25rem] shrink-0 rounded object-cover"
           />
-          <p className="min-w-0 text-xs leading-relaxed text-accent-foreground">
+          <p className="min-w-0 text-xs text-accent-foreground">
             Video dikenali. Tautan YouTube, youtu.be, atau ID saja bisa dipakai.
           </p>
         </div>

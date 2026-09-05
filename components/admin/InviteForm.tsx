@@ -67,7 +67,7 @@ export default function InviteForm({
           </Button>
         }
       >
-        <h1 className="text-2xl leading-snug font-bold tracking-[-0.025em]">Undang admin</h1>
+        <h1 className="text-2xl font-bold tracking-[-0.025em]">Undang admin</h1>
 
         <Field className="mt-4.5 gap-2">
           <FieldLabel htmlFor="name">

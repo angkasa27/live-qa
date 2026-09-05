@@ -141,7 +141,7 @@ export default function QuestionItem({
         </p>
       )}
 
-      <p className="text-lg leading-normal font-semibold tracking-[-0.01em] whitespace-pre-wrap">
+      <p className="text-lg font-semibold tracking-[-0.01em] whitespace-pre-wrap">
         {q.body}
       </p>
 

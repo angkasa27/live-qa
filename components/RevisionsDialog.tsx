@@ -77,7 +77,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
                 {r.retracted || r.answer === null ? (
                   <p className="mt-1.5 text-sm italic text-muted-foreground">Jawaban ditarik.</p>
                 ) : (
-                  <p className="mt-1.5 whitespace-pre-wrap text-[0.9375rem] leading-relaxed">
+                  <p className="mt-1.5 whitespace-pre-wrap text-[0.9375rem]">
                     {r.answer}
                   </p>
                 )}

@@ -172,7 +172,7 @@ export default function AccountForm({
         {busy === "ban" ? <Spinner /> : admin.banned ? <UserCheck aria-hidden /> : <CircleSlash aria-hidden />}
         {admin.banned ? "Aktifkan kembali" : "Nonaktifkan akun"}
       </Button>
-      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground">
         {admin.banned
           ? "Akun ini sedang tidak bisa masuk. Mengaktifkannya mengembalikan akses ke sesi yang sama."
           : "Tidak bisa masuk lagi. Sesi dan jawaban yang sudah ia terbitkan tetap ada. Bisa diaktifkan lagi kapan saja."}
@@ -188,7 +188,7 @@ export default function AccountForm({
           <Trash2 aria-hidden />
           Hapus permanen
         </Button>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Menghapus akunnya memutus jejak siapa yang menulis jawabannya — nonaktifkan saja,
           kecuali akun ini memang belum pernah dipakai.
         </p>
@@ -251,7 +251,7 @@ export default function AccountForm({
         }}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="confirm-name" className="block leading-relaxed">
+          <Label htmlFor="confirm-name" className="block">
             Ketik <span className="font-bold">{admin.name}</span> untuk melanjutkan
           </Label>
           <Input

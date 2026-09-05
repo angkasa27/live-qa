@@ -20,8 +20,8 @@ export default async function MyQuestionsPage() {
   return (
     <>
       <header className="px-5 pt-5 pb-1">
-        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Pertanyaan saya</h1>
-        <p className="mt-1.5 text-base leading-relaxed text-muted-foreground text-pretty">
+        <h1 className="text-3xl font-extrabold tracking-[-0.03em]">Pertanyaan saya</h1>
+        <p className="mt-1.5 text-base text-muted-foreground text-pretty">
           Tersimpan di perangkat ini saja. Jika data peramban dihapus atau Anda berganti
           perangkat, daftar ini hilang.
         </p>
@@ -62,7 +62,7 @@ export default async function MyQuestionsPage() {
                   </Link>
                 )}
 
-                <p className="mt-2 text-lg leading-normal font-semibold tracking-[-0.01em] whitespace-pre-wrap">
+                <p className="mt-2 text-lg font-semibold tracking-[-0.01em] whitespace-pre-wrap">
                   {q.body}
                 </p>
                 <p className="mt-2 text-xs text-faint">
@@ -72,7 +72,7 @@ export default async function MyQuestionsPage() {
                 {/* Status is stated even when there is an answer: a question can be hidden
                     after it was answered, and the asker should still see where it stands. */}
                 {q.status === "hidden" && (
-                  <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+                  <p className="mt-3 text-base text-muted-foreground">
                     <span className="mr-1.5 rounded-full border border-border px-2 py-[3px] text-2xs font-bold">
                       tidak ditampilkan
                     </span>

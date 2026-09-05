@@ -246,7 +246,7 @@ export default function EditSessionForm({
         onConfirm={remove}
       >
         <div className="space-y-1.5">
-          <Label htmlFor="confirm-name" className="block leading-relaxed">
+          <Label htmlFor="confirm-name" className="block">
             Ketik <span className="font-bold">{event.name}</span> untuk melanjutkan
           </Label>
           <Input

@@ -109,8 +109,8 @@ function ProposalCard({
           {timecode(proposal.videoStart)}
         </span>
       </p>
-      <p className="mt-2 text-md leading-relaxed whitespace-pre-wrap">{proposal.draft}</p>
-      <p className="mt-2 border-l-2 border-accent-border pl-2.5 text-sm leading-snug italic text-muted-foreground">
+      <p className="mt-2 text-md whitespace-pre-wrap">{proposal.draft}</p>
+      <p className="mt-2 border-l-2 border-accent-border pl-2.5 text-sm italic text-muted-foreground">
         “{proposal.quote}”
       </p>
       <div className="mt-3 flex items-center gap-2">
@@ -220,7 +220,7 @@ function QuestionCard({
         </span>
       </p>
 
-      <Clamp className="mt-2 text-lg leading-normal font-semibold tracking-[-0.01em] whitespace-pre-wrap" lines={5}>
+      <Clamp className="mt-2 text-lg font-semibold tracking-[-0.01em] whitespace-pre-wrap" lines={5}>
         {q.body}
       </Clamp>
 
@@ -261,7 +261,7 @@ function QuestionCard({
               what is currently live is the thing being compared against. */}
           {answered && (
             <div className="mt-3 border-l-[3px] border-primary pl-3.5">
-              <Clamp className="text-md leading-relaxed whitespace-pre-wrap text-foreground-soft" lines={4}>
+              <Clamp className="text-md whitespace-pre-wrap text-foreground-soft" lines={4}>
                 {q.answer}
               </Clamp>
             </div>

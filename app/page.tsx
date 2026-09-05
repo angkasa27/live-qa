@@ -57,7 +57,7 @@ function Hero({ e }: { e: Row }) {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,38,30,0)_26%,rgba(9,38,30,0.58)_60%,rgba(9,38,30,0.95)_100%)]" />
 
         <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5">
-          <h2 className="text-xl leading-snug font-bold tracking-[-0.02em] [text-shadow:0_1px_12px_rgba(9,38,30,0.5)]">
+          <h2 className="text-xl font-bold tracking-[-0.02em] [text-shadow:0_1px_12px_rgba(9,38,30,0.5)]">
             {e.name}
           </h2>
           <MetaList className="mt-2 gap-1 [&_svg]:stroke-white/70">
@@ -172,7 +172,7 @@ export default async function EventListPage() {
   return (
     <>
       <header className="px-5 pt-5 pb-1">
-        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Sual</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.03em]">Sual</h1>
         <p className="text-base text-muted-foreground">
           Setiap pertanyaan begitu berarti.
         </p>

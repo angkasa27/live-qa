@@ -85,7 +85,7 @@ export default function QuestionList({
         </Button>
       </div>
 
-      {note && <p className="px-5 pt-1.5 pb-4 text-sm leading-relaxed text-muted-foreground">{note}</p>}
+      {note && <p className="px-5 pt-1.5 pb-4 text-sm text-muted-foreground">{note}</p>}
 
       {items.length === 0 && loading === null ? (
         <Empty className="border-t border-border-soft">

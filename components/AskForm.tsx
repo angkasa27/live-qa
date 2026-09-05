@@ -78,7 +78,7 @@ export default function AskForm({
           </Button>
         }
       >
-        <h1 className="text-2xl leading-snug font-bold tracking-[-0.025em]">Kirim pertanyaan</h1>
+        <h1 className="text-2xl font-bold tracking-[-0.025em]">Kirim pertanyaan</h1>
         <p className="text-base text-muted-foreground">
           Untuk <strong className="font-semibold text-foreground">{eventName}</strong>
         </p>
@@ -178,10 +178,10 @@ function Confirmation({ eventId, moderated }: { eventId: string; moderated: bool
         >
           <Check className="size-6" strokeWidth={2.5} />
         </span>
-        <h1 className="mt-3.5 text-2xl leading-snug font-bold tracking-[-0.025em]">
+        <h1 className="mt-3.5 text-2xl font-bold tracking-[-0.025em]">
           {moderated ? "Pertanyaan Anda terkirim" : "Sudah masuk antrean"}
         </h1>
-        <p className="mx-auto mt-2 max-w-sm text-base leading-relaxed text-muted-foreground text-pretty">
+        <p className="mx-auto mt-2 max-w-sm text-base text-muted-foreground text-pretty">
           {moderated
             ? "Majelis ini memakai review admin, jadi pertanyaan Anda menunggu disetujui sebelum tampil. Tidak perlu mengirim ulang."
             : "Pertanyaan Anda langsung tampil dan sudah terbaca oleh admin majelis. Urutannya sesuai waktu bertanya."}
