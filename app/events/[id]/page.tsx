@@ -51,14 +51,21 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
       <Toolbar>
         <ToolbarBack href="/">Majelis</ToolbarBack>
         <ToolbarSpacer />
+        {/*
+         * This tag answers "what will I find here", not "what lifecycle state is this in".
+         * That is why a scheduled majelis shows nothing — there is nothing here yet — and
+         * why an archive says "Rekaman" rather than "Arsip": the recording is the thing you
+         * came for. An archive with no recording shows nothing, because the tag would then
+         * be claiming something that is not on the page.
+         */}
         {live && (
-          <Badge variant="live">
+          <Badge variant="live" className="mr-1.5">
             <span className="size-2 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
             Berlangsung
           </Badge>
         )}
         {archived && event.youtubeId && (
-          <Badge variant="accent">
+          <Badge variant="accent" className="mr-1.5">
             <Video aria-hidden />
             Rekaman
           </Badge>
@@ -77,7 +84,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           ))}
 
         <div className="page border-b border-border-soft px-5 pt-5 pb-4.5">
-          <h1 className="text-2xl leading-snug font-bold tracking-[-0.025em]">{event.name}</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.025em]">{event.name}</h1>
           <MetaList className="mt-3.5">
             <MetaItem icon={User}>{event.speaker}</MetaItem>
             <MetaItem icon={MapPin}>{event.venue}</MetaItem>

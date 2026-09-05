@@ -149,6 +149,29 @@ things about it are not in that file:
   size control is ever wired up. Nothing wires one up today.
 - Reach for a neighbour before adding an arbitrary size. `SpeakerDeck` is the one exemption and
   clamps against the viewport instead.
+- **Every step carries its own line-height**, so leading is never a call-site decision. Set the
+  size and the leading comes with it. There is exactly one override in the product — an answer
+  body, at `leading-[1.65]`, because it is the longest prose here and reads looser on purpose.
+  Reaching for `leading-snug` or `leading-relaxed` per element is how nine sizes became
+  nineteen leadings, all of them slightly wrong; if a size needs different leading everywhere,
+  change the ramp, not the element.
+
+### Where the design is not the standard
+
+The design files are a drawing, not a system, and they waver in places. Where they do, this
+document picks one value and the code follows it — matching the drawing exactly would import
+the drift:
+
+| The design draws | We ship |
+|---|---|
+| A word-badge at 30px in a bar, 30px in a session row, 28px on a person | One badge height, 30px |
+| An edge on row badges, none on bar badges | Always an edge, matching the tone — invisible on `live` anyway |
+| Section headings at 15px, row titles at 15.5px | One step, `text-xl` |
+| Chips at 40px, except the refresh chip at 38px | One chip size, 40px |
+| Field padding at 13px, 14px and 15px | 14px |
+
+None of these is visible as a difference; all of them are visible as inconsistency once you
+have four screens open. When a new screen disagrees with this table, the table wins.
 
 ## Shape
 
@@ -263,7 +286,6 @@ A button-styled `<Link>` uses `<Button render={<Link href=… />}>`. Do not reac
 |---|---|
 | `admin/Modal.tsx` | Built on native `<dialog>`, which already gives inertness, focus containment, Escape, and focus return. A dialog library would add a dependency to re-implement what the platform ships. |
 | `Spinner.tsx` | Ten lines, and coupled to the reduced-motion rule above. |
-| `StatusBadge.tsx` | Domain-shaped — see below. A thin wrapper over `Badge`. |
 | `MetaList.tsx` | The icon-led facts under a title, on every screen in both design files. The pictogram carries what a label used to say, which only works if the same icon means the same fact everywhere: `User` speaker, `MapPin` venue, `Clock` time, `MessageCircle` questions. |
 | `PageShell.tsx` | `<main>` plus the sticky action. The action is a *sibling* of `<main>`, not its last child: inside the scroll container `sticky bottom-0` only pins once content overflows, so on a short list the bar sat under the content instead of under the thumb. |
 | `Player.tsx`, `SpeakerDeck.tsx`, `Poster.tsx` | No generic equivalent exists. |
@@ -272,10 +294,15 @@ A button-styled `<Link>` uses `<Button render={<Link href=… />}>`. Do not reac
 
 These encode rules from `REQUIREMENTS.md`. A generic component would let a caller violate one.
 
-- **`StatusBadge`** — the `scheduled`/`live`/`archived` triple, with `live` the only user of
-  `--live`. It says nothing about whether the session has video: state ⊥ video is an explicit
-  orthogonal pair, and a badge that merged them would be the exact modelling error the
-  requirements warn about.
+- **The bar tag on a majelis** — `Badge size="bar"` in the detail page's `Toolbar`. It answers
+  "what will I find here", not "what lifecycle state is this in", which is why a scheduled
+  session shows nothing, a running one shows *Berlangsung*, and an archive shows *Rekaman*
+  rather than *Arsip*. An archive with no recording shows nothing at all: the tag names what is
+  on the page, so it must not claim a recording that is not there.
+
+  This is why the old `StatusBadge` is gone. It rendered the `scheduled`/`live`/`archived`
+  triple and was careful to say nothing about video — state ⊥ video being an orthogonal pair —
+  but the screen never wanted the lifecycle state. `live` remains the only user of `--live`.
 - **`QuestionItem`'s pending treatment** — warn ground, "Menunggu review admin", and "hanya Anda
   yang melihat ini". Straight out of the visibility matrix: a pending question is visible to its
   asker and to nobody else. The reassurance is load-bearing, not decoration; without it people

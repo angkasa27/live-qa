@@ -16,8 +16,11 @@ import { cn } from "@/lib/utils"
  * is a button, and nothing needed the other two.
  *
  * Two axes, so the design's pills don't become a variant each: `variant` is the colour and
- * what it means, `size` is the shape. The section counts on the admin board are
- * `size="count"`, and a count that needs attention is `variant="warning" size="count"`.
+ * what it means, `size` is the shape. There are two shapes and no more: a word (30px) and a
+ * number (20px square). The design has a word-badge at 30px, 30px and 28px depending on
+ * which screen it is on, and an edge on some but not others — that is drift, not intent, so
+ * it is one height and always an edge here. The edge matches the tone, so on `live` it is
+ * invisible anyway.
  *
  * Not uppercase. The design sets these in sentence case at 11.5px/700 — "Berlangsung",
  * "Rekaman", "Nonaktif" — and Indonesian status labels are long enough already.
@@ -43,7 +46,9 @@ const badgeVariants = cva(
         destructive: "border-destructive-border bg-destructive-soft text-destructive",
       },
       size: {
-        default: "min-h-5.5 px-2.5 py-0.5 text-2xs",
+        // The design draws this at 30px in a bar, 30 in a session row and 28 on a person,
+        // which is three numbers for one thing. It is 30 everywhere here.
+        default: "min-h-[30px] px-3 py-1.5 text-2xs",
         // A number, not a word: the counts in the admin board section headers.
         count: "min-h-5 min-w-5 px-1.5 text-2xs",
       },

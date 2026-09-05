@@ -50,8 +50,12 @@ const buttonVariants = cva(
         // 54px, full width. The sticky call to action at the foot of a screen.
         lg: "min-h-[54px] w-full rounded-md px-5 text-[calc(15px*var(--step))] [&_svg:not([class*='size-'])]:size-[17px]",
         // 40px pill. Reads as a chip, behaves as a button: the answer timestamps that seek
-        // the recording, and the refresh beside a question count.
-        chip: "min-h-10 rounded-full px-3.5 text-sm [&_svg:not([class*='size-'])]:size-3",
+        // the recording, and the refresh beside a question count. Its edge is PRIMARY, not
+        // the grey an `outline` button wears, and that is the whole point — a chip sits in a
+        // line of badges that are not tappable, so the green edge is what says this one is.
+        // Overrides the variant's edge deliberately; a chip is only ever a chip.
+        chip:
+          "min-h-10 rounded-full px-3.5 text-sm shadow-[inset_0_0_0_1.5px_var(--primary)] [&_svg:not([class*='size-'])]:size-3",
         icon: "size-12 rounded-full [&_svg:not([class*='size-'])]:size-5",
       },
     },
