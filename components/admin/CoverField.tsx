@@ -29,7 +29,7 @@ export default function CoverField({
 
   return (
     <Field className="gap-1.5">
-      <FieldLabel htmlFor="image" className="font-medium">
+      <FieldLabel htmlFor="image">
         Gambar sampul <span className="font-normal text-muted-foreground">(16:9)</span>
       </FieldLabel>
 
@@ -45,7 +45,7 @@ export default function CoverField({
         )}
 
         {shown && (
-          <Badge variant="outline" className="absolute top-2.5 left-2.5 bg-card/90 text-[0.625rem]">
+          <Badge variant="outline" className="absolute top-2.5 left-2.5 bg-card/90">
             {value.trim() ? "Sampul khusus" : "Dari rekaman"}
           </Badge>
         )}
@@ -53,7 +53,7 @@ export default function CoverField({
         <button
           type="button"
           onClick={() => input.current?.focus()}
-          className="absolute right-2.5 bottom-2.5 min-h-9 rounded-lg border border-border bg-card/90 px-3 text-[0.8125rem] font-semibold backdrop-blur transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="absolute right-2.5 bottom-2.5 min-h-9 rounded-lg border border-border bg-card/90 px-3 text-base font-bold backdrop-blur transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {shown ? "Ganti" : "Tambah"}
         </button>

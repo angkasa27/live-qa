@@ -38,7 +38,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-bold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <History className="h-3.5 w-3.5" aria-hidden />
         Riwayat
@@ -59,7 +59,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
               <li key={r.createdAt + i} className="rounded-lg border border-border p-3">
                 <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   {/* The newest row is what is published now; the rest are what it replaced. */}
-                  <span className="font-medium text-foreground">
+                  <span className="font-bold text-foreground">
                     {i === 0 ? "Versi sekarang" : `Versi ${rows.length - i}`}
                   </span>
                   <span aria-hidden>·</span>
@@ -77,7 +77,7 @@ export default function RevisionsDialog({ questionId }: { questionId: string }) 
                 {r.retracted || r.answer === null ? (
                   <p className="mt-1.5 text-sm italic text-muted-foreground">Jawaban ditarik.</p>
                 ) : (
-                  <p className="mt-1.5 whitespace-pre-wrap text-[0.9375rem]">
+                  <p className="mt-1.5 whitespace-pre-wrap text-md">
                     {r.answer}
                   </p>
                 )}

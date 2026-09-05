@@ -220,7 +220,7 @@ function QuestionCard({
         </span>
       </p>
 
-      <Clamp className="mt-2 text-lg font-semibold tracking-[-0.01em] whitespace-pre-wrap" lines={5}>
+      <Clamp className="mt-2 text-lg font-semibold whitespace-pre-wrap" lines={5}>
         {q.body}
       </Clamp>
 

@@ -48,7 +48,7 @@ export default function Countdown({ iso }: { iso: string }) {
           [left.seconds, "detik"],
         ].map(([value, unit]) => (
           <div key={unit} className="min-w-0 flex-1 rounded-md bg-background py-3">
-            <b className="block text-2xl font-extrabold tracking-[-0.03em] tabular-nums">
+            <b className="block text-2xl font-extrabold tabular-nums">
               {value}
             </b>
             <span className="mt-0.5 block text-2xs text-muted-foreground">{unit}</span>

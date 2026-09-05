@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils"
  * evening, one-handed, inside a 10-30 minute window. Nothing here is under 40px.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-2.5 border-0 font-bold tracking-[-0.01em] whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "group/button inline-flex shrink-0 items-center justify-center gap-2.5 border-0 font-bold whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -48,7 +48,7 @@ const buttonVariants = cva(
         // 48px, the design's --tap. The generic control.
         md: "min-h-12 rounded-md px-4 text-md [&_svg:not([class*='size-'])]:size-4",
         // 54px, full width. The sticky call to action at the foot of a screen.
-        lg: "min-h-[54px] w-full rounded-md px-5 text-[calc(15px*var(--step))] [&_svg:not([class*='size-'])]:size-[17px]",
+        lg: "min-h-[54px] w-full rounded-md px-5 text-xl [&_svg:not([class*='size-'])]:size-[17px]",
         // 40px pill. Reads as a chip, behaves as a button: the answer timestamps that seek
         // the recording, and the refresh beside a question count. Its edge is PRIMARY, not
         // the grey an `outline` button wears, and that is the whole point — a chip sits in a

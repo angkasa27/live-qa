@@ -129,7 +129,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
   if (items.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#141311] px-6 text-center text-[#f7f4ed]">
-        <p className="text-2xl font-medium">Belum ada pertanyaan.</p>
+        <p className="text-2xl font-bold">Belum ada pertanyaan.</p>
         <Link href={`/admin/events/${eventId}`} className="text-on-bar-2 underline underline-offset-4">
           Kembali ke sesi
         </Link>

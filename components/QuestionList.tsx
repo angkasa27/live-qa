@@ -68,7 +68,7 @@ export default function QuestionList({
   return (
     <>
       <div className="flex items-center justify-between gap-3 px-5 pt-4.5 pb-1">
-        <h2 className="text-xl font-extrabold tracking-[-0.02em]">{heading} pertanyaan</h2>
+        <h2 className="text-xl font-bold">{heading} pertanyaan</h2>
         <Button
           type="button"
           variant="outline"

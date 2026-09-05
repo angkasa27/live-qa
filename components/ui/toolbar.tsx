@@ -80,7 +80,7 @@ function ToolbarTitle({ className, ...props }: React.ComponentProps<"h1">) {
     <h1
       data-slot="toolbar-title"
       className={cn(
-        "min-w-0 flex-1 truncate px-2 text-xl font-bold tracking-[-0.02em]",
+        "min-w-0 flex-1 truncate px-2 text-xl font-bold",
         className
       )}
       {...props}

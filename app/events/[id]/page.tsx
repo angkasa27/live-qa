@@ -84,7 +84,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           ))}
 
         <div className="page border-b border-border-soft px-5 pt-5 pb-4.5">
-          <h1 className="text-2xl font-bold tracking-[-0.025em]">{event.name}</h1>
+          <h1 className="text-2xl font-bold">{event.name}</h1>
           <MetaList className="mt-3.5">
             <MetaItem icon={User}>{event.speaker}</MetaItem>
             <MetaItem icon={MapPin}>{event.venue}</MetaItem>

@@ -64,7 +64,7 @@ export default function Clamp({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="mt-1 min-h-9 text-[0.8125rem] font-semibold text-primary underline underline-offset-4"
+          className="mt-1 min-h-9 text-base font-bold text-primary underline underline-offset-4"
         >
           {open ? "Ringkas" : "Selengkapnya"}
         </button>

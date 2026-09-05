@@ -20,7 +20,7 @@ export default async function MyQuestionsPage() {
   return (
     <>
       <header className="px-5 pt-5 pb-1">
-        <h1 className="text-3xl font-extrabold tracking-[-0.03em]">Pertanyaan saya</h1>
+        <h1 className="text-3xl font-extrabold">Pertanyaan saya</h1>
         <p className="mt-1.5 text-base text-muted-foreground text-pretty">
           Tersimpan di perangkat ini saja. Jika data peramban dihapus atau Anda berganti
           perangkat, daftar ini hilang.
@@ -62,7 +62,7 @@ export default async function MyQuestionsPage() {
                   </Link>
                 )}
 
-                <p className="mt-2 text-lg font-semibold tracking-[-0.01em] whitespace-pre-wrap">
+                <p className="mt-2 text-lg font-semibold whitespace-pre-wrap">
                   {q.body}
                 </p>
                 <p className="mt-2 text-xs text-faint">

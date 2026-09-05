@@ -25,7 +25,7 @@ export default function DateTimeField({
   return (
     <div className="grid grid-cols-2 gap-3">
       <Field className="gap-1.5">
-        <FieldLabel htmlFor="startsAtDate" className="font-medium">
+        <FieldLabel htmlFor="startsAtDate" className="font-bold">
           Tanggal
         </FieldLabel>
         <Input
@@ -37,7 +37,7 @@ export default function DateTimeField({
         />
       </Field>
       <Field className="gap-1.5">
-        <FieldLabel htmlFor="startsAtTime" className="font-medium">
+        <FieldLabel htmlFor="startsAtTime" className="font-bold">
           Waktu
         </FieldLabel>
         <Input

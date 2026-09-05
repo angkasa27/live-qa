@@ -149,12 +149,33 @@ things about it are not in that file:
   size control is ever wired up. Nothing wires one up today.
 - Reach for a neighbour before adding an arbitrary size. `SpeakerDeck` is the one exemption and
   clamps against the viewport instead.
-- **Every step carries its own line-height**, so leading is never a call-site decision. Set the
-  size and the leading comes with it. There is exactly one override in the product — an answer
-  body, at `leading-[1.65]`, because it is the longest prose here and reads looser on purpose.
-  Reaching for `leading-snug` or `leading-relaxed` per element is how nine sizes became
-  nineteen leadings, all of them slightly wrong; if a size needs different leading everywhere,
-  change the ramp, not the element.
+- **Every step carries its own line-height and letter-spacing**, so neither is ever a call-site
+  decision. Set the size; the rest comes with it. Tracking tightens as the type grows — the
+  ordinary optical correction — and there is none below 14.5px:
+
+  | | `2xs`–`md` | `lg` | `xl` | `2xl` | `3xl` |
+  |---|---|---|---|---|---|
+  | tracking | none | −0.01em | −0.02em | −0.025em | −0.03em |
+
+  Three overrides exist in the whole product and each says why where it sits: an answer body
+  (`leading-[1.65]`, the longest prose here), an uppercase eyebrow (`tracking-[0.12em]`, because
+  uppercase needs positive spacing), and `SpeakerDeck`, which is off this ramp entirely.
+  Reaching for `leading-snug` or `tracking-[-0.02em]` per element is how nine sizes became
+  nineteen leadings and six trackings, all of them slightly wrong. If a size needs different
+  leading everywhere, change the ramp, not the element.
+
+### Weight
+
+Four weights, and each has one job. `font-medium` was retired: it was the weight nobody chose
+deliberately, and it was what made three admin field labels lighter than every other field
+label, and `AlertTitle` / `EmptyTitle` / `DrawerTitle` lighter than every other title.
+
+| Weight | Class | Carries |
+|---|---|---|
+| 800 | `font-extrabold` | Page headings (`text-3xl`), the countdown digits, an avatar initial. Nothing else. |
+| 700 | `font-bold` | Every other heading and title, form labels, badges, buttons, section rules. The default for anything that is not prose. |
+| 600 | `font-semibold` | A question. It is the thing being read, and this is the only place it is used. |
+| 400 | `font-normal` | Prose and metadata — and de-emphasising a fragment inside a bolder parent, like `(opsional)` after a label. |
 
 ### Where the design is not the standard
 

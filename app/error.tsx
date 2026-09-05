@@ -27,7 +27,7 @@ export default function Error({
 
   return (
     <main className="page flex flex-1 flex-col items-center justify-center px-5 py-20 text-center">
-      <h1 className="text-3xl font-extrabold tracking-[-0.03em]">
+      <h1 className="text-3xl font-extrabold">
         Ada yang tidak beres
       </h1>
       <p className="mt-3 max-w-prose text-base text-muted-foreground text-pretty">

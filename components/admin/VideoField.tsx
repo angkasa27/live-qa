@@ -25,7 +25,7 @@ export default function VideoField({
 
   return (
     <Field className="gap-1.5">
-      <FieldLabel htmlFor="video" className="font-medium">
+      <FieldLabel htmlFor="video" className="font-bold">
         Tautan siaran atau rekaman{" "}
         <span className="font-normal text-muted-foreground">(opsional)</span>
       </FieldLabel>
