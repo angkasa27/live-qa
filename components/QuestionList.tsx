@@ -1,33 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, ChevronDown, MessageCircleDashed, RefreshCw } from "lucide-react";
-import { ASK_OPEN, ASK_SENT } from "@/components/AskDrawer";
-import QuestionCard from "@/components/QuestionCard";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { relativeTime } from "@/lib/relativeTime";
+import { MessageCircleDashed, RefreshCw } from "lucide-react";
+import Link from "next/link";
+
+import QuestionItem from "@/components/QuestionItem";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { fetchPage } from "@/lib/actions";
 import type { Question } from "@/lib/types";
 
 export default function QuestionList({
   eventId,
+  speaker,
   youtubeId,
+  total,
   canAsk = false,
+  note,
 }: {
   eventId: string;
+  /** Credits the answers: "Ustadz Hafizh menjawab". */
+  speaker?: string;
   youtubeId?: string;
+  /** Counted on the server, so the heading is right before the first page arrives. */
+  total: number;
   /** Live events point an empty list at the form; a recorded archive has nowhere to send you. */
   canAsk?: boolean;
+  /** One line under the heading — the archive uses it to explain the timestamps. */
+  note?: string;
 }) {
   const [items, setItems] = useState<Question[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState<"refresh" | "more" | null>("refresh");
-  const [syncedAt, setSyncedAt] = useState<string | null>(null);
 
   const applyFirstPage = useCallback((page: { items: Question[]; nextCursor: string | null }) => {
     setItems(page.items);
     setCursor(page.nextCursor);
-    setSyncedAt(new Date().toISOString());
     setLoading(null);
   }, []);
 
@@ -35,12 +43,6 @@ export default function QuestionList({
     setLoading("refresh");
     applyFirstPage(await fetchPage(eventId, null));
   }, [eventId, applyFirstPage]);
-
-  useEffect(() => {
-    const onSent = () => void refresh();
-    window.addEventListener(ASK_SENT, onSent);
-    return () => window.removeEventListener(ASK_SENT, onSent);
-  }, [refresh]);
 
   // First load: no setState before the await, so nothing renders twice on mount.
   useEffect(() => {
@@ -60,79 +62,71 @@ export default function QuestionList({
     setLoading(null);
   }
 
+  // The asker's own pending question can be in the list without being in the public count.
+  const heading = Math.max(total, items.length);
+
   return (
     <>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="font-mono text-[0.6875rem] tracking-[0.08em] text-faint uppercase" aria-live="polite">
-          {loading === "refresh"
-            ? "Memuat…"
-            : syncedAt
-              ? `Diperbarui ${relativeTime(syncedAt)}`
-              : "Terlama dulu"}
-        </p>
-        <button
+      <div className="flex items-center justify-between gap-3 px-5 pt-4.5 pb-1">
+        <h2 className="text-xl font-extrabold tracking-[-0.02em]">{heading} pertanyaan</h2>
+        <Button
+          type="button"
+          variant="outline"
+          size="chip"
           onClick={refresh}
           disabled={loading !== null}
-          className="flex min-h-[2.75rem] items-center gap-[7px] rounded-full border border-border bg-card px-3 text-[0.8125rem] font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          aria-label="Muat pertanyaan baru"
         >
-          <RefreshCw className={`h-4 w-4 ${loading === "refresh" ? "animate-spin" : ""}`} aria-hidden />
-          Muat yang baru
-        </button>
+          <RefreshCw
+            className={loading === "refresh" ? "animate-spin" : undefined}
+            strokeWidth={2.4}
+            aria-hidden
+          />
+        </Button>
       </div>
 
+      {note && <p className="px-5 pt-1.5 pb-4 text-sm leading-relaxed text-muted-foreground">{note}</p>}
+
       {items.length === 0 && loading === null ? (
-        <Empty className="rounded-2xl px-7 py-13">
-          <EmptyHeader>
-            <EmptyMedia variant="icon" className="bg-accent text-accent-foreground">
-              <MessageCircleDashed aria-hidden />
-            </EmptyMedia>
-            <EmptyTitle className="font-serif text-[1.1875rem] leading-snug font-normal">
-              Belum ada pertanyaan.
-            </EmptyTitle>
-            <EmptyDescription>
-              {canAsk
-                ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
-                : "Belum ada pertanyaan pada majelis ini."}
-            </EmptyDescription>
-          </EmptyHeader>
+        <Empty className="border-t border-border-soft">
+          <EmptyMedia variant="icon" className="bg-accent text-accent-foreground">
+            <MessageCircleDashed aria-hidden />
+          </EmptyMedia>
+          <EmptyTitle className="text-xl font-bold">Belum ada pertanyaan.</EmptyTitle>
+          <EmptyDescription>
+            {canAsk
+              ? "Majelis baru dimulai. Pertanyaan pertama boleh dari Anda."
+              : "Belum ada pertanyaan pada majelis ini."}
+          </EmptyDescription>
           {canAsk && (
-            <EmptyContent>
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent(ASK_OPEN))}
-                className="min-h-9 text-sm font-semibold text-primary underline underline-offset-4"
-              >
-                Kirim pertanyaan
-                <ArrowRight className="ml-1 inline h-4 w-4 align-[-2px]" aria-hidden />
-              </button>
-            </EmptyContent>
+            <Link
+              href={`/events/${eventId}/tanya`}
+              className="mt-1 font-bold text-primary underline underline-offset-4"
+            >
+              Kirim pertanyaan
+            </Link>
           )}
         </Empty>
       ) : (
-        <ul className="space-y-3">
+        <div>
           {items.map((q) => (
-            <li key={q.id}>
-              <QuestionCard q={q} youtubeId={youtubeId} />
-            </li>
+            <QuestionItem key={q.id} q={q} speaker={speaker} youtubeId={youtubeId} />
           ))}
-        </ul>
+        </div>
       )}
 
       {cursor && (
-        <button
-          onClick={loadMore}
-          disabled={loading !== null}
-          className="mt-3 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-[14px] border border-border bg-card text-sm font-semibold transition-colors hover:border-primary disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {loading === "more" ? (
-            "Memuat…"
-          ) : (
-            <>
-              <ChevronDown className="h-4 w-4" aria-hidden />
-              Muat pertanyaan lagi
-            </>
-          )}
-        </button>
+        <div className="p-5">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={loadMore}
+            disabled={loading !== null}
+          >
+            {loading === "more" ? "Memuat…" : "Muat pertanyaan lagi"}
+          </Button>
+        </div>
       )}
     </>
   );

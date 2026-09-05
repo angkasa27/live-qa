@@ -1,12 +1,19 @@
+import { Clock, MapPin, MessageCircle, PenLine, User, Video } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import AskDrawer from "@/components/AskDrawer";
-import EventHeader from "@/components/EventHeader";
-import StatusBadge from "@/components/StatusBadge";
-import Player from "@/components/Player";
-import QuestionList from "@/components/QuestionList";
-import { getEvent } from "@/lib/queries";
-import { coverFor } from "@/lib/types";
+
+import Countdown from "@/components/Countdown";
 import LocalTime from "@/components/LocalTime";
+import { MetaItem, MetaList } from "@/components/MetaList";
+import Player from "@/components/Player";
+import Poster from "@/components/Poster";
+import QuestionList from "@/components/QuestionList";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Toolbar, ToolbarBack, ToolbarSpacer } from "@/components/ui/toolbar";
+import { countQuestions, getEvent } from "@/lib/queries";
+import { coverFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,59 +40,108 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
   const event = await getEvent(id);
   if (!event) notFound();
 
+  const total = await countQuestions(event.id);
   const cover = !event.youtubeId ? coverFor(event) : undefined;
+  const live = event.status === "live";
+  const archived = event.status === "archived";
+  const scheduled = event.status === "scheduled";
 
   return (
     <>
-      <EventHeader
-        name={event.name}
-        backHref="/"
-        backLabel="Semua majelis"
-        action={<StatusBadge status={event.status} />}
-      />
+      <Toolbar>
+        <ToolbarBack href="/">Majelis</ToolbarBack>
+        <ToolbarSpacer />
+        {live && (
+          <Badge variant="live">
+            <span className="size-2 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
+            Berlangsung
+          </Badge>
+        )}
+        {archived && event.youtubeId && (
+          <Badge variant="accent">
+            <Video aria-hidden />
+            Rekaman
+          </Badge>
+        )}
+      </Toolbar>
 
       {/* With a recording on the page, <Player> owns the iframe and lets the answer timestamps
           seek it in place instead of sending anyone off to YouTube. */}
       <MaybePlayer youtubeId={event.youtubeId} title={`Rekaman: ${event.name}`}>
-        {cover && (
-          // eslint-disable-next-line @next/next/no-img-element -- remote host, see app/page.tsx
-          <img src={cover} alt="" className="aspect-video w-full bg-border object-cover" />
-        )}
+        {!event.youtubeId &&
+          (cover ? (
+            // eslint-disable-next-line @next/next/no-img-element -- remote host, see app/page.tsx
+            <img src={cover} alt="" className="page aspect-video w-full object-cover" />
+          ) : (
+            <Poster className="page" />
+          ))}
 
-        <div className="border-b border-border-soft bg-card">
-          <div className="page px-4 py-3 sm:px-6">
-            <p className="text-sm text-foreground">
-              {event.speaker} · {event.venue}
-            </p>
-            <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+        <div className="page border-b border-border-soft px-5 pt-5 pb-4.5">
+          <h1 className="text-2xl leading-snug font-bold tracking-[-0.025em]">{event.name}</h1>
+          <MetaList className="mt-3.5">
+            <MetaItem icon={User}>{event.speaker}</MetaItem>
+            <MetaItem icon={MapPin}>{event.venue}</MetaItem>
+            <MetaItem icon={Clock}>
               <LocalTime iso={event.startsAt} />
-              {event.moderation === "manual" && " · review manual"}
-            </p>
-          </div>
+            </MetaItem>
+          </MetaList>
         </div>
 
-        <main className="page flex-1 px-4 py-3.5 sm:px-6">
-          {/* Whether questions are open is the event's own answer, not a guess from its status:
-              an admin can keep an archived session taking questions. See ROADMAP.md §2. */}
-          {!event.acceptingQuestions && event.status === "archived" && (
-            <p className="mb-3.5 rounded-[14px] border border-border bg-background px-3.5 py-3 text-[0.8125rem] leading-relaxed text-muted-foreground text-pretty">
-              Jawaban tertulis di bawah adalah ringkasan admin. Rekaman majelis adalah rujukan
-              utama.
-            </p>
+        <main className="page flex-1">
+          {/* A session that has not started has nothing to read yet, so the page is the wait. */}
+          {scheduled && !event.acceptingQuestions ? (
+            <Countdown iso={event.startsAt} />
+          ) : (
+            <>
+              {event.acceptingQuestions && (
+                <Alert variant="info" className="mx-5 mt-4">
+                  <MessageCircle aria-hidden />
+                  <AlertDescription>
+                    {event.moderation === "manual"
+                      ? "Pertanyaan Anda masuk ke admin dulu, lalu tampil di layar pemateri."
+                      : "Pertanyaan Anda langsung masuk ke layar pemateri."}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Whether questions are open is the event's own answer, not a guess from its
+                  status: an admin can keep an archived session taking questions. ROADMAP §2. */}
+              {archived && !event.acceptingQuestions && (
+                <Alert className="mx-5 mt-4">
+                  <Video aria-hidden />
+                  <AlertDescription>
+                    Jawaban tertulis adalah <strong className="font-semibold text-foreground">ringkasan admin</strong>.
+                    Rekaman tetap rujukan utama.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <QuestionList
+                eventId={event.id}
+                speaker={event.speaker}
+                youtubeId={event.youtubeId}
+                total={total}
+                canAsk={event.acceptingQuestions}
+                note={
+                  archived && event.youtubeId
+                    ? "Ketuk menit untuk memutar rekaman di bagian itu."
+                    : undefined
+                }
+              />
+            </>
           )}
-          <QuestionList
-            eventId={event.id}
-            youtubeId={event.youtubeId}
-            canAsk={event.acceptingQuestions}
-          />
         </main>
       </MaybePlayer>
 
-      {/* A sheet over the majelis rather than a route: asking should not navigate away from
-          the thing being asked about, and the old page 404'd for any session that had since
-          stopped taking questions. */}
       {event.acceptingQuestions && (
-        <AskDrawer eventId={event.id} moderated={event.moderation === "manual"} />
+        <div className="sticky bottom-0 border-t border-border-soft bg-card/95 backdrop-blur-md">
+          <div className="page px-5 py-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
+            <Button size="lg" render={<Link href={`/events/${event.id}/tanya`} />}>
+              <PenLine aria-hidden />
+              Kirim pertanyaan
+            </Button>
+          </div>
+        </div>
       )}
     </>
   );

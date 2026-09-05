@@ -160,5 +160,17 @@ export function slugDraft(input: string) {
     .slice(0, 48);
 }
 
+/**
+ * "Ustadz Hafizh Ramadhan" -> "Ustadz Hafizh". Used only in the "… menjawab" credit over an
+ * answer, where the full name of a speaker with a long nasab ("Ustadz Yazid bin Abdul Qadir
+ * Jawas") pushes the line onto three rows and buries the word that matters.
+ *
+ * Two words, because Indonesian speaker names in this product read "<title> <given name>";
+ * a one-word name is returned untouched.
+ */
+export function speakerShort(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).join(" ");
+}
+
 export const MAX_BODY = 500;
 export const PAGE_SIZE = 10;

@@ -1,11 +1,14 @@
-import { ArrowRight, CalendarOff } from "lucide-react";
+import { ArrowRight, CalendarOff, Clock, Lock, MessageCircle, User, Video } from "lucide-react";
 import Link from "next/link";
-import StatusBadge from "@/components/StatusBadge";
-import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
+
 import BottomTabs from "@/components/BottomTabs";
+import LocalTime from "@/components/LocalTime";
+import { MetaItem, MetaList } from "@/components/MetaList";
+import Poster from "@/components/Poster";
+import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { listEvents } from "@/lib/queries";
 import { coverFor, type Event } from "@/lib/types";
-import LocalTime from "@/components/LocalTime";
 
 // Reads the database on every request. The list has to show what's live *now*, and a session
 // going live is exactly the moment a stale cache would be worst.
@@ -13,79 +16,138 @@ export const dynamic = "force-dynamic";
 
 type Row = Event & { questionCount: number; lead: boolean };
 
-/** A section title, in the same key as the admin index's. */
-function Heading({ live, children }: { live?: boolean; children: React.ReactNode }) {
+/** A section title. Flat and quiet — it names a group, it is not a thing you tap. */
+function Rule({ children }: { children: React.ReactNode }) {
+  return <p className="px-5 pt-4 pb-2 text-base font-bold text-muted-foreground">{children}</p>;
+}
+
+/**
+ * The one majelis this page is about, promoted into the only shape on the screen with a
+ * radius and a colour. Everything else is a flat row, so this reads as "here" without a
+ * heading having to say so.
+ *
+ * Title and meta ride on the cover under a veil rather than sitting under it, which keeps
+ * the card short enough that the next session is still on screen.
+ */
+function Hero({ e }: { e: Row }) {
+  const cover = coverFor(e);
+  const live = e.status === "live";
+
   return (
-    <h2 className="mb-2 flex items-center gap-2 font-mono text-[0.6875rem] tracking-[0.12em] text-faint uppercase">
-      {live && <span className="h-1.5 w-1.5 rounded-full bg-live" aria-hidden />}
-      {children}
-    </h2>
+    <Link
+      href={`/events/${e.id}`}
+      className="mx-4 mt-4 block overflow-hidden rounded-lg bg-primary text-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      <div className="relative">
+        {cover ? (
+          // next/image would need a domain allowlist for a URL organisers supply.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={cover} alt="" className="aspect-video w-full object-cover" />
+        ) : (
+          <Poster />
+        )}
+
+        {live && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-2 rounded-full bg-live px-3.5 py-1.5 text-2xs font-bold">
+            <span className="size-2 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
+            Sedang berlangsung
+          </span>
+        )}
+
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,38,30,0)_26%,rgba(9,38,30,0.58)_60%,rgba(9,38,30,0.95)_100%)]" />
+
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5">
+          <h2 className="text-xl leading-snug font-bold tracking-[-0.02em] [text-shadow:0_1px_12px_rgba(9,38,30,0.5)]">
+            {e.name}
+          </h2>
+          <MetaList className="mt-2 gap-1 [&_svg]:stroke-white/70">
+            <MetaItem icon={User} className="text-sm">
+              {e.speaker}
+            </MetaItem>
+            <MetaItem icon={Clock} className="text-sm">
+              <LocalTime iso={e.startsAt} />
+            </MetaItem>
+          </MetaList>
+        </div>
+      </div>
+
+      <span className="flex items-center justify-between gap-3 py-2.5 pr-2.5 pl-4 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <MessageCircle className="size-4 stroke-2" aria-hidden />
+          {e.questionCount}
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 font-bold text-primary">
+          {e.acceptingQuestions ? "Bertanya" : "Lihat majelis"}
+          <ArrowRight className="size-3.5 stroke-[2.6]" aria-hidden />
+        </span>
+      </span>
+    </Link>
   );
 }
 
 /**
- * `lead` is the same card with more room: the cover is not sharing a grid column, the name is
- * a size up, and the call to action says what tapping does instead of leaving it to an arrow.
- * One component rather than two, because the difference really is only the room.
+ * A session in a list: flat, full width, the whole row tappable. The tags line under it
+ * carries the one fact worth knowing before you open it — whether you can ask, or what is
+ * waiting inside.
  */
-function EventCard({ e, lead = false }: { e: Row; lead?: boolean }) {
+function EventRow({ e }: { e: Row }) {
   const cover = coverFor(e);
-  const live = e.status === "live";
+  const upcoming = e.status === "scheduled";
+
   return (
-    <Link
-      href={`/events/${e.id}`}
-      className={`flex h-full flex-col overflow-hidden rounded-2xl bg-card transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-        live ? "border-[1.5px] border-primary" : "border border-border"
-      }`}
-    >
-      {cover && (
-        <div className="relative">
-          {/* next/image would need a domain allowlist for a URL organisers supply. */}
+    <Item render={<Link href={`/events/${e.id}`} />} className="flex-wrap">
+      {cover ? (
+        <ItemMedia variant="image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cover}
-            alt=""
-            loading={lead ? "eager" : "lazy"}
-            className="aspect-video w-full bg-border object-cover"
-          />
-          {live && (
-            <span className="absolute right-2.5 bottom-2.5">
-              <StatusBadge status="live" />
-            </span>
-          )}
-        </div>
+          <img src={cover} alt="" loading="lazy" />
+        </ItemMedia>
+      ) : (
+        upcoming && (
+          <ItemMedia variant="image">
+            <Poster className="rounded-sm" />
+          </ItemMedia>
+        )
       )}
-      <div className={`flex flex-1 flex-col gap-1.5 ${lead ? "p-4" : "p-3.5"}`}>
-        <div className="flex items-start justify-between gap-2.5">
-          <h3 className={`leading-snug font-bold ${lead ? "text-[1.1875rem]" : ""}`}>{e.name}</h3>
-          {/* Already shown over the cover on a live card; don't say it twice. */}
-          {!(live && cover) && <StatusBadge status={e.status} />}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {e.speaker} · {e.venue}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          <LocalTime iso={e.startsAt} />
-        </p>
-        <p className="mt-1.5 flex items-center justify-between gap-3 text-[0.8125rem] font-semibold">
-          <span className="text-primary">{e.questionCount} pertanyaan</span>
-          {e.acceptingQuestions ? (
-            <span className="flex items-center gap-1 text-primary">
-              {lead ? "Kirim pertanyaan" : "Bertanya"}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+
+      <ItemContent>
+        <ItemTitle className="block">{e.name}</ItemTitle>
+        <MetaList className="gap-1.5">
+          <MetaItem icon={User} className="text-sm">
+            {e.speaker}
+          </MetaItem>
+          <MetaItem icon={Clock} className="text-sm">
+            <LocalTime iso={e.startsAt} />
+          </MetaItem>
+        </MetaList>
+      </ItemContent>
+
+      <p className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-primary">
+        {e.acceptingQuestions ? (
+          <span className="inline-flex items-center gap-1.5">
+            <MessageCircle className="size-3.5 stroke-[1.9]" aria-hidden />
+            Terbuka untuk pertanyaan
+          </span>
+        ) : upcoming ? (
+          <span className="inline-flex items-center gap-1.5 text-faint">
+            <Lock className="size-3.5 stroke-[1.9]" aria-hidden />
+            Dibuka saat majelis mulai
+          </span>
+        ) : (
+          <>
+            <span className="inline-flex items-center gap-1.5">
+              <MessageCircle className="size-3.5 stroke-[1.9]" aria-hidden />
+              {e.questionCount} jawaban
             </span>
-          ) : (
-            <span className="font-normal text-faint">
-              {e.status === "scheduled"
-                ? "Pertanyaan dibuka saat majelis berlangsung."
-                : e.youtubeId
-                  ? "· ada rekaman"
-                  : ""}
-            </span>
-          )}
-        </p>
-      </div>
-    </Link>
+            {e.youtubeId && (
+              <span className="inline-flex items-center gap-1.5">
+                <Video className="size-3.5 stroke-[1.9]" aria-hidden />
+                Rekaman
+              </span>
+            )}
+          </>
+        )}
+      </p>
+    </Item>
   );
 }
 
@@ -103,19 +165,22 @@ export default async function EventListPage() {
    */
   const [first, ...rest] = events;
   const lead = first?.lead ? first : null;
+  const others = lead ? rest : events;
+  const upcoming = others.filter((e) => e.status !== "archived");
+  const past = others.filter((e) => e.status === "archived");
 
   return (
     <>
-      <header className="border-b border-border-soft bg-card">
-        <div className="page px-4 pt-[18px] pb-3.5 sm:px-6">
-          <h1 className="font-serif text-[1.625rem] leading-tight font-medium tracking-tight">Majelis</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Pilih majelis untuk bertanya atau membaca jawaban.</p>
-        </div>
+      <header className="px-5 pt-5 pb-1">
+        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Majelis</h1>
+        <p className="mt-1.5 text-base text-muted-foreground">
+          Pilih majelis untuk bertanya atau membaca jawabannya.
+        </p>
       </header>
 
-      <main className="page flex-1 px-4 py-4 sm:px-6">
+      <main className="page flex-1">
         {events.length === 0 ? (
-          <Empty className="rounded-2xl">
+          <Empty className="m-4 rounded-md border border-border">
             <EmptyMedia variant="icon">
               <CalendarOff aria-hidden />
             </EmptyMedia>
@@ -123,26 +188,24 @@ export default async function EventListPage() {
           </Empty>
         ) : (
           <>
-            {lead && (
-              <section className="mb-6">
-                <Heading live={lead.status === "live"}>
-                  {lead.status === "live" ? "Sedang berlangsung" : "Majelis berikutnya"}
-                </Heading>
-                <EventCard e={lead} lead />
-              </section>
+            {lead && <Hero e={lead} />}
+
+            {upcoming.length > 0 && (
+              <>
+                <Rule>Akan datang</Rule>
+                {upcoming.map((e) => (
+                  <EventRow key={e.id} e={e} />
+                ))}
+              </>
             )}
-            {(lead ? rest : events).length > 0 && (
-              <section>
-                {/* Only worth naming once something is standing above it. */}
-                {lead && <Heading>Majelis lain</Heading>}
-                <ul className="grid gap-3 md:grid-cols-2">
-                  {(lead ? rest : events).map((e) => (
-                    <li key={e.id}>
-                      <EventCard e={e} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+
+            {past.length > 0 && (
+              <>
+                <Rule>Sudah lewat</Rule>
+                {past.map((e) => (
+                  <EventRow key={e.id} e={e} />
+                ))}
+              </>
             )}
           </>
         )}

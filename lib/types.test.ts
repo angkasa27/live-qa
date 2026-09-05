@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coverFor, isoToLocal, localToIso, MAX_BODY, parseVideoId, slugDraft, slugify, timecode } from "./types.ts";
+import { coverFor, isoToLocal, localToIso, MAX_BODY, parseVideoId, slugDraft, slugify, speakerShort, timecode } from "./types.ts";
 
 describe("isoToLocal", () => {
   it("shows the majelis wall clock, whatever zone the machine is in", () => {
@@ -105,4 +105,22 @@ describe("coverFor", () => {
 
 it("MAX_BODY matches the db check (500)", () => {
   expect(MAX_BODY).toBe(500);
+});
+
+describe("speakerShort", () => {
+  it("keeps a title and a given name", () => {
+    expect(speakerShort("Ustadz Hafizh Ramadhan")).toBe("Ustadz Hafizh");
+  });
+
+  it("cuts a long nasab down to the part people say", () => {
+    expect(speakerShort("Ustadz Yazid bin Abdul Qadir Jawas")).toBe("Ustadz Yazid");
+  });
+
+  it("leaves a one-word name alone", () => {
+    expect(speakerShort("Khalid")).toBe("Khalid");
+  });
+
+  it("survives stray whitespace", () => {
+    expect(speakerShort("  Ustadz   Ridwan  Saputra ")).toBe("Ustadz Ridwan");
+  });
 });
