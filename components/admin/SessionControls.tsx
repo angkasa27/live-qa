@@ -1,32 +1,86 @@
 "use client";
 
-import { Check, Radio, Square, X, Zap } from "lucide-react";
+import { Radio, RotateCcw, SlidersHorizontal, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import Spinner from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
-import { Toggle, ToggleOff, ToggleOn } from "@/components/ui/toggle";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import { updateEvent } from "@/lib/actions";
 import type { Event } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 /**
- * The two things that change mid-session, on the board itself.
+ * Where a session goes next, as one move naming what happens.
  *
- * They used to live in a settings sheet alongside ten fields that only matter before or
- * after a majelis — name, slug, venue, cover, staff. An operator working a live queue was
- * opening a form to flip a switch. These are the only controls that belong to the hour the
- * session is running, so they are the only ones here; everything else moved to "Ubah sesi".
+ * The old control was a three-way status picker, which asks the operator to hold a state
+ * machine in their head and offers two wrong answers next to the right one. A majelis only
+ * ever moves scheduled → live → archived, so each stage has exactly one move.
+ *
+ * Every move hands `acceptingQuestions` back to `null` rather than pinning it true or false.
+ * Pinning worked, but it meant `coalesce(accepting_questions, status = 'live')` — the whole
+ * point of the nullable column — fired once and never again, so the switch was writing an
+ * override with nothing left to override. Null makes each stage carry its own default (open
+ * while live, closed otherwise) and turns the switch back into a real exception that the next
+ * move clears. Reopening an archive *for questions* is still that exception.
  */
-export function SessionDeck({ event, when }: { event: Event; when: string }) {
+function nextMove(status: Event["status"]) {
+  if (status === "scheduled")
+    return {
+      label: "Mulai sesi",
+      icon: Radio,
+      patch: { status: "live" as const, acceptingQuestions: null },
+    };
+  if (status === "live")
+    return {
+      label: "Selesaikan sesi",
+      icon: Square,
+      patch: { status: "archived" as const, acceptingQuestions: null },
+    };
+  // Archived used to be the end of the line, on the grounds that reopening belonged "with the
+  // rest of the rare, considered edits" — except no such edit existed, so a session stopped by
+  // a mis-aimed thumb could never be started again.
+  return {
+    label: "Buka lagi sesi",
+    icon: RotateCcw,
+    patch: { status: "live" as const, acceptingQuestions: null },
+  };
+}
+
+/**
+ * The session's one move, and behind a second button everything else about how it is running.
+ *
+ * It sits in the bottom bar because that is where the thumb already is. The controls used to
+ * be a strip of pills pinned under the toolbar — reachable, but occupying the top of every
+ * screen to say three things that change perhaps twice a session, and stealing the space the
+ * majelis itself should be using. Now the page is the session: its recording or poster, what
+ * it is, then the queue. The bar carries the one thing an operator presses.
+ *
+ * The three switches are switches, not chips. A chip has to spell out its own state in words
+ * ("Pertanyaan dibuka" / "Pertanyaan ditutup") because a pill that only changes colour is a
+ * pill whose meaning you have to remember. Given a drawer with room for a label and a line of
+ * explanation, a switch says the same thing with its position and leaves the words free to
+ * describe what the setting *does*.
+ */
+export function SessionActions({ event, canEdit }: { event: Event; canEdit: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Optimistic, because a toggle that waits for a round trip before moving reads as broken.
+  // Optimistic, because a switch that waits for a round trip before moving reads as broken.
   const [accepting, setAccepting] = useState(event.acceptingQuestions);
   const [manual, setManual] = useState(event.moderation === "manual");
+  const [shown, setShown] = useState(!event.hidden);
 
   function push(patch: Parameters<typeof updateEvent>[1], rollback: () => void) {
     setError(null);
@@ -40,124 +94,119 @@ export function SessionDeck({ event, when }: { event: Event; when: string }) {
     });
   }
 
+  const next = nextMove(event.status);
+  const Icon = next.icon;
+
   return (
-    <div className="sticky top-14 z-19 border-b border-border-soft bg-card">
-      <div className="page flex items-center gap-2 overflow-x-auto px-4 py-2.5">
-        <span
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 pr-1 text-sm font-bold",
-            event.status === "live" ? "text-live" : "text-muted-foreground"
-          )}
-        >
-          {event.status === "live" && (
-            <span className="size-2 shrink-0 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
-          )}
-          {when}
-        </span>
-
-        <Toggle
-          pressed={accepting}
+    <>
+      <div className="flex items-center gap-2.5">
+        <Button
+          size="lg"
+          className="min-w-0 flex-1"
           disabled={pending}
-          onPressedChange={(v) => {
-            setAccepting(v);
-            push({ acceptingQuestions: v }, () => setAccepting(!v));
-          }}
+          onClick={() => push(next.patch, () => {})}
         >
-          <ToggleOn>
-            <Check aria-hidden />
-            Pertanyaan dibuka
-          </ToggleOn>
-          <ToggleOff>
-            <X aria-hidden />
-            Pertanyaan ditutup
-          </ToggleOff>
-        </Toggle>
+          {pending ? <Spinner /> : <Icon aria-hidden />}
+          {next.label}
+        </Button>
 
-        <Toggle
-          variant="warning"
-          pressed={manual}
-          disabled={pending}
-          onPressedChange={(v) => {
-            setManual(v);
-            push({ moderation: v ? "manual" : "auto" }, () => setManual(!v));
-          }}
-        >
-          <ToggleOn>
-            <Radio aria-hidden />
-            Review dulu
-          </ToggleOn>
-          <ToggleOff>
-            <Zap aria-hidden />
-            Langsung tayang
-          </ToggleOff>
-        </Toggle>
+        <Drawer>
+          <DrawerTrigger
+            render={
+              <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Pengaturan sesi"
+                  className="size-[54px] shrink-0 rounded-md"
+                >
+                <SlidersHorizontal aria-hidden />
+              </Button>
+            }
+          />
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Pengaturan sesi</DrawerTitle>
+              <DrawerDescription>Berlaku seketika, tanpa disimpan.</DrawerDescription>
+            </DrawerHeader>
+
+            <div className="flex flex-col gap-1 px-4 pb-2">
+              <SettingRow
+                title="Terima pertanyaan"
+                description="Jamaah bisa mengirim pertanyaan baru. Terbuka sendiri selama sesi berlangsung."
+                checked={accepting}
+                disabled={pending}
+                onChange={(v) => {
+                  setAccepting(v);
+                  push({ acceptingQuestions: v }, () => setAccepting(!v));
+                }}
+              />
+
+              <SettingRow
+                title="Review dulu"
+                description="Pertanyaan masuk ke antrean Anda sebelum tampil. Matikan agar langsung tayang."
+                checked={manual}
+                disabled={pending}
+                onChange={(v) => {
+                  setManual(v);
+                  push({ moderation: v ? "manual" : "auto" }, () => setManual(!v));
+                }}
+              />
+
+              {/* Visibility is a fact about what the session is doing now, so it belongs with
+                  the other two rather than inside a form about names and venues — where it
+                  was, mislabelled "Arsip dapat diakses publik" while it actually hid the
+                  majelis at every stage. Superadmin only, matching lib/actions.ts. */}
+              {canEdit && (
+                <SettingRow
+                  title="Tampil ke publik"
+                  description="Matikan dan halaman majelis hilang dari daftar dan tertutup bagi siapa pun."
+                  checked={shown}
+                  disabled={pending}
+                  onChange={(v) => {
+                    setShown(v);
+                    push({ hidden: !v }, () => setShown(!v));
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="px-4 pb-4" aria-live="polite">
+              {error && <p className="mb-3 text-sm font-bold text-destructive">{error}</p>}
+              <DrawerClose render={<Button variant="outline" size="lg">Tutup</Button>} />
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
 
+      {/* Outside the drawer too: a failed move is reported by the button that made it, and the
+          drawer may well be shut by the time the server answers. */}
       <div aria-live="polite">
-        {error && <p className="px-5 pb-2 text-sm font-bold text-destructive">{error}</p>}
+        {error && <p className="mt-2 text-center text-sm font-bold text-destructive">{error}</p>}
       </div>
-    </div>
+    </>
   );
 }
 
-/**
- * Where a session goes next, as one button naming what happens.
- *
- * The old control was a three-way status picker, which asks the operator to hold a state
- * machine in their head and offers two wrong answers next to the right one. A majelis only
- * ever moves scheduled → live → archived, so each stage has exactly one move, and the line
- * underneath says what it will do before it does it.
- *
- * It sits after the queue because that is where an operator is when the session is over.
- */
-export function SessionEndzone({ event }: { event: Event }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  const next =
-    event.status === "scheduled"
-      ? {
-          label: "Mulai sesi",
-          why: "Pertanyaan dibuka, sesi tampil sebagai berlangsung.",
-          icon: Radio,
-          patch: { status: "live" as const, acceptingQuestions: true },
-        }
-      : event.status === "live"
-        ? {
-            label: "Selesaikan sesi",
-            why: "Pertanyaan ditutup, sesi masuk arsip.",
-            icon: Square,
-            patch: { status: "archived" as const, acceptingQuestions: false },
-          }
-        : null;
-
-  // An archived session has nowhere left to go. Reopening one is a deliberate act that
-  // belongs with the rest of the rare, considered edits, not under a live queue.
-  if (!next) return null;
-
-  const Icon = next.icon;
+function SettingRow({
+  title,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
-    <div className="mx-4 mt-6 mb-6 border-t border-border-soft pt-4.5">
-      <Button
-        variant="outline"
-        size="lg"
-        disabled={pending}
-        onClick={() => {
-          setError(null);
-          start(async () => {
-            const res = await updateEvent(event.id, next.patch);
-            if (res.ok) router.refresh();
-            else setError(res.error);
-          });
-        }}
-      >
-        {pending ? <Spinner /> : <Icon aria-hidden />}
-        {next.label}
-      </Button>
-      <p className="mt-2 text-center text-xs text-muted-foreground" aria-live="polite">
-        {error ? <span className="font-bold text-destructive">{error}</span> : next.why}
-      </p>
-    </div>
+    <Field orientation="horizontal" className="gap-4 py-3">
+      <FieldContent>
+        <FieldTitle>{title}</FieldTitle>
+        <FieldDescription>{description}</FieldDescription>
+      </FieldContent>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </Field>
   );
 }

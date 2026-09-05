@@ -12,7 +12,6 @@ import PageShell from "@/components/PageShell";
 import Spinner from "@/components/Spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +29,11 @@ import { isoToLocal, localToIso, parseVideoId, type Event } from "@/lib/types";
  * status progression is one button under the queue, staffing is a property of a person, and
  * what is left is here — rare, deliberate, and saved together.
  *
+ * Visibility is not here either. It used to be, as a checkbox reading "Arsip dapat diakses
+ * publik", which named the archive but actually hid the majelis at every stage — including a
+ * live one, with nothing on the board to say so. It is a fact about what the session is doing
+ * now, so it sits with the other two on the deck.
+ *
  * Nothing writes until Simpan. An earlier version saved on every tap, which meant one
  * mis-aimed thumb could archive a running majelis with no undo.
  */
@@ -40,7 +44,6 @@ type Draft = {
   speaker: string;
   video: string;
   image: string;
-  hidden: boolean;
 };
 
 const draftOf = (e: Event): Draft => ({
@@ -50,7 +53,6 @@ const draftOf = (e: Event): Draft => ({
   speaker: e.speaker,
   video: e.youtubeId ?? "",
   image: e.image ?? "",
-  hidden: e.hidden,
 });
 
 export default function EditSessionForm({
@@ -84,7 +86,6 @@ export default function EditSessionForm({
 
     start(async () => {
       const res = await updateEvent(event.id, {
-        hidden: draft.hidden,
         details: {
           name: draft.name,
           // The address is locked after creation, so it is sent back exactly as it came.
@@ -190,12 +191,6 @@ export default function EditSessionForm({
         <VideoField value={draft.video} onChange={(video) => set({ video })} />
         <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
       </Field>
-
-      <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 text-md">
-        <Checkbox checked={!draft.hidden} onCheckedChange={(v) => set({ hidden: !v })} />
-        Arsip dapat diakses publik
-      </label>
-      <FieldDescription>Lewat tautan, tidak diindeks mesin pencari.</FieldDescription>
 
       <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
         Alamat halaman
