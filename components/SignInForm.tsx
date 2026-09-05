@@ -43,7 +43,7 @@ export default function SignInForm({ next }: { next: string }) {
         }
       >
         <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Masuk</h1>
-        <p className="mt-1.5 text-base text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Halaman ini untuk admin dan pemateri. Peserta tidak perlu akun.
         </p>
 

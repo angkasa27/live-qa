@@ -45,7 +45,7 @@ function MetaItem({
     <li
       data-slot="meta-item"
       className={cn(
-        "flex min-w-0 items-start gap-2.5 text-base leading-snug",
+        "flex min-w-0 items-start gap-1.5 text-base leading-snug",
         "in-data-[layout=inline]:items-center in-data-[layout=inline]:gap-1.5 in-data-[layout=inline]:text-sm",
         className
       )}

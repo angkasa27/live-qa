@@ -79,7 +79,7 @@ export default function AskForm({
         }
       >
         <h1 className="text-2xl leading-snug font-bold tracking-[-0.025em]">Kirim pertanyaan</h1>
-        <p className="mt-1.5 text-base text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Untuk <strong className="font-semibold text-foreground">{eventName}</strong>
         </p>
 

@@ -74,7 +74,7 @@ function Hero({ e }: { e: Row }) {
       <span className="flex items-center justify-between gap-3 py-2.5 pr-2.5 pl-4 text-sm">
         <span className="inline-flex items-center gap-2">
           <MessageCircle className="size-4 stroke-2" aria-hidden />
-          {e.questionCount}
+          {e.questionCount} Pertanyaan
         </span>
         <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 font-bold text-primary">
           {e.acceptingQuestions ? "Bertanya" : "Lihat majelis"}
@@ -136,7 +136,7 @@ function EventRow({ e }: { e: Row }) {
           <>
             <span className="inline-flex items-center gap-1.5">
               <MessageCircle className="size-3.5 stroke-[1.9]" aria-hidden />
-              {e.questionCount} jawaban
+              {e.questionCount} Pertanyaan
             </span>
             {e.youtubeId && (
               <span className="inline-flex items-center gap-1.5">
@@ -172,9 +172,9 @@ export default async function EventListPage() {
   return (
     <>
       <header className="px-5 pt-5 pb-1">
-        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Majelis</h1>
-        <p className="mt-1.5 text-base text-muted-foreground">
-          Pilih majelis untuk bertanya atau membaca jawabannya.
+        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Sual</h1>
+        <p className="text-base text-muted-foreground">
+          Setiap pertanyaan begitu berarti.
         </p>
       </header>
 
