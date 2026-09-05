@@ -26,8 +26,15 @@ function Rule({ children }: { children: React.ReactNode }) {
  * radius and a colour. Everything else is a flat row, so this reads as "here" without a
  * heading having to say so.
  *
- * Title and meta ride on the cover under a veil rather than sitting under it, which keeps
- * the card short enough that the next session is still on screen.
+ * No words sit on the cover. Title, speaker and time are below it, on the card's own green,
+ * because a veil dark enough to carry white text over a busy poster is also dark enough to
+ * hide the poster — and organisers upload whatever artwork they have. The cover gets to be a
+ * cover, and the words get a ground they are legible on whatever is behind them.
+ *
+ * The live flag is the exception, and stays on the image: it brings its own solid fill, so it
+ * needs no veil, and it has to read before anything else does.
+ *
+ * Cover, then what it is, then what you can do. Each with its own room.
  */
 function Hero({ e }: { e: Row }) {
   const cover = coverFor(e);
@@ -47,28 +54,29 @@ function Hero({ e }: { e: Row }) {
           <Poster />
         )}
 
+        {/* The one thing still on the cover, and it can be: it carries its own solid fill, so
+            unlike words it needs no veil under it to stay legible over any poster. It sits on
+            the image because "this is happening now" should be readable before you have read
+            anything, and in the corner of the artwork is where a flag is looked for. */}
         {live && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-2 rounded-full bg-live px-3.5 py-1.5 text-2xs font-bold">
             <span className="size-2 rounded-full bg-current motion-safe:animate-pulse" aria-hidden />
             Sedang berlangsung
           </span>
         )}
+      </div>
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,38,30,0)_26%,rgba(9,38,30,0.58)_60%,rgba(9,38,30,0.95)_100%)]" />
+      <div className="px-4 pt-3.5">
+        <h2 className="text-xl font-bold">{e.name}</h2>
 
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5">
-          <h2 className="text-xl font-bold [text-shadow:0_1px_12px_rgba(9,38,30,0.5)]">
-            {e.name}
-          </h2>
-          <MetaList className="mt-2 gap-1 [&_svg]:stroke-white/70">
-            <MetaItem icon={User} className="text-sm">
-              {e.speaker}
-            </MetaItem>
-            <MetaItem icon={Clock} className="text-sm">
-              <LocalTime iso={e.startsAt} />
-            </MetaItem>
-          </MetaList>
-        </div>
+        <MetaList className="mt-2 gap-1 [&_svg]:stroke-white/70">
+          <MetaItem icon={User} className="text-sm">
+            {e.speaker}
+          </MetaItem>
+          <MetaItem icon={Clock} className="text-sm">
+            <LocalTime iso={e.startsAt} />
+          </MetaItem>
+        </MetaList>
       </div>
 
       <span className="flex items-center justify-between gap-3 py-2.5 pr-2.5 pl-4 text-sm">
