@@ -3,8 +3,11 @@
 > **Parked, see [ROADMAP.md §7](ROADMAP.md#7-transcript-ingestion-frozen).** Ingestion is
 > deliberately manual and off the critical path: the archive is a byproduct of live sessions that
 > already produce clean data. This process still works and is worth keeping, but **don't build a
-> self-serve ingest button** until the republishing question below has an answer. The `Event` and
-> `Question` shapes it writes predate the roadmap's §4 model.
+> self-serve ingest button** until the republishing question below has an answer.
+>
+> Step 1 still runs as written. Step 2 does not: it writes to `lib/mock.ts`, which is gone —
+> the app reads Postgres now, so the destination is a seed or an insert, and the `Event` and
+> `Question` shapes here predate the roadmap's §4 model. Decide the destination before using it.
 
 Two steps. The script does the mechanical half; an agent does the judgement half.
 

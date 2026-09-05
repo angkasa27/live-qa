@@ -40,12 +40,12 @@ other admin is made from **Pengguna** on the admin home, which only the superadm
 
 **Access to a majelis is granted, not owned.** The superadmin creates sessions, writes their
 details and answers their questions. An admin is assigned to a session and gets the room:
-approve or reject what comes in, move it between terjadwal/live/arsip, open and close
-submissions, switch review mode, open the speaker deck. Nothing else — not the details, not the
-public toggle, not the answers, not deleting it.
+approve or reject what comes in, move it to its next stage, open and close submissions, switch
+review mode, put it in front of the room. Nothing else — not the details, not the public toggle,
+not the answers, not deleting it.
 
-Assign from either end: **Petugas** in the session's settings sheet, or **Majelis** on the
-account in Pengguna. Both edit the same `event_admins` rows. The boundary is enforced in the
+Assignment lives with the person, in `/admin/pengguna/[id]`: "what does Rani run?" is the question
+anyone actually asks, never "who is on session 47?". The boundary is enforced in the
 server actions (`lib/actions.ts`) and again on the pages (`lib/guard.ts`); the UI only hides
 what it already refuses.
 
@@ -78,14 +78,19 @@ and the recording is the authority.
 | Route | Who | What |
 |---|---|---|
 | `/` | student | Pick a session |
-| `/events/[id]` | student | Submit a question, anonymous by default. Player when there's a recording |
-| `/events/[id]/questions` | student | All questions + answers, manual Refresh, Load more |
+| `/events/[id]` | student | The majelis: countdown, or questions + answers with manual Refresh and Load more. Player when there's a recording |
+| `/events/[id]/tanya` | student | Submit a question. Redirects to the majelis when it has stopped taking them |
 | `/pertanyaan-saya` | student | Your own questions and whether they've been answered |
 | `/masuk` | admin | Sign in |
 | `/admin` | admin | Sessions, with pending and unanswered counts |
-| `/admin/events/new` | admin | Create a session |
-| `/admin/events/[id]` | admin | Status and moderation controls, approve, hide, answer |
+| `/admin/events/new` | superadmin | Create a session |
+| `/admin/events/[id]` | admin | The board: the two live controls, the queue in four folding sections, and one button for where the session goes next |
+| `/admin/events/[id]/ubah` | superadmin | What the session *is* — name, time, venue, speaker, cover, recording, delete |
+| `/admin/events/[id]/tayangkan` | admin | QR, speaker screen, shareable link |
 | `/admin/events/[id]/speaker` | syaikh | Full-screen swipe deck, extends as you near the end |
+| `/admin/pengguna` | superadmin | People |
+| `/admin/pengguna/[id]` | superadmin | One account: password, which sessions they run, deactivate, delete |
+| `/admin/pengguna/undang` | superadmin | Add an admin |
 
 Everything under `/admin` is guarded twice: `proxy.ts` does a cheap cookie-presence redirect, and
 every protected page calls `requireSession()` in `lib/guard.ts`. Only the second is a real

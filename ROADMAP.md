@@ -67,15 +67,20 @@ from home, build for it then.
 
 | Route | Who | What it does | State |
 |---|---|---|---|
-| `/` | Student | Pick a session. Cover, status badge, question count. | Built |
-| `/events/[id]` | Student | Submit a question, anonymous by default. Player when there's a stream. | Built |
-| `/events/[id]/questions` | Student | Everything asked, answers underneath. Manual refresh, cursor-paged. | Built |
+| `/` | Student | Pick a session. The running one is promoted; the rest are flat rows. | Built |
+| `/events/[id]` | Student | The majelis. Countdown before it starts; everything asked with answers underneath once it has, manual refresh, cursor-paged. Player when there's a recording. | Built |
+| `/events/[id]/tanya` | Student | Submit a question, named by default. Redirects to the majelis when it has stopped taking them, so a stale tab never dead-ends. | Built |
 | `/pertanyaan-saya` | Student | Your own questions and whether they've been answered. | Built |
 | `/masuk` | Admin | Sign in. No sign-up, see §4. | Built |
 | `/admin` | Admin | Sessions you run, with pending and unanswered counts. | Built |
-| `/admin/events/new` | Admin | Create a session. | Built |
-| `/admin/events/[id]` | Admin | Status and moderation controls, approval queue, type in answers. Print next. | Built |
+| `/admin/events/new` | Superadmin | Create a session. Always scheduled; going live is its own act. | Built |
+| `/admin/events/[id]` | Admin | The board. Accepting and review mode as deck toggles, the queue in four folding sections, one button for where the session goes next. Print next. | Built |
+| `/admin/events/[id]/ubah` | Superadmin | What the session *is*: name, time, venue, speaker, cover, recording, public toggle, delete. | Built |
+| `/admin/events/[id]/tayangkan` | Admin | The session put in front of the room: QR, speaker screen, shareable link. | Built |
 | `/admin/events/[id]/speaker` | Syaikh | Full-screen deck, one question per card, swipe to advance. | Built |
+| `/admin/pengguna` | Superadmin | People, with what each one runs. | Built |
+| `/admin/pengguna/[id]` | Superadmin | One account: password, assigned sessions, deactivate, delete. | Built |
+| `/admin/pengguna/undang` | Superadmin | Add an admin and assign their sessions in one pass. | Built |
 
 ## 3. Decisions worth remembering
 
@@ -148,7 +153,7 @@ notification and still show as anonymous, logged in or not. Contact detail never
 server.
 
 **Validation is currently theatre.**
-The 500-character limit and the empty check live in `components/SubmitForm.tsx` only. That is UI,
+The 500-character limit and the empty check live in `components/AskForm.tsx` only. That is UI,
 not enforcement. When the API lands the same rules get duplicated server-side with a rate limit.
 That is the actual trust boundary.
 
@@ -204,8 +209,9 @@ not something a grant hands out. Everything reversible in an evening — a quest
 mistake, a session left open — is. That is the line: an admin can be wrong for ten minutes, not
 in perpetuity.
 
-`event_admins` carries the grants and is edited from either end, the session's settings sheet or
-the account in Pengguna. `events.created_by` is provenance now and decides nothing. The plugin's
+`event_admins` carries the grants and is edited from the account's side, in
+`/admin/pengguna/[id]` — assignment is a property of a person, because "what does Rani run?" is
+the question anyone actually asks, never "who is on session 47?". `events.created_by` is provenance now and decides nothing. The plugin's
 `/admin/*` endpoints are mapped so only the superadmin passes them (`lib/auth.ts`); the majelis
 boundary is ours, in `lib/actions.ts` and `lib/guard.ts`, both of which answer "you are not on
 it" and "it doesn't exist" identically so one organiser cannot probe for another's sessions by
@@ -257,7 +263,7 @@ and answer.
 an archive was public, when what organisers actually need is to take a majelis away from the
 public entirely. It is replaced by `events.hidden`, its own axis rather than a fourth `status`, so
 un-hiding restores whatever lifecycle state the event already had and a *scheduled* majelis can be
-drafted before it is announced. The toggle is in `components/EventControls.tsx`.
+drafted before it is announced. The toggle is in `components/admin/EditSessionForm.tsx`.
 
 Hidden means hidden, not unlisted: `lib/queries.ts` excludes these from every public read, so the
 event page 404s and the questions are unreachable through the server actions too, not merely off
@@ -375,7 +381,7 @@ submitted through the app is invisible to this — finding those is the frozen s
 
 ### Replay anchors
 
-`timecode()` in `lib/mock.ts` formats the seconds. The control adapts to its surroundings: with a
+`timecode()` in `lib/types.ts` formats the seconds. The control adapts to its surroundings: with a
 player on the page it seeks the embed in place and scrolls it into view; without one it falls back
 to `youtu.be/<id>?t=<seconds>`. Seeking needs no `iframe_api` load; the embed takes commands over
 `postMessage` as long as its src carries `enablejsapi=1`:
