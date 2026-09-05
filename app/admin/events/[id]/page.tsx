@@ -1,4 +1,4 @@
-import { MonitorPlay, Pencil } from "lucide-react";
+import { Pencil, Presentation, QrCode } from "lucide-react";
 import Link from "next/link";
 
 import AdminBoard from "@/components/AdminBoard";
@@ -23,10 +23,10 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
   return (
     <>
       {/*
-       * Two icons, not three. "Tayangkan" and the QR used to be separate controls doing one
-       * job — putting the session in front of the room — and the third opened a sheet that
-       * has since been split by when its contents are needed. What is left is: show this to
-       * the room, or change what it is.
+       * Three things a session is, from the bar: put it on the projector, hand it to the
+       * room, or change what it is. The speaker screen has its own icon because it is the
+       * one an operator opens mid-majelis, and burying it one tap inside the QR screen put
+       * a nightly action behind a once-a-session one.
        */}
       <Toolbar variant="ink">
         <ToolbarBack href="/admin">{""}</ToolbarBack>
@@ -34,11 +34,20 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Tayangkan ke ruangan"
+          aria-label="Layar pemateri"
+          className="text-on-bar active:bg-white/12"
+          render={<Link href={`/admin/events/${event.id}/speaker`} />}
+        >
+          <Presentation aria-hidden />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Bagikan majelis"
           className="text-on-bar active:bg-white/12"
           render={<Link href={`/admin/events/${event.id}/tayangkan`} />}
         >
-          <MonitorPlay aria-hidden />
+          <QrCode aria-hidden />
         </Button>
         {canEdit && (
           <Button
