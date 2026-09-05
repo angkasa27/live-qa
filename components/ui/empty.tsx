@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
  * Regenerating this file DISCARDS those edits; re-apply them from that document.
  *
  * The generated base sets `border-dashed` with no width or colour, so no border drew at
- * all. Added `border border-border`, and `rounded-lg` became `rounded-xl` to match the
+ * all. Added `border border-border`, and the radius follows the product's three-step scale, to match the
  * panels these sit among.
  *
  * An empty queue is the expected condition at the start of every majelis, not an error

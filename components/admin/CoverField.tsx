@@ -33,7 +33,7 @@ export default function CoverField({
         Gambar sampul <span className="font-normal text-muted-foreground">(16:9)</span>
       </FieldLabel>
 
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-border bg-muted">
         {shown ? (
           // eslint-disable-next-line @next/next/no-img-element -- remote covers, no loader configured
           <img src={shown} alt="" className="h-full w-full object-cover" />

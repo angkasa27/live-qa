@@ -40,7 +40,7 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="m-auto w-[calc(100vw-2rem)] max-w-lg rounded-xl border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
+      className="m-auto w-[calc(100vw-2rem)] max-w-lg rounded-md border border-border bg-card p-0 text-foreground backdrop:bg-black/50"
     >
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <h2 className="min-w-0 flex-1 text-base font-semibold">{title}</h2>

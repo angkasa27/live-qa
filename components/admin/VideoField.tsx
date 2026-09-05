@@ -39,7 +39,7 @@ export default function VideoField({
       />
 
       {videoId && (
-        <div className="mt-1 flex items-center gap-2.5 rounded-xl border border-accent-border bg-accent p-2">
+        <div className="mt-1 flex items-center gap-2.5 rounded-md border border-accent-border bg-accent p-2">
           {/* eslint-disable-next-line @next/next/no-img-element -- remote still, no loader configured */}
           <img
             src={`https://i.ytimg.com/vi/${videoId}/default.jpg`}
