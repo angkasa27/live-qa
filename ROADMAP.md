@@ -69,18 +69,18 @@ from home, build for it then.
 |---|---|---|---|
 | `/` | Student | Pick a session. The running one is promoted; the rest are flat rows. | Built |
 | `/events/[id]` | Student | The majelis. Countdown before it starts; everything asked with answers underneath once it has, manual refresh, cursor-paged. Player when there's a recording. | Built |
-| `/events/[id]/tanya` | Student | Submit a question, named by default. Redirects to the majelis when it has stopped taking them, so a stale tab never dead-ends. | Built |
-| `/pertanyaan-saya` | Student | Your own questions and whether they've been answered. | Built |
-| `/masuk` | Admin | Sign in. No sign-up, see §4. | Built |
+| `/events/[id]/ask` | Student | Submit a question, named by default. Redirects to the majelis when it has stopped taking them, so a stale tab never dead-ends. | Built |
+| `/my-questions` | Student | Your own questions and whether they've been answered. | Built |
+| `/signin` | Admin | Sign in. No sign-up, see §4. | Built |
 | `/admin` | Admin | Sessions you run, with pending and unanswered counts. | Built |
 | `/admin/events/new` | Superadmin | Create a session. Always scheduled; going live is its own act. | Built |
 | `/admin/events/[id]` | Admin | The board. Accepting and review mode as deck toggles, the queue in four folding sections, one button for where the session goes next. Print next. | Built |
-| `/admin/events/[id]/ubah` | Superadmin | What the session *is*: name, time, venue, speaker, cover, recording, public toggle, delete. | Built |
-| `/admin/events/[id]/tayangkan` | Admin | The session put in front of the room: QR, speaker screen, shareable link. | Built |
+| `/admin/events/[id]/edit` | Superadmin | What the session *is*: name, time, venue, speaker, cover, recording, public toggle, delete. | Built |
+| `/admin/events/[id]/share` | Admin | The address handed to the room: QR, shareable link, printable PNG. | Built |
 | `/admin/events/[id]/speaker` | Syaikh | Full-screen deck, one question per card, swipe to advance. | Built |
-| `/admin/pengguna` | Superadmin | People, with what each one runs. | Built |
-| `/admin/pengguna/[id]` | Superadmin | One account: password, assigned sessions, deactivate, delete. | Built |
-| `/admin/pengguna/undang` | Superadmin | Add an admin and assign their sessions in one pass. | Built |
+| `/admin/people` | Superadmin | People, with what each one runs. | Built |
+| `/admin/people/[id]` | Superadmin | One account: password, assigned sessions, deactivate, delete. | Built |
+| `/admin/people/invite` | Superadmin | Add an admin and assign their sessions in one pass. | Built |
 
 ## 3. Decisions worth remembering
 
@@ -108,7 +108,7 @@ job by disappearing. `paginate()` went with it; keyset pagination belongs in SQL
 The id is in the key because two questions submitted in the same millisecond would otherwise page
 non-deterministically, dropping or repeating one.
 The cost: a newly submitted question lands at the *end* of the public list, so on a busy event the
-person who asked it may need to page to find it. `/pertanyaan-saya` is the answer to that.
+person who asked it may need to page to find it. `/my-questions` is the answer to that.
 
 **Polling, not websockets, and only on two devices.**
 There's a useful asymmetry here. Five thousand phones need nothing: they have a Refresh button,
@@ -210,7 +210,7 @@ mistake, a session left open — is. That is the line: an admin can be wrong for
 in perpetuity.
 
 `event_admins` carries the grants and is edited from the account's side, in
-`/admin/pengguna/[id]` — assignment is a property of a person, because "what does Rani run?" is
+`/admin/people/[id]` — assignment is a property of a person, because "what does Rani run?" is
 the question anyone actually asks, never "who is on session 47?". `events.created_by` is provenance now and decides nothing. The plugin's
 `/admin/*` endpoints are mapped so only the superadmin passes them (`lib/auth.ts`); the majelis
 boundary is ours, in `lib/actions.ts` and `lib/guard.ts`, both of which answer "you are not on
@@ -240,7 +240,7 @@ working thing.
 |---|---|---|---|
 | 1 | Backend + auth | Postgres, better-auth, real queries, server-side validation, rate limiting, the status model | **done** |
 | 2 | Admin | `/admin` home, event creation, status and moderation as controls, routes moved under `/admin` | **done**; orgs deferred, see §4 |
-| 3 | Student | Indonesian copy throughout, optional email at submit, `/pertanyaan-saya` | **done** |
+| 3 | Student | Indonesian copy throughout, optional email at submit, `/my-questions` | **done** |
 | 4 | Email | Notify on answer. The address is already collected and stored. | |
 | 5 | Print | `@media print` stylesheet, admin clicks print, the browser makes the PDF | |
 | 6 | Archive | Visibility toggle, `noindex`, disclaimer | **done** |
@@ -248,7 +248,7 @@ working thing.
 ### What each of the three still needs
 
 **Step 4: Email.** `questions.contact` is already collected, validated and stored server-side, and
-`/pertanyaan-saya` already answers "was it answered?" for anyone who comes back on their own.
+`/my-questions` already answers "was it answered?" for anyone who comes back on their own.
 Email is what closes the loop for anyone who doesn't. Send over plain SMTP rather than a provider
 SDK: it works identically on Vercel and on a self-hosted VPS, which keeps the Coolify/Dokploy move
 a Dockerfile (§3). Needs one decision from the organisers: which mailbox it sends from.

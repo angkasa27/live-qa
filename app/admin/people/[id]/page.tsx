@@ -8,9 +8,9 @@ import { listEventsForAdmin } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function AkunPage({ params }: PageProps<"/admin/pengguna/[id]">) {
+export default async function AccountPage({ params }: PageProps<"/admin/people/[id]">) {
   const { id } = await params;
-  await requireSuperadmin(`/admin/pengguna/${id}`);
+  await requireSuperadmin(`/admin/people/${id}`);
 
   const admins = await listAdmins();
   const admin = admins.ok ? admins.data.find((a) => a.id === id) : undefined;
@@ -29,7 +29,7 @@ export default async function AkunPage({ params }: PageProps<"/admin/pengguna/[i
   return (
     <>
       <Toolbar variant="ink">
-        <ToolbarBack href="/admin/pengguna">{""}</ToolbarBack>
+        <ToolbarBack href="/admin/people">{""}</ToolbarBack>
         <ToolbarTitle>{admin.name}</ToolbarTitle>
       </Toolbar>
       <AccountForm

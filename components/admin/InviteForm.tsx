@@ -54,7 +54,7 @@ export default function InviteForm({
         return setError(`Akun dibuat, tetapi penugasan gagal: ${grant.error}`);
       }
     }
-    router.push(`/admin/pengguna/${res.data.id}`);
+    router.push(`/admin/people/${res.data.id}`);
   }
 
   return (

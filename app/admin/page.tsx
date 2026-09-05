@@ -87,7 +87,7 @@ export default async function AdminHome() {
             size="icon"
             aria-label="Orang"
             className="text-on-bar active:bg-white/12"
-            render={<Link href="/admin/pengguna" />}
+            render={<Link href="/admin/people" />}
           >
             <Users aria-hidden />
           </Button>

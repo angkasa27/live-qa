@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * fighting the keyboard), and the dead end is fixed by redirecting to the majelis instead
  * of pretending it does not exist. Only a session that genuinely is not there 404s.
  */
-export default async function AskPage({ params }: PageProps<"/events/[id]/tanya">) {
+export default async function AskPage({ params }: PageProps<"/events/[id]/ask">) {
   const { id } = await params;
   const event = await getEvent(id);
   if (!event) notFound();

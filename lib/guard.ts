@@ -11,7 +11,7 @@ import { canWorkOn, getEvent } from "./queries.ts";
  */
 export async function requireSession(returnTo: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect(`/masuk?next=${encodeURIComponent(returnTo)}`);
+  if (!session) redirect(`/signin?next=${encodeURIComponent(returnTo)}`);
   return session;
 }
 

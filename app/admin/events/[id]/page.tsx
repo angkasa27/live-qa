@@ -45,7 +45,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
           size="icon"
           aria-label="Bagikan majelis"
           className="text-on-bar active:bg-white/12"
-          render={<Link href={`/admin/events/${event.id}/tayangkan`} />}
+          render={<Link href={`/admin/events/${event.id}/share`} />}
         >
           <QrCode aria-hidden />
         </Button>
@@ -55,7 +55,7 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
             size="icon"
             aria-label="Ubah sesi"
             className="text-on-bar active:bg-white/12"
-            render={<Link href={`/admin/events/${event.id}/ubah`} />}
+            render={<Link href={`/admin/events/${event.id}/edit`} />}
           >
             <Pencil aria-hidden />
           </Button>

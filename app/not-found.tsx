@@ -24,7 +24,7 @@ export default function NotFound() {
           <BookOpen aria-hidden />
           Lihat semua majelis
         </Button>
-        <Button variant="outline" size="lg" render={<Link href="/pertanyaan-saya" />}>
+        <Button variant="outline" size="lg" render={<Link href="/my-questions" />}>
           <MessageCircle aria-hidden />
           Pertanyaan saya
         </Button>

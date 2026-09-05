@@ -10,7 +10,7 @@ import { getSessionCookie } from "better-auth/cookies";
 export function proxy(request: NextRequest) {
   if (getSessionCookie(request)) return NextResponse.next();
 
-  const signIn = new URL("/masuk", request.url);
+  const signIn = new URL("/signin", request.url);
   signIn.searchParams.set("next", request.nextUrl.pathname);
   return NextResponse.redirect(signIn);
 }

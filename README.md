@@ -44,7 +44,7 @@ approve or reject what comes in, move it to its next stage, open and close submi
 review mode, put it in front of the room. Nothing else — not the details, not the public toggle,
 not the answers, not deleting it.
 
-Assignment lives with the person, in `/admin/pengguna/[id]`: "what does Rani run?" is the question
+Assignment lives with the person, in `/admin/people/[id]`: "what does Rani run?" is the question
 anyone actually asks, never "who is on session 47?". The boundary is enforced in the
 server actions (`lib/actions.ts`) and again on the pages (`lib/guard.ts`); the UI only hides
 what it already refuses.
@@ -61,7 +61,7 @@ The seed gives you six sessions covering all three states.
 |---|---|
 | Submit a question, anonymously or named | `/events/devfest-25`: live, auto-approve, so it publishes immediately |
 | Watch moderation hold one back | `/events/ai-townhall`: live, **manual** review. Yours shows "menunggu review" to you and to nobody else |
-| Find your own questions again | `/pertanyaan-saya`: no login; the browser holds an opaque cookie |
+| Find your own questions again | `/my-questions`: no login; the browser holds an opaque cookie |
 | Run a session | `/admin`: pending and unanswered counts per majelis, live ones first |
 | Create one | `/admin/events/new`: paste a YouTube link and it echoes back the id it parsed |
 | Approve, hide, answer | `/admin/events/ai-townhall` |
@@ -79,25 +79,25 @@ and the recording is the authority.
 |---|---|---|
 | `/` | student | Pick a session |
 | `/events/[id]` | student | The majelis: countdown, or questions + answers with manual Refresh and Load more. Player when there's a recording |
-| `/events/[id]/tanya` | student | Submit a question. Redirects to the majelis when it has stopped taking them |
-| `/pertanyaan-saya` | student | Your own questions and whether they've been answered |
-| `/masuk` | admin | Sign in |
+| `/events/[id]/ask` | student | Submit a question. Redirects to the majelis when it has stopped taking them |
+| `/my-questions` | student | Your own questions and whether they've been answered |
+| `/signin` | admin | Sign in |
 | `/admin` | admin | Sessions, with pending and unanswered counts |
 | `/admin/events/new` | superadmin | Create a session |
 | `/admin/events/[id]` | admin | The board: the two live controls, the queue in four folding sections, and one button for where the session goes next |
-| `/admin/events/[id]/ubah` | superadmin | What the session *is* — name, time, venue, speaker, cover, recording, delete |
-| `/admin/events/[id]/tayangkan` | admin | QR, speaker screen, shareable link |
+| `/admin/events/[id]/edit` | superadmin | What the session *is* — name, time, venue, speaker, cover, recording, delete |
+| `/admin/events/[id]/share` | admin | QR and shareable link. The speaker screen is its own icon in the bar |
 | `/admin/events/[id]/speaker` | syaikh | Full-screen swipe deck, extends as you near the end |
-| `/admin/pengguna` | superadmin | People |
-| `/admin/pengguna/[id]` | superadmin | One account: password, which sessions they run, deactivate, delete |
-| `/admin/pengguna/undang` | superadmin | Add an admin |
+| `/admin/people` | superadmin | People |
+| `/admin/people/[id]` | superadmin | One account: password, which sessions they run, deactivate, delete |
+| `/admin/people/invite` | superadmin | Add an admin |
 
 Everything under `/admin` is guarded twice: `proxy.ts` does a cheap cookie-presence redirect, and
 every protected page calls `requireSession()` in `lib/guard.ts`. Only the second is a real
 authorization boundary. Next's own docs are explicit that Proxy isn't one.
 
 An admin sees only the majelis they are staffing; the superadmin sees all of them and is the
-only one who can reach `/admin/pengguna` or `/admin/events/new`. A majelis you are not on 404s
+only one who can reach `/admin/people` or `/admin/events/new`. A majelis you are not on 404s
 exactly as one that doesn't exist. Organisation ownership stays deferred — with one lembaga per
 deployment, per-session grants are the whole of what was missing. See
 [§4](ROADMAP.md#4-data-model).

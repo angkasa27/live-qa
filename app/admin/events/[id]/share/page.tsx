@@ -5,17 +5,17 @@ import { requireEventAccess } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
-export default async function TayangkanPage({
+export default async function SharePage({
   params,
-}: PageProps<"/admin/events/[id]/tayangkan">) {
+}: PageProps<"/admin/events/[id]/share">) {
   const { id } = await params;
-  const { event } = await requireEventAccess(`/admin/events/${id}/tayangkan`, id);
+  const { event } = await requireEventAccess(`/admin/events/${id}/share`, id);
 
   return (
     <>
       <Toolbar variant="ink">
         <ToolbarBack href={`/admin/events/${event.id}`}>{""}</ToolbarBack>
-        <ToolbarTitle>Tayangkan</ToolbarTitle>
+        <ToolbarTitle>Bagikan</ToolbarTitle>
       </Toolbar>
       <PageShell padded={false}>
         <ShareCard eventId={event.id} name={event.name} />

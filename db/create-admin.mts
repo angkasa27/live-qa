@@ -1,5 +1,5 @@
 // Create the superadmin. Sign-up is closed on the running app by design (lib/auth.ts), so this
-// is the only way to make the first account — every other admin is made from /admin/pengguna.
+// is the only way to make the first account — every other admin is made from /admin/people.
 //
 //   npm run admin:create -- "Nama" email@example.com "password-min-8-chars"
 //

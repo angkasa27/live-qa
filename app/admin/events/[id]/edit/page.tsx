@@ -7,9 +7,9 @@ import { countQuestions } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function UbahSesiPage({ params }: PageProps<"/admin/events/[id]/ubah">) {
+export default async function EditSessionPage({ params }: PageProps<"/admin/events/[id]/edit">) {
   const { id } = await params;
-  const { event, canEdit } = await requireEventAccess(`/admin/events/${id}/ubah`, id);
+  const { event, canEdit } = await requireEventAccess(`/admin/events/${id}/edit`, id);
   // What a session *is* belongs to the superadmin; a grant buys running it. 404 rather than
   // 403, matching every other boundary here — an admin has no business knowing this is a page.
   if (!canEdit) notFound();

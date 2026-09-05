@@ -5,8 +5,8 @@ import { listEventsForAdmin } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function UndangPage() {
-  await requireSuperadmin("/admin/pengguna/undang");
+export default async function InvitePage() {
+  await requireSuperadmin("/admin/people/invite");
   const events = (await listEventsForAdmin(null)).map((e) => ({
     id: e.id,
     name: e.name,
@@ -17,7 +17,7 @@ export default async function UndangPage() {
   return (
     <>
       <Toolbar variant="ink">
-        <ToolbarBack href="/admin/pengguna">Batal</ToolbarBack>
+        <ToolbarBack href="/admin/people">Batal</ToolbarBack>
       </Toolbar>
       <InviteForm events={events} />
     </>

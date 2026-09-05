@@ -160,7 +160,7 @@ function Confirmation({ eventId, moderated }: { eventId: string; moderated: bool
     <PageShell
       action={
         <div className="space-y-2.5">
-          <Button size="lg" render={<Link href="/pertanyaan-saya" />}>
+          <Button size="lg" render={<Link href="/my-questions" />}>
             <ListChecks aria-hidden />
             Lihat pertanyaan saya
           </Button>

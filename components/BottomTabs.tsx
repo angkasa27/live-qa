@@ -8,10 +8,10 @@ import Link from "next/link";
  */
 const TABS = [
   { href: "/", label: "Majelis", Icon: BookOpen },
-  { href: "/pertanyaan-saya", label: "Pertanyaan saya", Icon: MessageCircle },
+  { href: "/my-questions", label: "Pertanyaan saya", Icon: MessageCircle },
 ] as const;
 
-export default function BottomTabs({ current }: { current: "/" | "/pertanyaan-saya" }) {
+export default function BottomTabs({ current }: { current: "/" | "/my-questions" }) {
   return (
     <nav className="sticky bottom-0 border-t border-border-soft bg-card [padding-bottom:env(safe-area-inset-bottom)]">
       <div className="page grid grid-cols-2 gap-1 px-2 py-1.5">

@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 /** Superadmin only. requireSuperadmin 404s an ordinary admin who guesses the address. */
-export default async function OrangPage() {
-  await requireSuperadmin("/admin/pengguna");
+export default async function PeoplePage() {
+  await requireSuperadmin("/admin/people");
   const admins = await listAdmins();
   const rows = admins.ok ? admins.data : [];
 
@@ -44,7 +44,7 @@ export default async function OrangPage() {
       <PageShell
         padded={false}
         action={
-          <Button variant="outline" size="lg" render={<Link href="/admin/pengguna/undang" />}>
+          <Button variant="outline" size="lg" render={<Link href="/admin/people/invite" />}>
             <UserPlus aria-hidden />
             Undang admin
           </Button>
@@ -105,7 +105,7 @@ export default async function OrangPage() {
                   {body}
                 </Item>
               ) : (
-                <Item key={a.id} size="sm" render={<Link href={`/admin/pengguna/${a.id}`} />}>
+                <Item key={a.id} size="sm" render={<Link href={`/admin/people/${a.id}`} />}>
                   {body}
                 </Item>
               );

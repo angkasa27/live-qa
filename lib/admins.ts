@@ -94,7 +94,7 @@ export async function createAdmin(input: {
       headers: ctx.headers,
       body: { name, email, password: input.password, role: "admin" },
     });
-    revalidatePath("/admin/pengguna");
+    revalidatePath("/admin/people");
     return done({ id: user.id });
   } catch (err) {
     return fail(reason(err));
@@ -126,7 +126,7 @@ export async function setAdminActive(userId: string, active: boolean): Promise<R
   try {
     if (active) await auth.api.unbanUser({ headers: ctx.headers, body: { userId } });
     else await auth.api.banUser({ headers: ctx.headers, body: { userId } });
-    revalidatePath("/admin/pengguna");
+    revalidatePath("/admin/people");
     return done(undefined);
   } catch (err) {
     return fail(reason(err));
@@ -151,7 +151,7 @@ export async function deleteAdmin(userId: string): Promise<Result> {
     await auth.api.removeUser({ headers: ctx.headers, body: { userId } });
     await query(`update events set created_by = null where created_by = $1`, [userId]);
     await query(`delete from event_admins where user_id = $1`, [userId]);
-    revalidatePath("/admin/pengguna");
+    revalidatePath("/admin/people");
     revalidatePath("/admin");
     return done(undefined);
   } catch (err) {
@@ -192,7 +192,7 @@ export async function setAdminEvents(userId: string, eventIds: string[]): Promis
   if (!ctx) return fail("Tidak diizinkan.");
   return replaceGrants("user_id", userId, "event_id", eventIds, [
     "/admin",
-    "/admin/pengguna",
+    "/admin/people",
     // The sessions themselves, so the pair stays symmetric with setEventAdmins.
     ...eventIds.map((id) => `/admin/events/${id}`),
   ]);

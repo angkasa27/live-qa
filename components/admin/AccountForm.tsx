@@ -247,7 +247,7 @@ export default function AccountForm({
             setConfirming(null);
             return setError(res.error);
           }
-          router.push("/admin/pengguna");
+          router.push("/admin/people");
         }}
       >
         <div className="space-y-1.5">

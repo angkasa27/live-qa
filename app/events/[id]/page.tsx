@@ -136,7 +136,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
       {event.acceptingQuestions && (
         <div className="sticky bottom-0 border-t border-border-soft bg-card/95 backdrop-blur-md">
           <div className="page px-5 py-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
-            <Button size="lg" render={<Link href={`/events/${event.id}/tanya`} />}>
+            <Button size="lg" render={<Link href={`/events/${event.id}/ask`} />}>
               <PenLine aria-hidden />
               Kirim pertanyaan
             </Button>

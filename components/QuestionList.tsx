@@ -100,7 +100,7 @@ export default function QuestionList({
           </EmptyDescription>
           {canAsk && (
             <Link
-              href={`/events/${eventId}/tanya`}
+              href={`/events/${eventId}/ask`}
               className="mt-1 font-bold text-primary underline underline-offset-4"
             >
               Kirim pertanyaan

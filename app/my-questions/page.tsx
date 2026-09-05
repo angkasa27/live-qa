@@ -97,7 +97,7 @@ export default async function MyQuestionsPage() {
         )}
       </main>
 
-      <BottomTabs current="/pertanyaan-saya" />
+      <BottomTabs current="/my-questions" />
     </>
   );
 }
