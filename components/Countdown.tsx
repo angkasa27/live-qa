@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-/** Whole days/hours/minutes left, or null once the moment has passed. */
+/** Whole days/hours/minutes/seconds left, or null once the moment has passed. */
 function remaining(iso: string) {
   const ms = new Date(iso).getTime() - Date.now();
   if (!Number.isFinite(ms) || ms <= 0) return null;
-  const minutes = Math.floor(ms / 60_000);
+  const seconds = Math.floor(ms / 1000);
   return {
-    days: Math.floor(minutes / 1440),
-    hours: Math.floor((minutes % 1440) / 60),
-    minutes: minutes % 60,
+    days: Math.floor(seconds / 86_400),
+    hours: Math.floor((seconds % 86_400) / 3600),
+    minutes: Math.floor((seconds % 3600) / 60),
+    seconds: seconds % 60,
   };
 }
 
@@ -19,8 +20,8 @@ function remaining(iso: string) {
  *
  * Client-only on purpose: a countdown rendered on the server is stale before it is painted,
  * and hydration would have to reconcile two different numbers. It renders nothing at all on
- * the first pass, then ticks once a minute — seconds would be a distraction on something
- * usually days away, and a per-second timer on a page left open in a pocket is rude.
+ * the first pass, then ticks every second — the last minute before a majelis starts is the
+ * one anyone is actually watching, and a clock that sits still through it reads as broken.
  */
 export default function Countdown({ iso }: { iso: string }) {
   const [left, setLeft] = useState<ReturnType<typeof remaining>>(null);
@@ -28,7 +29,7 @@ export default function Countdown({ iso }: { iso: string }) {
   useEffect(() => {
     const tick = () => setLeft(remaining(iso));
     tick();
-    const id = setInterval(tick, 60_000);
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [iso]);
 
@@ -44,9 +45,10 @@ export default function Countdown({ iso }: { iso: string }) {
           [left.days, "hari"],
           [left.hours, "jam"],
           [left.minutes, "menit"],
+          [left.seconds, "detik"],
         ].map(([value, unit]) => (
-          <div key={unit} className="basis-22 rounded-md bg-background py-3">
-            <b className="block text-2xl leading-tight font-extrabold tracking-[-0.03em] tabular-nums">
+          <div key={unit} className="min-w-0 flex-1 rounded-md bg-background py-3">
+            <b className="block text-2xl font-extrabold tracking-[-0.03em] tabular-nums">
               {value}
             </b>
             <span className="mt-0.5 block text-2xs text-muted-foreground">{unit}</span>
