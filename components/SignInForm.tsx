@@ -1,11 +1,15 @@
 "use client";
 
+import { LogIn, Mail, KeyRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LogIn } from "lucide-react";
+
+import PageShell from "@/components/PageShell";
 import Spinner from "@/components/Spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/auth-client";
 
 export default function SignInForm({ next }: { next: string }) {
@@ -21,50 +25,66 @@ export default function SignInForm({ next }: { next: string }) {
     setError(null);
     const res = await signIn.email({ email, password });
     setBusy(false);
+    // Deliberately one message for both: saying which half was wrong tells an attacker
+    // which addresses have accounts.
     if (res.error) return setError("Email atau kata sandi salah.");
     router.push(next);
     router.refresh();
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-4">
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          className="mt-2"
-          id="email"
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-      <div>
-        <Label htmlFor="password">Kata sandi</Label>
-        <Input
-          className="mt-2"
-          id="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-
-      <div aria-live="polite" className="min-h-[1.25rem]">
-        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-      </div>
-
-      <button
-        type="submit"
-        disabled={busy}
-        className="flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-opacity disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    <form onSubmit={submit} className="flex flex-1 flex-col">
+      <PageShell
+        action={
+          <Button type="submit" size="lg" disabled={busy}>
+            {busy ? <Spinner /> : <LogIn aria-hidden />}
+            {busy ? "Memproses…" : "Masuk"}
+          </Button>
+        }
       >
-        {busy ? <Spinner /> : <LogIn className="h-[18px] w-[18px]" aria-hidden />}
-        {busy ? "Memproses…" : "Masuk"}
-      </button>
+        <h1 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">Masuk</h1>
+        <p className="mt-1.5 text-base text-muted-foreground">
+          Halaman ini untuk admin dan pemateri. Peserta tidak perlu akun.
+        </p>
+
+        <Field className="mt-6 gap-2">
+          <FieldLabel htmlFor="email">
+            <Mail aria-hidden />
+            Email
+          </FieldLabel>
+          <Input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+
+        <Field className="mt-4 gap-2">
+          <FieldLabel htmlFor="password">
+            <KeyRound aria-hidden />
+            Kata sandi
+          </FieldLabel>
+          <Input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        <div aria-live="polite">
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </PageShell>
     </form>
   );
 }

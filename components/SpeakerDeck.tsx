@@ -1,10 +1,21 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchApproved } from "@/lib/actions";
 import { timecode, type Question } from "@/lib/types";
+
+/**
+ * The projector screen keeps its own palette and its own type scale, and neither comes from
+ * the design files — they describe phones. A hall reads this from ten metres in a room whose
+ * lights are usually still on, so the ground is darker than the admin bar (#141311, not
+ * --foreground) and every size is a clamp against the viewport rather than a step on the
+ * product's ramp. --bar-line and --on-bar-2 are shared with the admin bar, because those two
+ * really are the same greys.
+ */
 
 /** Body length → font size. Long questions shrink so they still fit one screen. */
 function bodyClass(len: number) {
@@ -119,7 +130,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#141311] px-6 text-center text-[#f7f4ed]">
         <p className="text-2xl font-medium">Belum ada pertanyaan.</p>
-        <Link href={`/admin/events/${eventId}`} className="text-[#a8a096] underline underline-offset-4">
+        <Link href={`/admin/events/${eventId}`} className="text-on-bar-2 underline underline-offset-4">
           Kembali ke sesi
         </Link>
       </div>
@@ -144,8 +155,8 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
               <p className={`${bodyClass(q.body.length)} leading-tight tracking-tight text-pretty`}>
                 {q.body}
               </p>
-              <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-[#a8a096]">
-                {q.author ?? "Anonim"}
+              <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-on-bar-2">
+                {q.author ?? "Tanpa nama"}
               </p>
               {q.answer && (
                 <div className="mt-8 border-l-4 border-[#8fbfae] pl-4">
@@ -168,7 +179,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
         <Link
           href={`/admin/events/${eventId}`}
-          className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-[#8b8377] transition-colors hover:text-[#f2efe8]"
+          className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-[#8b8377] transition-colors hover:text-on-bar"
         >
           <X className="h-4 w-4" aria-hidden />
           Keluar
@@ -181,22 +192,26 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
 
       {/* Pointer-based devices get buttons; on touch the swipe is the gesture. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden items-center justify-center gap-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] [@media(pointer:fine)]:flex">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => go(-1)}
           disabled={current === 0}
-          className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
+          className="pointer-events-auto border border-bar-line text-on-bar-2 active:bg-white/10 disabled:opacity-30"
           aria-label="Pertanyaan sebelumnya"
         >
-          <ChevronLeft className="mx-auto h-6 w-6" aria-hidden />
-        </button>
-        <button
+          <ChevronLeft className="size-6" aria-hidden />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => go(1)}
           disabled={current >= items.length - 1 && !cursor}
-          className="pointer-events-auto h-12 w-12 rounded-full border border-[#35302a] text-[#a8a096] transition-colors hover:border-[#4a453d] hover:text-[#f7f4ed] disabled:opacity-30"
+          className="pointer-events-auto border border-bar-line text-on-bar-2 active:bg-white/10 disabled:opacity-30"
           aria-label="Pertanyaan berikutnya"
         >
-          <ChevronRight className="mx-auto h-6 w-6" aria-hidden />
-        </button>
+          <ChevronRight className="size-6" aria-hidden />
+        </Button>
       </div>
     </div>
   );
