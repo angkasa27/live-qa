@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sual — Terang Hijau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   TERANG HIJAU — Terang, in the palette Sual already ships.
+
+   Same structure, type and spacing as d-terang.html; only the
+   colour tokens differ, and they are lifted from app/globals.css
+   rather than invented. Use this to see the new layout land in
+   the existing brand before deciding whether to change the brand.
+
+   Lembar's layout, softened.
+
+   One rule does the work: CONTENT IS FLAT AND FULL WIDTH,
+   CONTROLS ARE ROUNDED. Nothing gets a card just for existing,
+   so the page keeps Lembar's width and its long readable lines —
+   but the moment something has a radius, it is tappable. That
+   is why the buttons read as buttons here and did not there.
+
+   The compact form scale comes from Papan; the
+   countdown comes from Suara. --step scales the whole type
+   ramp from one number, if a size control is ever wired up.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  /* Sual's shipped palette, carried over from app/globals.css: warm paper, one green
+     for anything actionable, amber for "waiting on a human", one red for live. */
+  --ground:#faf9f7;        /* --background */
+  --surface:#ffffff;       /* --card */
+  --ink:#1c1a17;           /* --foreground */
+  --ink-2:#77716a;         /* --muted-foreground */
+  --ink-3:#8b857c;         /* --faint */
+  --line:#ece8e1;          /* --border-soft */
+  --line-hard:#e2ded6;     /* --border */
+  --primary:#16624f;
+  --primary-deep:#0f4a3b;  /* pressed; not in globals, held on the same hue */
+  --primary-soft:#eef4f1;  /* --accent */
+  --primary-line:#bcd6cc;  /* --accent-border */
+  --live:#b2382a;
+  --wait:#8a5a12;
+  --wait-soft:#fdf8ee;
+  --wait-line:#d9c9a8;
+  --r-sm:10px;
+  --r-md:14px;
+  --r-lg:20px;
+  --step:1;
+  --tap:48px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--ground);color:var(--ink);
+  font-size:calc(14px * var(--step));line-height:1.55;
+}
+img{display:block;max-width:100%}
+button,input,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:var(--r-sm)}
+
+.demo{position:sticky;top:0;z-index:99;background:#1c1a17;padding:8px 10px;display:flex;gap:6px;overflow-x:auto}
+.demo b{color:#8b857c;font-size:11px;font-weight:700;align-self:center;padding-right:4px;white-space:nowrap}
+.demo button{background:#33302b;color:#d5d0c8;border:0;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.demo button[aria-pressed=true]{background:#faf9f7;color:#1c1a17}
+
+.app{max-width:520px;margin:0 auto;background:var(--surface);min-height:100vh;display:flex;flex-direction:column}
+.screen[hidden]{display:none}
+.screen{display:flex;flex-direction:column;flex:1}
+
+/* ══ CONTROLS — everything below has a radius, and everything
+      with a radius is tappable. Nothing else in this file does. ══ */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:54px;
+     border:0;border-radius:var(--r-md);background:var(--primary);color:#fff;
+     font-size:calc(15px * var(--step));font-weight:700;letter-spacing:-.01em}
+.btn:active{background:var(--primary-deep)}
+.btn svg{width:17px;height:17px}
+.btn.quiet{background:var(--surface);color:var(--primary);box-shadow:inset 0 0 0 1.5px var(--line-hard)}
+.btn.quiet:active{background:var(--primary-soft)}
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border-radius:999px;
+      border:1.5px solid var(--primary);background:var(--surface);color:var(--primary);
+      font-size:calc(12px * var(--step));font-weight:700}
+.chip:active{background:var(--primary);color:#fff}
+.chip svg{width:12px;height:12px;flex:0 0 12px;fill:currentColor}
+.chip.icon svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor}
+
+/* ══ CONTENT — flat, full width, hairlines only ══ */
+.head{padding:20px 20px 4px}
+.head h1{font-size:calc(21px * var(--step));font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.head p{color:var(--ink-2);margin-top:5px;font-size:calc(13px * var(--step))}
+
+/* the running session: promoted, so it is the one thing on the page with a shape */
+.now{display:block;margin:16px;border-radius:var(--r-lg);overflow:hidden;background:var(--primary);color:#fff}
+.now .art{position:relative}
+.now .poster,.now img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.now .poster{align-items:flex-start;padding-top:24px}
+.now .flag{position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:8px;
+           background:var(--live);color:#fff;border-radius:999px;padding:6px 13px;
+           font-size:calc(11.5px * var(--step));font-weight:700}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+@media (prefers-reduced-motion:no-preference){
+  .flag .dot{animation:beat 1.9s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.3}}
+}
+/* title and meta ride on the cover under a veil, so the card stays short */
+.now .veil{position:absolute;inset:0;
+           background:linear-gradient(180deg,rgba(9,38,30,0) 26%,rgba(9,38,30,.58) 60%,rgba(9,38,30,.95) 100%)}
+.now .on{position:absolute;left:0;right:0;bottom:0;padding:0 16px 14px}
+.now h2{font-size:calc(15.5px * var(--step));font-weight:700;letter-spacing:-.02em;line-height:1.3;
+        text-shadow:0 1px 12px rgba(9,38,30,.5)}
+.now .meta{margin-top:7px;gap:4px}
+.now .meta li{font-size:calc(12.5px * var(--step))}
+.now .meta li svg{flex:0 0 15px;height:15px;stroke:rgba(255,255,255,.72)}
+.now .go{display:flex;align-items:center;justify-content:space-between;gap:12px;
+         padding:9px 10px 9px 16px;font-size:calc(12.5px * var(--step));font-weight:500}
+.now .go .arrow{display:inline-flex;align-items:center;gap:8px;font-weight:700;background:#fff;color:var(--primary);
+                border-radius:999px;padding:9px 16px}
+.now .go .arrow svg{width:14px;height:14px}
+.now .go>span:first-child svg{width:15px;height:15px;stroke-width:2}
+
+/* icon-led meta: the pictogram carries what a label used to say */
+.meta{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.meta li{display:flex;align-items:flex-start;gap:10px;font-size:calc(13px * var(--step));line-height:1.4}
+.meta li svg{flex:0 0 16px;height:16px;margin-top:1px;stroke:var(--ink-3)}
+.meta b{font-weight:600}
+.tags{display:flex;flex-wrap:wrap;align-items:center;gap:5px 16px;margin-top:8px;
+      font-size:calc(12.5px * var(--step));font-weight:400;color:var(--primary)}
+.tags span{display:inline-flex;align-items:center;gap:6px}
+.tags svg{width:14px;height:14px;flex:0 0 14px}
+.tags .off{color:var(--ink-3)}
+.by svg{width:13px;height:13px;flex:0 0 13px;stroke:currentColor}
+.by{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.by span{display:inline-flex;align-items:center;gap:6px}
+.answer .who{display:flex;align-items:center;gap:7px}
+.answer .who svg{width:13px;height:13px;flex:0 0 13px;stroke:currentColor;fill:none;stroke-width:2}
+.chip.icon{min-width:44px;padding:0 12px}
+.rule{padding:16px 20px 8px;font-size:calc(13px * var(--step));font-weight:700;color:var(--ink-2)}
+
+/* list rows: flat, full width, the whole row is the target */
+.row{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:11px;
+     align-items:start;padding:16px 20px;border-top:1px solid var(--line);width:100%;text-align:left}
+.row:active{background:var(--ground)}
+.row img,.row .poster{grid-area:1/1;width:96px;height:auto;aspect-ratio:16/9;
+     border-radius:var(--r-sm);object-fit:cover}
+.row img{background:var(--line)}
+.row .poster svg{width:28px;height:28px}
+.row .b{grid-area:1/2;min-width:0}
+/* no cover, no empty column */
+.row:not(:has(img)):not(:has(.poster)) .b{grid-column:1/-1}
+.row .tags{grid-column:1/-1;margin-top:0}
+.row h2{font-size:calc(15.5px * var(--step));font-weight:700;letter-spacing:-.02em;line-height:1.3}
+.row .meta{margin-top:7px;gap:6px}
+.row .meta li{font-size:calc(12.5px * var(--step))}
+.row .meta li svg{flex:0 0 15px;height:15px;margin-top:0}
+.row .state{display:block;margin-top:7px;font-size:calc(13.5px * var(--step));font-weight:400;color:var(--primary)}
+.row .state.off{color:var(--ink-3);font-weight:500}
+
+/* ── one bar, every inner page, detail and form alike ────── */
+.bar{display:flex;align-items:center;min-height:56px;padding:0 8px;
+     border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:41px;z-index:20}
+.bar .back{display:flex;align-items:center;gap:5px;min-height:var(--tap);padding:0 14px 0 8px;
+           border-radius:999px;font-size:calc(13.5px * var(--step));font-weight:700;color:var(--primary)}
+.bar .back:active{background:var(--primary-soft)}
+.bar .back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
+.bar .sp{flex:1}
+/* the state of the session, stated once, where it stays visible while you scroll */
+.bar .tag{display:inline-flex;align-items:center;gap:6px;margin-right:6px;border-radius:999px;
+          padding:6px 12px;font-size:calc(11.5px * var(--step));font-weight:700}
+.bar .tag svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.bar .tag.on-air{background:var(--live);color:#fff}
+.bar .tag.rec{background:var(--primary-soft);color:var(--primary)}
+
+/* ── detail ──────────────────────────────────────────────── */
+.stage{position:relative;background:#1c1a17}
+.stage img,.poster{width:100%;aspect-ratio:16/9;object-fit:cover}
+.poster{display:grid;place-items:center;color:rgba(255,255,255,.46);
+        background:linear-gradient(155deg,#1d7a62 0%,#16624f 45%,#0b3d31 100%)}
+.poster svg{width:74px;height:74px}
+.play{position:absolute;inset:0;width:100%;border:0;background:rgba(28,26,23,.30);display:grid;place-items:center}
+.play span{display:flex;align-items:center;gap:10px;background:var(--surface);color:var(--primary);
+           border-radius:999px;padding:11px 18px;font-size:calc(13.5px * var(--step));font-weight:700}
+.play svg{width:15px;height:15px;fill:currentColor}
+
+.intro{padding:20px 20px 18px;border-bottom:1px solid var(--line)}
+.intro h1{font-size:calc(18px * var(--step));font-weight:700;letter-spacing:-.025em;line-height:1.28}
+.intro .about{margin-top:13px;font-size:calc(13.5px * var(--step));line-height:1.6;color:var(--ink-2)}
+
+/* one notice shape, everywhere: a card with margin and a radius */
+.alert{display:flex;gap:11px;align-items:flex-start;margin:16px 20px 4px;padding:12px 14px;
+       border:1px solid var(--line);border-radius:var(--r-md);background:var(--ground);
+       font-size:calc(13px * var(--step));line-height:1.5;color:var(--ink-2)}
+.alert svg{flex:0 0 17px;height:17px;margin-top:1px;stroke:currentColor;fill:none;stroke-width:1.9}
+.alert p{flex:1;min-width:0}
+.alert b{color:var(--ink);font-weight:600}
+.alert.info{background:var(--primary-soft);border-color:var(--primary-line);color:#3d5a51}
+.alert.info b{color:var(--primary)}
+
+/* countdown — Suara's, in this palette, in the same card shape as an alert */
+.count{margin:16px 20px;padding:18px 16px 20px;text-align:center;
+       border:1px solid var(--line);border-radius:var(--r-md)}
+.count h3{font-size:calc(13.5px * var(--step));font-weight:600;color:var(--ink-2)}
+.count .clock{display:flex;justify-content:center;gap:10px;margin-top:14px}
+.count .clock div{background:var(--ground);border-radius:var(--r-md);padding:12px 0;flex:0 0 86px}
+.count .clock b{display:block;font-size:calc(20px * var(--step));font-weight:800;letter-spacing:-.03em;
+                font-variant-numeric:tabular-nums;line-height:1.1}
+.count .clock span{display:block;font-size:calc(11.5px * var(--step));color:var(--ink-2);margin-top:3px}
+
+/* ── questions: flat bands, full width ───────────────────── */
+.qtitle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 4px}
+.qtitle h2{font-size:calc(15px * var(--step));font-weight:800;letter-spacing:-.02em}
+.qtitle .chip{min-height:38px}
+.qnote{padding:6px 20px 16px;color:var(--ink-2);font-size:calc(12.5px * var(--step));line-height:1.5}
+.item{padding:20px;border-top:1px solid var(--line)}
+.item .ask{font-size:calc(14.5px * var(--step));font-weight:600;line-height:1.5;letter-spacing:-.01em}
+.item .by{margin-top:9px;color:var(--ink-3);font-size:calc(12px * var(--step))}
+.answer{margin-top:14px;padding-left:16px;border-left:3px solid var(--primary)}
+.answer .who{font-size:calc(12px * var(--step));font-weight:700;color:var(--primary)}
+.answer p{margin-top:5px;font-size:calc(13.5px * var(--step));line-height:1.65;color:#2b2822}
+.answer .chip{margin-top:14px}
+.item.mine{background:var(--wait-soft)}
+.item .queued{display:flex;align-items:center;gap:8px;color:var(--wait);font-weight:700;
+              font-size:calc(12.5px * var(--step));margin-bottom:11px}
+.item .queued svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2}
+.loadmore{padding:20px}
+
+/* ── sticky action ───────────────────────────────────────── */
+.act{position:sticky;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+     border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+
+/* ── ask page: Papan's compact scale, contained groups ───── */
+.form{padding:18px 20px;flex:1;font-size:14px}
+/* the form names itself in the page, the way a detail page does */
+.form h1{font-size:calc(18px * var(--step));font-weight:700;letter-spacing:-.025em;line-height:1.28}
+.form .sub{margin:5px 0 0;color:var(--ink-2);font-size:calc(13px * var(--step))}
+.form .sub b{color:var(--ink);font-weight:600}
+.form>label:not(.check){display:block;margin:18px 0 8px;font-size:calc(13.5px * var(--step));font-weight:700}
+.ta{width:100%;min-height:150px;resize:none;border:1.5px solid var(--line-hard);border-radius:var(--r-md);
+    padding:13px;font-size:16px;line-height:1.5;background:var(--surface)}
+.ta:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(22,98,79,.16)}
+.tally{text-align:right;font-size:12px;color:var(--ink-3);margin-top:8px}
+.inp{width:100%;min-height:var(--tap);border:1.5px solid var(--line-hard);border-radius:var(--r-sm);
+     padding:0 13px;font-size:16px;background:var(--surface)}
+.inp:focus{border-color:var(--primary);outline:none}
+.inp:disabled{background:var(--ground);color:var(--ink-3);border-color:var(--line)}
+/* anonymity is one checkbox under the name it turns off */
+.check{position:relative;display:flex;align-items:center;gap:11px;min-height:var(--tap);margin-top:6px;
+       font-size:calc(13.5px * var(--step))}
+.check input{position:absolute;width:1px;height:1px;opacity:0}
+.box{flex:0 0 22px;height:22px;border:2px solid var(--ink-3);border-radius:6px;display:grid;place-items:center}
+.box svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;opacity:0}
+.check input:checked ~ .box{border-color:var(--primary);background:var(--primary)}
+.check input:checked ~ .box svg{opacity:1}
+.check input:focus-visible ~ .box{outline:3px solid var(--primary);outline-offset:2px}
+
+/* ── footer nav ──────────────────────────────────────────── */
+.foot{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+      border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}
+.foot a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        min-height:56px;border-radius:var(--r-md);font-size:calc(11px * var(--step));font-weight:600;color:var(--ink-3)}
+.foot a[aria-current]{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.foot svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9}
+
+@media (min-width:560px){ .app{min-height:calc(100vh - 41px);box-shadow:0 0 0 1px var(--line)} }
+</style>
+</head>
+<body>
+
+<nav class="demo" aria-label="Pratinjau layar">
+  <b>Terang Hijau</b>
+  <button aria-pressed="true"  data-go="daftar">Daftar majelis</button>
+  <button aria-pressed="false" data-go="akan">Akan datang</button>
+  <button aria-pressed="false" data-go="live">Berlangsung</button>
+  <button aria-pressed="false" data-go="tanya">Kirim pertanyaan</button>
+  <button aria-pressed="false" data-go="arsip">Arsip</button>
+</nav>
+
+<div class="app">
+
+<!-- ══════════════ 1. DAFTAR ══════════════ -->
+<section class="screen" id="daftar">
+  <div class="head">
+    <h1>Majelis</h1>
+    <p>Pilih majelis untuk bertanya atau membaca jawabannya.</p>
+  </div>
+
+  <a class="now" href="#" data-go="live">
+    <div class="art">
+      <div class="poster"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M16 4c-5 0-8 3.4-8 8v16h16V12c0-4.6-3-8-8-8z"/><path d="M16 12v16M8 20h16"/></svg></div>
+      <span class="flag"><span class="dot"></span>Sedang berlangsung</span>
+      <div class="veil"></div>
+      <div class="on">
+        <h2>Kajian Ahad Pagi: Adab Sebelum Ilmu</h2>
+        <ul class="meta">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Hafizh Ramadhan</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Mulai 08.00 pagi ini</li>
+        </ul>
+      </div>
+    </div>
+    <span class="go"><span style="display:inline-flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.6A8.4 8.4 0 1121 11.5z"/></svg>14</span>
+      <span class="arrow">Bertanya
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </span>
+  </a>
+
+  <p class="rule">Akan datang</p>
+  <a class="row" href="#" data-go="akan">
+    <div class="poster" role="img" aria-label="Poster majelis Fikih Muamalah"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M16 4c-5 0-8 3.4-8 8v16h16V12c0-4.6-3-8-8-8z"/><path d="M16 12v16M8 20h16"/></svg></div>
+    <div class="b">
+      <h2>Fikih Muamalah: Jual Beli Online</h2>
+      <ul class="meta">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Ridwan Saputra</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Sabtu, 12 September · 19.30 WIB</li>
+      </ul>
+    </div>
+    <p class="tags"><span class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 118 0v3"/></svg>Dibuka saat majelis mulai</span></p>
+  </a>
+  <a class="row" href="#" data-go="akan">
+    <div class="b">
+      <h2>Kajian Tafsir Juz 30</h2>
+      <ul class="meta">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadzah Halimah Zahra</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Ahad, 20 September · 09.00 WIB</li>
+      </ul>
+    </div>
+    <p class="tags"><span class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 118 0v3"/></svg>Dibuka saat majelis mulai</span></p>
+  </a>
+
+  <p class="rule">Sudah lewat</p>
+  <a class="row" href="#" data-go="arsip">
+    <img src="https://i.ytimg.com/vi/1mycTmtS5_4/hqdefault.jpg" alt="">
+    <div class="b">
+      <h2>Tanya Jawab: Masalah-Masalah Penting</h2>
+      <ul class="meta">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Yazid bin Abdul Qadir Jawas</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Selasa, 12 Mei 2026</li>
+      </ul>
+    </div>
+    <p class="tags"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.6A8.4 8.4 0 1121 11.5z"/></svg>8 jawaban</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg>Rekaman</span></p>
+  </a>
+  <a class="row" href="#" data-go="arsip">
+    <img src="https://i.ytimg.com/vi/71z6vw_c5JE/hqdefault.jpg" alt="">
+    <div class="b">
+      <h2>Talkshow Tanya Ustadz</h2>
+      <ul class="meta">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Khalid Basalamah</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Rabu, 24 Juni 2026</li>
+      </ul>
+    </div>
+    <p class="tags"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.6A8.4 8.4 0 1121 11.5z"/></svg>7 jawaban</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg>Rekaman</span></p>
+  </a>
+
+  <nav class="foot">
+    <a href="#" aria-current="page">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 016.5 3H11v18H6.5A2.5 2.5 0 014 18.5z"/><path d="M20 5.5A2.5 2.5 0 0017.5 3H13v18h4.5a2.5 2.5 0 002.5-2.5z"/></svg>
+      Majelis
+    </a>
+    <a href="#">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.6A8.4 8.4 0 1121 11.5z"/></svg>
+      Pertanyaan saya
+    </a>
+  </nav>
+</section>
+
+<!-- ══════════════ 2. AKAN DATANG ══════════════ -->
+<section class="screen" id="akan" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="daftar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      Majelis
+    </a>
+  </header>
+
+  <div class="stage">
+    <div class="poster" role="img" aria-label="Poster majelis Fikih Muamalah"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M16 4c-5 0-8 3.4-8 8v16h16V12c0-4.6-3-8-8-8z"/><path d="M16 12v16M8 20h16"/></svg></div>
+  </div>
+
+  <div class="intro">
+    <h1>Fikih Muamalah: Jual Beli Online</h1>
+    <ul class="meta">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Ridwan Saputra</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Masjid Nurul Iman, Bekasi</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Sabtu, 12 September · 19.30 WIB</li>
+    </ul>
+  </div>
+
+  <div class="count">
+    <h3>Pertanyaan dibuka saat majelis mulai</h3>
+    <div class="clock">
+      <div><b>7</b><span>hari</span></div>
+      <div><b>13</b><span>jam</span></div>
+      <div><b>42</b><span>menit</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 3. BERLANGSUNG ══════════════ -->
+<section class="screen" id="live" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="daftar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      Majelis
+    </a>
+    <span class="sp"></span>
+    <span class="tag on-air"><span class="dot"></span>Berlangsung</span>
+  </header>
+
+  <div class="stage">
+    <div class="poster"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M16 4c-5 0-8 3.4-8 8v16h16V12c0-4.6-3-8-8-8z"/><path d="M16 12v16M8 20h16"/></svg></div>
+    <button class="play" aria-label="Putar siaran langsung">
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Tonton siaran</span>
+    </button>
+  </div>
+
+  <div class="intro">
+    <h1>Kajian Ahad Pagi: Adab Sebelum Ilmu</h1>
+    <ul class="meta">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Hafizh Ramadhan</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Masjid Al-Furqan, Depok</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Mulai 08.00 pagi ini</li>
+    </ul>
+  </div>
+
+  <div class="alert info">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.6A8.4 8.4 0 1121 11.5z"/></svg><p>Pertanyaan Anda langsung masuk ke layar pemateri.</p>
+  </div>
+
+  <div class="qtitle">
+    <h2>14 pertanyaan</h2>
+    <button class="chip icon" type="button" aria-label="Muat pertanyaan baru"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8 8 0 006.3 5.7L3 9"/><path d="M4 13a8 8 0 0013.7 5.3L21 15"/><path d="M3 4v5h5M21 20v-5h-5"/></svg></button>
+  </div>
+
+  <article class="item mine">
+    <p class="queued"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Menunggu review admin</p>
+    <p class="ask">Kalau saya baru mulai belajar agama, kitab apa yang sebaiknya dibaca lebih dulu?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>baru saja</span></p>
+  </article>
+
+  <article class="item">
+    <p class="ask">Bagaimana adab bertanya kepada guru ketika kita merasa jawabannya kurang tepat?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Fikri</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>3 menit lalu</span></p>
+  </article>
+
+  <article class="item">
+    <p class="ask">Apakah niat menuntut ilmu harus diulang setiap kali datang kajian, atau cukup sekali di awal?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>11 menit lalu</span></p>
+    <div class="answer">
+      <p class="who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>Ustadz Hafizh menjawab</p>
+      <p>Niat itu tempatnya di hati dan ia diperbarui setiap amal. Tidak perlu dilafazkan, tapi hadirkan lagi setiap kali berangkat: saya datang untuk mengangkat kebodohan dari diri saya.</p>
+    </div>
+  </article>
+
+  <div class="loadmore">
+    <button class="btn quiet" type="button">Muat pertanyaan lagi</button>
+  </div>
+
+  <div class="act">
+    <a class="btn" href="#" data-go="tanya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Kirim pertanyaan</a>
+  </div>
+</section>
+
+<!-- ══════════════ 4. KIRIM PERTANYAAN ══════════════ -->
+<section class="screen" id="tanya" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="live">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      Batal
+    </a>
+  </header>
+
+  <div class="form">
+    <h1>Kirim pertanyaan</h1>
+    <p class="sub">Untuk <b>Adab Sebelum Ilmu</b></p>
+
+    <label for="q">Pertanyaan</label>
+    <textarea class="ta" id="q" placeholder="Tulis pertanyaan Anda…"></textarea>
+    <p class="tally">0 / 500</p>
+
+    <label for="nm">Nama</label>
+    <input class="inp" id="nm" placeholder="Nama Anda">
+
+    <label class="check">
+      <input type="checkbox" id="anon">
+      <span class="box"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+      Kirim tanpa nama
+    </label>
+  </div>
+
+  <div class="act">
+    <button class="btn" type="button">Kirim pertanyaan</button>
+  </div>
+</section>
+
+<!-- ══════════════ 5. ARSIP ══════════════ -->
+<section class="screen" id="arsip" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="daftar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      Majelis
+    </a>
+    <span class="sp"></span>
+    <span class="tag rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg>Rekaman</span>
+  </header>
+
+  <div class="stage">
+    <img src="https://i.ytimg.com/vi/1mycTmtS5_4/hqdefault.jpg" alt="">
+    <button class="play" aria-label="Putar rekaman majelis">
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Tonton rekaman</span>
+    </button>
+  </div>
+
+  <div class="intro">
+    <h1>Tanya Jawab: Masalah-Masalah Penting</h1>
+    <ul class="meta">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Yazid bin Abdul Qadir Jawas</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Moslem Nearer</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Selasa, 12 Mei 2026 · 19.30 WIB</li>
+    </ul>
+  </div>
+
+  <div class="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg><p>Jawaban tertulis adalah <b>ringkasan admin</b>. Rekaman tetap rujukan utama.</p>
+  </div>
+
+  <div class="qtitle"><h2>8 pertanyaan</h2></div>
+  <p class="qnote">Ketuk menit untuk memutar rekaman di bagian itu.</p>
+
+  <article class="item">
+    <p class="ask">Sebagian ibu-ibu yang baru mengaji merasa malas datang karena ibu-ibu yang memakai cadar tidak ramah kepada mereka. Bagaimana ini?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span></p>
+    <div class="answer">
+      <p class="who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>Ustadz Yazid menjawab</p>
+      <p>Sudah saya ingatkan di awal: cadar itu dibuka, kecuali di hadapan laki-laki. Hukum cadar sendiri sunah — itu yang rajih dari dua pendapat ulama. Dan sambutlah yang datang, karena yang mengaji tidak semuanya orang yang sudah lama; banyak yang baru ikut.</p>
+      <button class="chip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>0:08</button>
+    </div>
+  </article>
+
+  <article class="item">
+    <p class="ask">Apakah ada uzur bagi orang jahil yang melakukan syirik dan bidah?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span></p>
+    <div class="answer">
+      <p class="who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>Ustadz Yazid menjawab</p>
+      <p>Masih ada uzur, kalau di tempat itu tidak ada kajian apa-apa dan tidak ada yang mengingatkan dia tentang tauhid dan syirik. Tapi kalau kajian sudah menyebar, dakwah sudah disampaikan, dan dia masih tidak mau belajar — itu salah dia, tidak ada uzur baginya.</p>
+      <button class="chip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>13:38</button>
+    </div>
+  </article>
+
+  <article class="item">
+    <p class="ask">Ziarah kubur itu sudah jelas diperbolehkan. Lalu mengapa Ustaz Yazid tidak memperbolehkan ziarah kubur, sedangkan Nabi memperbolehkan?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span></p>
+    <div class="answer">
+      <p class="who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>Ustadz Yazid menjawab</p>
+      <p>Jangan salah paham — saya tidak melarang orang ziarah kubur. Ziarah kubur boleh dan syar'i. Yang saya larang adalah minta-minta di kubur, kepada selain Allah. Tujuan ziarah kubur yang pertama mengucapkan salam kepada penghuni kubur, yang kedua mendoakan mereka — bukan meminta doa dari mereka.</p>
+      <button class="chip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>23:53</button>
+    </div>
+  </article>
+
+  <article class="item">
+    <p class="ask">Bolehkah seseorang yang sudah bertobat menceritakan masa lalunya yang penuh maksiat?</p>
+    <p class="by"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>Tanpa nama</span></p>
+    <div class="answer">
+      <p class="who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>Ustadz Yazid menjawab</p>
+      <p>Tidak boleh. Allah sudah menutupi dia ketika berbuat maksiat, jadi jangan diceritakan lagi kepada orang lain. Kalau dia sudah bertobat kepada Allah, sudah — masa lalunya tutup.</p>
+      <button class="chip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>30:18</button>
+    </div>
+  </article>
+</section>
+
+</div>
+
+<script>
+const screens = [...document.querySelectorAll('.screen')];
+const tabs = [...document.querySelectorAll('.demo button')];
+function go(id){
+  screens.forEach(s => s.hidden = s.id !== id);
+  tabs.forEach(t => t.setAttribute('aria-pressed', String(t.dataset.go === id)));
+  window.scrollTo(0,0);
+}
+// ticking "tanpa nama" empties the name and locks it, so the two can never disagree
+const anon = document.getElementById('anon');
+const nm = document.getElementById('nm');
+anon.addEventListener('change', () => {
+  nm.disabled = anon.checked;
+  if (anon.checked) nm.value = '';
+});
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-go]');
+  if (!el) return;
+  e.preventDefault();
+  go(el.dataset.go);
+});
+</script>
+</body>
+</html>

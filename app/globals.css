@@ -32,6 +32,8 @@
   --input: oklch(0.902 0.012 84.6); /* #e2ded6 */
   --ring: oklch(0.446 0.078 171.9); /* #16624f — focus rings are green here */
   --radius: 0.625rem;
+  /* Scales the entire type ramp from one number. See the --text-* block below. */
+  --step: 1;
 
   /* Sual-only. shadcn has no word for any of these, and each carries a meaning the
      interface is not allowed to spend elsewhere. */
@@ -45,6 +47,19 @@
   --accent-border: oklch(0.854 0.031 170.4); /* #bcd6cc */
   --destructive-soft: oklch(0.967 0.013 28.9); /* #fdf1ef — was --danger-soft */
   --destructive-border: oklch(0.684 0.086 27.8); /* #c9857c — was --danger-border */
+
+  /* Pressed green. Held on --primary's hue (171.9 → 171.7), L and C moved down. */
+  --primary-deep: oklch(0.368 0.064 171.7); /* #0f4a3b */
+  /* Answer bodies. One step off --foreground, so a long answer reads softer than a title
+     without becoming --muted-foreground, which means "secondary" everywhere else. */
+  --foreground-soft: oklch(0.278 0.012 84.6); /* #2b2822 */
+
+  /* The admin bar is ink so an operator is never unsure which side they are typing into.
+     Its ground is --foreground; these are what sits on top. Until now they were literal
+     hexes scattered through Shell.tsx and admin/page.tsx. */
+  --bar-line: oklch(0.312 0.013 72.4); /* #35302a */
+  --on-bar: oklch(0.953 0.010 87.5); /* #f2efe8 */
+  --on-bar-2: oklch(0.710 0.017 73.6); /* #a8a096 */
 }
 
 @theme inline {
@@ -78,18 +93,34 @@
   --color-destructive-soft: var(--destructive-soft);
   --color-destructive-border: var(--destructive-border);
 
-  --font-sans: var(--font-sans-ui);
-  /* Questions and answers are the reading matter; they get the serif. */
-  --font-serif: var(--font-serif-reading);
-  --font-mono: var(--font-mono-label);
+  --color-primary-deep: var(--primary-deep);
+  --color-foreground-soft: var(--foreground-soft);
+  --color-bar-line: var(--bar-line);
+  --color-on-bar: var(--on-bar);
+  --color-on-bar-2: var(--on-bar-2);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* One family. Weight (400–800) and size carry what a second face used to. */
+  --font-sans: var(--font-sans-ui);
+
+  /* Three radii, because the design has three, and each says something:
+     content is flat and full width, controls are rounded. A radius means tappable. */
+  --radius-sm: 10px; /* chips on rows, inputs, the recording proposal */
+  --radius-md: 14px; /* buttons, alerts, the countdown, question cards, textareas */
+  --radius-lg: 20px; /* the promoted running-session card, and nothing else */
+
+  /* The type ramp is literal pixels, not rem multiples, because the design was drawn in
+     them — and every step is scaled by --step so the whole ramp moves from one number if a
+     size control is ever wired up. Names are Tailwind's; the sizes are Sual's, so `text-sm`
+     here is 12.5px, not 14px. There is one ramp in this product; this is it. */
+  --text-2xs: calc(11.5px * var(--step)); /* live flag, tags, count pills, roles */
+  --text-xs: calc(12px * var(--step)); /* bylines, question meta, help text */
+  --text-sm: calc(12.5px * var(--step)); /* row meta, toggles */
+  --text-base: calc(13px * var(--step)); /* alerts, section rules, body copy */
+  --text-md: calc(13.5px * var(--step)); /* answer bodies, back links, form labels */
+  --text-lg: calc(14.5px * var(--step)); /* the question itself */
+  --text-xl: calc(15.5px * var(--step)); /* row and card titles */
+  --text-2xl: calc(18px * var(--step)); /* detail and form headings */
+  --text-3xl: calc(21px * var(--step)); /* page headings */
 }
 
 /* One column for the whole app. Every bar, band, sheet and <main> centres on the same
@@ -107,14 +138,23 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   html {
     @apply font-sans;
   }
   body {
     @apply bg-background text-foreground;
+    font-size: calc(14px * var(--step));
+    line-height: 1.55;
     -webkit-text-size-adjust: 100%;
+  }
+  /* Thick, green and offset, on everything — a mosque floor in the evening is not the place
+     to hunt for a hairline. Replaces the half-opacity ring the generated CSS shipped. */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {

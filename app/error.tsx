@@ -32,7 +32,7 @@ export default function Error({
       {/* The digest is the only safe handle on the failure: it matches this render to a line in
           the server log without putting the message itself on screen. */}
       {error.digest && (
-        <p className="mt-2 font-mono text-xs text-muted-foreground">Kode: {error.digest}</p>
+        <p className="mt-2 text-xs text-muted-foreground">Kode: {error.digest}</p>
       )}
       <div className="mt-7 flex flex-col gap-3 sm:flex-row">
         <button

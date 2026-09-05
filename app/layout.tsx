@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
+import { Public_Sans } from "next/font/google";
 import "./globals.css";
 
-const sans = Plus_Jakarta_Sans({ variable: "--font-sans-ui", subsets: ["latin"] });
-const serif = Newsreader({ variable: "--font-serif-reading", subsets: ["latin"] });
-const mono = IBM_Plex_Mono({ variable: "--font-mono-label", subsets: ["latin"], weight: ["400", "500"] });
+// One family for the whole product. The Terang Hijau design carries no serif and no mono:
+// weight and size do the work a second family used to, which is why the ramp runs to 800.
+const sans = Public_Sans({
+  variable: "--font-sans-ui",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   title: "Sual: Tanya Jawab Majelis",
@@ -23,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`h-full antialiased ${sans.variable} ${serif.variable} ${mono.variable}`}>
+    <html lang="id" className={`h-full antialiased ${sans.variable}`}>
       <body className="min-h-full flex flex-col">
         {children}
       </body>

@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sual — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   ADMIN — rebuilt around the operator's day, not the routes.
+
+   The old shape had one "Pengaturan" sheet holding twelve
+   controls: status, accepting, moderation, staff, name, slug,
+   time, venue, speaker, cover, video, delete. All of it always,
+   whatever the session was doing. That sheet is gone. Its
+   contents were split by WHEN they are needed:
+
+     during the session  → controls on the board itself
+     rarely, deliberate  → Ubah sesi (the facts + recording + delete)
+     never per-session   → Orang (who staffs what)
+     once, at creation   → the page address, then never editable
+
+   Four more calls, each a removal or a merge:
+
+   • The board IS the home screen. An operator mid-majelis opens
+     this to work the queue; landing on a list first is a step
+     that exists for the data model, not for them.
+   • No filter chips. Filtering hides work. The queue is one list
+     sectioned by what it needs from you, in that order, counts in
+     the headers, done work collapsed.
+   • No three-way status picker. A session moves scheduled → live
+     → archived, so each stage offers one button naming what
+     happens next. A segmented control asks the operator to hold a
+     state machine in their head.
+   • QR and the speaker screen were two icons doing one job —
+     putting the session in front of the room. One "Tayangkan".
+
+   Palette and type are e-terang-hijau.html's. The bar is ink so
+   an operator is never unsure which side they are typing into.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --ground:#faf9f7;
+  --surface:#ffffff;
+  --ink:#1c1a17;
+  --ink-2:#77716a;
+  --ink-3:#8b857c;
+  --line:#ece8e1;
+  --line-hard:#e2ded6;
+  --primary:#16624f;
+  --primary-deep:#0f4a3b;
+  --primary-soft:#eef4f1;
+  --primary-line:#bcd6cc;
+  --live:#b2382a;
+  --danger:#a13124;
+  --danger-soft:#fdf1ef;
+  --wait:#8a5a12;
+  --wait-soft:#fdf8ee;
+  --wait-line:#d9c9a8;
+  --wait-pill:#f3e4c6;
+  --bar:#1c1a17;
+  --bar-line:#35302a;
+  --on-bar:#f2efe8;
+  --on-bar-2:#a8a096;
+  --r-sm:10px;
+  --r-md:14px;
+  --r-lg:20px;
+  --step:1;
+  --tap:48px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+     background:var(--ground);color:var(--ink);font-size:calc(14px * var(--step));line-height:1.55}
+img{display:block;max-width:100%}
+button,input,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:var(--r-sm)}
+
+.demo{position:sticky;top:0;z-index:99;background:#0e0d0b;padding:8px 10px;display:flex;gap:6px;overflow-x:auto}
+.demo b{color:#8b857c;font-size:11px;font-weight:700;align-self:center;padding-right:4px;white-space:nowrap}
+.demo button{background:#33302b;color:#d5d0c8;border:0;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.demo button[aria-pressed=true]{background:#faf9f7;color:#1c1a17}
+
+.app{max-width:520px;margin:0 auto;background:var(--surface);min-height:100vh;display:flex;flex-direction:column}
+.screen[hidden]{display:none}
+.screen{display:flex;flex-direction:column;flex:1}
+
+/* ══ controls ══ */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;
+     border:0;border-radius:var(--r-md);background:var(--primary);color:#fff;
+     font-size:calc(15px * var(--step));font-weight:700;letter-spacing:-.01em}
+.btn:active{background:var(--primary-deep)}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+.btn.ghost{background:var(--surface);color:var(--primary);box-shadow:inset 0 0 0 1.5px var(--line-hard)}
+.btn.ghost:active{background:var(--primary-soft)}
+.btn.wreck{background:var(--surface);color:var(--danger);box-shadow:inset 0 0 0 1.5px #e4bfb9}
+.btn.warnbtn{background:var(--surface);color:var(--wait);box-shadow:inset 0 0 0 1.5px var(--wait-line)}
+.btn.sm{width:auto;flex:1;min-height:42px;padding:0 12px;border-radius:var(--r-sm);
+        font-size:calc(13px * var(--step));white-space:nowrap}
+.btn.sm svg{width:15px;height:15px}
+.btn.quiet{flex:0 0 auto;background:none;box-shadow:none;color:var(--ink-2);font-weight:600}
+.btn.quiet:active{background:var(--ground)}
+.btn.danger{flex:0 0 auto;background:none;box-shadow:none;color:var(--danger);font-weight:600}
+
+/* ══ ink bar ══ */
+.bar{display:flex;align-items:center;min-height:56px;padding:0 8px;background:var(--bar);
+     color:var(--on-bar);position:sticky;top:41px;z-index:20}
+.bar .back{display:flex;align-items:center;gap:5px;min-height:var(--tap);padding:0 12px 0 8px;
+           border-radius:999px;font-size:calc(13.5px * var(--step));font-weight:700;color:var(--on-bar)}
+.bar .back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
+.bar h1{flex:1;min-width:0;padding:0 8px;font-size:calc(15px * var(--step));font-weight:700;
+        letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar:not(:has(.back)) h1{padding-left:12px}
+.bar .ic{flex:0 0 var(--tap);height:var(--tap);display:grid;place-items:center;border:0;
+         background:none;border-radius:999px;color:var(--on-bar)}
+.bar .ic:active{background:rgba(255,255,255,.12)}
+.bar .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9}
+
+/* ══ the live controls: the two things that change mid-session, on the board ══ */
+.deck{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);
+      background:var(--surface);position:sticky;top:97px;z-index:19;overflow-x:auto}
+.deck .when{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding-right:4px;
+            font-size:calc(12.5px * var(--step));font-weight:700;color:var(--live)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:0 0 8px}
+@media (prefers-reduced-motion:no-preference){
+  .beat{animation:beat 1.9s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.3}}
+}
+/* a toggle that reads as its own state, so no label has to explain it */
+.tog{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;min-height:38px;padding:0 13px;
+     border-radius:999px;border:1px solid var(--line-hard);background:var(--surface);
+     font-size:calc(12.5px * var(--step));font-weight:600;color:var(--ink-2);white-space:nowrap}
+.tog svg{width:14px;height:14px;flex:0 0 14px;stroke:currentColor;fill:none;stroke-width:2.2}
+/* a toggle that only highlights is a toggle you have to remember the meaning of;
+   these say what they currently are, and change words when tapped */
+.tog span{display:inline-flex;align-items:center;gap:7px}
+.tog .off,.tog[aria-pressed=false] .on{display:none}
+.tog[aria-pressed=false] .off{display:inline-flex}
+.tog[aria-pressed=true]{background:var(--primary-soft);border-color:var(--primary-line);color:var(--primary);font-weight:700}
+.tog.warnish[aria-pressed=true]{background:var(--wait-pill);border-color:var(--wait-line);color:var(--wait)}
+
+/* ══ queue: sectioned by what it needs, never filtered ══ */
+.shead{display:flex;align-items:center;gap:9px;width:100%;padding:16px 20px 8px;background:none;border:0;text-align:left}
+.shead .mk{width:17px;height:17px;flex:0 0 17px;fill:none;stroke-width:2;stroke:var(--wait)}
+.shead .mk.plain{stroke:var(--ink-3)}
+.shead .mk.ok{stroke:var(--primary)}
+.shead .t{font-size:calc(13px * var(--step));font-weight:700;color:var(--ink-2)}
+.shead .n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+          background:var(--line);color:var(--ink-2);font-size:calc(11.5px * var(--step));font-weight:700}
+.shead .n.due{background:var(--wait-pill);color:var(--wait)}
+.shead .sp{flex:1}
+.shead .cx{width:20px;height:20px;stroke:var(--ink-3);fill:none;stroke-width:2.2;transition:transform .18s}
+.shead[aria-expanded=false] .cx{transform:rotate(-90deg)}
+@media (prefers-reduced-motion:reduce){ .shead .cx{transition:none} }
+.group{padding:0 16px;display:flex;flex-direction:column;gap:12px}
+.group[hidden]{display:none}
+.group.last{padding-bottom:8px}
+
+.q{border:1px solid var(--line-hard);border-radius:var(--r-md);background:var(--surface);padding:14px}
+.q.needs{border-color:var(--wait-line);background:var(--wait-soft)}
+.q.gone{background:var(--ground);border-style:dashed;border-color:var(--line-hard)}
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      font-size:calc(12px * var(--step));color:var(--ink-3)}
+.qtop .who{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.qtop span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.qtop svg{width:13px;height:13px;flex:0 0 13px;stroke:currentColor;fill:none;stroke-width:1.9}
+.q .body{margin-top:9px;font-size:calc(14.5px * var(--step));font-weight:600;line-height:1.5;letter-spacing:-.01em}
+.answer{margin-top:12px;padding-left:14px;border-left:3px solid var(--primary)}
+.answer p{font-size:calc(13.5px * var(--step));line-height:1.6;color:#2b2822}
+.acts{display:flex;align-items:center;gap:8px;margin-top:13px}
+
+.proposal{margin-top:12px;border:1px solid var(--primary-line);background:var(--primary-soft);
+          border-radius:var(--r-sm);padding:12px}
+.proposal .lead{display:flex;align-items:center;gap:7px;font-size:calc(11.5px * var(--step));
+                font-weight:700;color:var(--primary)}
+.proposal .lead svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.proposal .lead .at{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-2);font-weight:600}
+.proposal .draft{margin-top:8px;font-size:calc(13.5px * var(--step));line-height:1.6}
+.proposal .quote{margin-top:8px;padding-left:10px;border-left:2px solid var(--primary-line);
+                 font-size:calc(12.5px * var(--step));font-style:italic;color:var(--ink-2);line-height:1.5}
+.elabel{display:flex;align-items:center;gap:7px;margin:14px 0 7px;font-size:calc(12.5px * var(--step));
+        font-weight:700;color:var(--ink-2)}
+.elabel svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.ta{width:100%;min-height:110px;resize:vertical;border:1.5px solid var(--line-hard);border-radius:var(--r-sm);
+    padding:12px;font-size:16px;line-height:1.5;background:var(--surface)}
+.ta:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(22,98,79,.16)}
+
+/* closing the session sits after the queue, where you are when it is over */
+.endzone{margin:22px 16px 24px;padding-top:18px;border-top:1px solid var(--line)}
+.endzone .why{margin-top:8px;text-align:center;font-size:calc(12px * var(--step));color:var(--ink-2)}
+
+/* ══ session list ══ */
+.rule{padding:16px 20px 8px;font-size:calc(13px * var(--step));font-weight:700;color:var(--ink-2)}
+.row{display:flex;align-items:center;gap:14px;padding:15px 20px;border-top:1px solid var(--line);width:100%;text-align:left}
+.row:active{background:var(--ground)}
+.row .b{flex:1;min-width:0}
+.row h2{font-size:calc(15.5px * var(--step));font-weight:700;letter-spacing:-.02em;line-height:1.3}
+.row .meta{margin-top:6px;display:flex;flex-wrap:wrap;gap:3px 13px;
+           font-size:calc(12.5px * var(--step));color:var(--ink-2)}
+.row .meta span{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.row .meta svg{width:14px;height:14px;flex:0 0 14px;stroke:var(--ink-3);fill:none;stroke-width:1.9}
+.row .meta .due{color:var(--wait);font-weight:700}
+.row .meta .due svg{stroke:currentColor}
+.row .tag svg{width:12px;height:12px;flex:0 0 12px;stroke:currentColor;fill:none;stroke-width:2.2}
+.row .tag{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;
+          font-size:calc(11.5px * var(--step));font-weight:700;
+          background:var(--wait-soft);color:var(--wait);border:1px solid var(--wait-line)}
+.row .tag.none{background:var(--ground);color:var(--ink-3);border-color:var(--line)}
+.row .tag.on{background:var(--live);color:#fff;border-color:var(--live)}
+
+/* ══ tayangkan ══ */
+.share{padding:20px}
+.qr{margin:0 auto;width:212px;padding:16px;border:1px solid var(--line-hard);border-radius:var(--r-md);background:#fff}
+.qr svg{width:100%;height:auto;display:block}
+.share .url{margin-top:14px;text-align:center;font-size:calc(13.5px * var(--step));color:var(--ink-2);word-break:break-all}
+.share .url b{color:var(--ink);font-weight:700}
+.opt{display:flex;align-items:center;gap:13px;width:100%;padding:14px;margin-top:10px;text-align:left;
+     border:1px solid var(--line-hard);border-radius:var(--r-md);background:var(--surface)}
+.opt .ring{flex:0 0 40px;height:40px;border-radius:var(--r-sm);background:var(--primary-soft);display:grid;place-items:center}
+.opt .ring svg{width:19px;height:19px;stroke:var(--primary);fill:none;stroke-width:1.9}
+.opt .t{flex:1}
+.opt .t b{display:block;font-size:calc(13.5px * var(--step));font-weight:700}
+.opt .t small{display:block;font-size:calc(12px * var(--step));color:var(--ink-2);margin-top:1px;line-height:1.4}
+.opt .go{width:18px;height:18px;stroke:var(--ink-3);fill:none;stroke-width:2.2}
+
+/* ══ forms ══ */
+.form{padding:18px 20px;flex:1}
+.form h2{font-size:calc(18px * var(--step));font-weight:700;letter-spacing:-.025em}
+.form .lede{margin-top:5px;color:var(--ink-2);font-size:calc(12.5px * var(--step));line-height:1.5}
+.form label{display:flex;align-items:center;gap:7px;margin:16px 0 7px;
+            font-size:calc(13.5px * var(--step));font-weight:700}
+.form label svg{width:15px;height:15px;flex:0 0 15px;stroke:var(--ink-3);fill:none;stroke-width:1.9}
+.form label .soft{font-weight:400;color:var(--ink-2)}
+.inp{width:100%;min-height:var(--tap);border:1.5px solid var(--line-hard);border-radius:var(--r-sm);
+     padding:0 13px;font-size:16px;background:var(--surface)}
+.inp:focus{border-color:var(--primary);outline:none}
+/* the drop target is itself 16:9, so nobody has to read what shape to bring */
+.drop{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:16/9;padding:16px;
+      border:1.5px dashed var(--line-hard);border-radius:var(--r-md);background:var(--ground);text-align:center}
+.drop:focus-within,.drop:hover{border-color:var(--primary);background:var(--primary-soft)}
+.drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.drop .ring{width:42px;height:42px;border-radius:50%;background:var(--surface);display:grid;
+            place-items:center;margin:0 auto 9px;box-shadow:0 1px 3px rgba(28,26,23,.10)}
+.drop .ring svg{width:19px;height:19px;stroke:var(--primary);fill:none;stroke-width:1.9}
+.drop b{display:block;font-size:calc(13.5px * var(--step));font-weight:700;color:var(--primary)}
+.drop small{display:block;font-size:calc(12px * var(--step));color:var(--ink-2);margin-top:3px}
+.shot{width:100%;aspect-ratio:16/9;border-radius:var(--r-md);overflow:hidden;background:var(--line)}
+.shot img{width:100%;height:100%;object-fit:cover}
+.shotacts{display:flex;gap:8px;margin-top:9px}
+[hidden]{display:none !important}
+.help{margin-top:6px;font-size:calc(12px * var(--step));color:var(--ink-2);line-height:1.45}
+.sect{margin:26px -20px 14px;padding:18px 20px 0;border-top:1px solid var(--line);
+      font-size:calc(12.5px * var(--step));font-weight:700;color:var(--ink-2)}
+.sect + label{margin-top:0}
+.pre{display:flex;align-items:center;border:1.5px solid var(--line-hard);border-radius:var(--r-sm);
+     overflow:hidden;background:var(--surface)}
+.pre span{padding-left:13px;color:var(--ink-3);font-size:15px;white-space:nowrap}
+.pre input{flex:1;min-width:0;border:0;min-height:var(--tap);padding:0 13px 0 1px;font-size:16px;background:none}
+.pre input:focus{outline:none}
+.pre:focus-within{border-color:var(--primary)}
+.fixed{display:flex;align-items:center;gap:10px;min-height:var(--tap);padding:0 13px;
+       border:1.5px dashed var(--line-hard);border-radius:var(--r-sm);background:var(--ground);
+       font-size:calc(13.5px * var(--step));color:var(--ink-2)}
+.fixed b{color:var(--ink);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fixed svg{flex:0 0 15px;height:15px;stroke:var(--ink-3);fill:none;stroke-width:1.9}
+
+/* ══ people ══ */
+.person{display:flex;align-items:center;gap:13px;padding:14px 20px;width:100%;text-align:left;
+        background:var(--surface);border:0;border-top:1px solid var(--line)}
+.av{flex:0 0 38px;height:38px;border-radius:50%;background:var(--primary-soft);color:var(--primary);
+    display:grid;place-items:center;font-size:calc(14px * var(--step));font-weight:800}
+.person .b{flex:1;min-width:0}
+.person b{display:block;font-size:calc(13.5px * var(--step));font-weight:700}
+.person small{display:block;font-size:calc(12px * var(--step));color:var(--ink-2);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role svg{width:12px;height:12px;flex:0 0 12px;stroke:currentColor;fill:none;stroke-width:2.2}
+.role{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-size:calc(11.5px * var(--step));font-weight:700;
+      background:var(--ground);color:var(--ink-2);border:1px solid var(--line)}
+.role.super{background:var(--primary-soft);color:var(--primary);border-color:var(--primary-line)}
+.role.dim{background:var(--ground);color:var(--ink-3)}
+.person .go{width:18px;height:18px;flex:0 0 18px;stroke:var(--ink-3);fill:none;stroke-width:2.2;margin-left:6px}
+.person.off .av,.person.off .b{opacity:.55}
+/* assignment lives with the person, because that is the question you ask:
+   "what does Rani run?", never "who is on session 47?" */
+.assign{margin:0 -20px;padding:2px 20px 4px}
+.arow{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 0;
+      background:none;border:0;text-align:left;border-bottom:1px solid var(--line)}
+.arow:last-child{border-bottom:0}
+.box{flex:0 0 22px;height:22px;border:2px solid var(--ink-3);border-radius:6px;display:grid;place-items:center}
+.box svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;opacity:0}
+.arow[aria-checked=true] .box{border-color:var(--primary);background:var(--primary)}
+.arow[aria-checked=true] .box svg{opacity:1}
+.arow .t{flex:1;min-width:0;font-size:calc(13.5px * var(--step));font-weight:600}
+.arow .t small{display:block;font-size:calc(11.5px * var(--step));font-weight:400;color:var(--ink-2)}
+
+.alert{display:flex;gap:11px;align-items:flex-start;margin:16px 20px 4px;padding:12px 14px;
+       border:1px solid var(--line);border-radius:var(--r-md);background:var(--ground);
+       font-size:calc(13px * var(--step));line-height:1.5;color:var(--ink-2)}
+.alert svg{flex:0 0 17px;height:17px;margin-top:1px;stroke:currentColor;fill:none;stroke-width:1.9}
+.alert p{flex:1;min-width:0}
+.alert b{color:var(--ink);font-weight:600}
+
+.act{position:sticky;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+     border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+
+@media (min-width:560px){ .app{min-height:calc(100vh - 41px);box-shadow:0 0 0 1px var(--line)} }
+</style>
+</head>
+<body>
+
+<nav class="demo" aria-label="Pratinjau layar">
+  <b>Admin</b>
+  <button aria-pressed="true"  data-go="sesi">Daftar sesi</button>
+  <button aria-pressed="false" data-go="kerja">Papan sesi</button>
+  <button aria-pressed="false" data-go="tayang">Tayangkan</button>
+  <button aria-pressed="false" data-go="ubah">Ubah sesi</button>
+  <button aria-pressed="false" data-go="buat">Sesi baru</button>
+  <button aria-pressed="false" data-go="orang">Orang</button>
+  <button aria-pressed="false" data-go="siapa">Akun</button>
+  <button aria-pressed="false" data-go="undang">Undang admin</button>
+</nav>
+
+<div class="app">
+
+<!-- ══════════════ 1. PAPAN — the home screen ══════════════ -->
+<section class="screen" id="kerja" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="sesi">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1>Adab Sebelum Ilmu</h1>
+    <a class="ic" href="#" data-go="tayang" aria-label="Tayangkan ke ruangan">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v11H3z"/><path d="M12 15v5M8 20h8"/></svg>
+    </a>
+    <a class="ic" href="#" data-go="ubah" aria-label="Ubah sesi">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+    </a>
+  </header>
+
+  <div class="deck">
+    <span class="when"><span class="dot beat"></span>Live · 08.00</span>
+    <button class="tog" type="button" aria-pressed="true">
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg>Pertanyaan dibuka</span>
+      <span class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Pertanyaan ditutup</span>
+    </button>
+    <button class="tog warnish" type="button" aria-pressed="true">
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Review dulu</span>
+      <span class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>Langsung tayang</span>
+    </button>
+  </div>
+
+  <!-- ── needs a decision ── -->
+  <button class="shead" type="button" aria-expanded="true" data-fold="g1">
+    <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span class="t">Perlu review</span>
+    <span class="n due">3</span>
+    <span class="sp"></span>
+    <svg class="cx" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div class="group" id="g1">
+    <article class="q needs">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>
+          Tanpa nama
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>2 menit lalu</span>
+      </p>
+      <p class="body">Kalau saya baru mulai belajar agama, kitab apa yang sebaiknya dibaca lebih dulu?</p>
+      <div class="acts">
+        <button class="btn sm" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></svg>
+          Tayangkan
+        </button>
+        <button class="btn sm ghost" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A9 9 0 0112 6c5 0 9 6 9 6a15 15 0 01-2.7 3.3M6.5 8.5C4 10.3 3 12 3 12s4 6 9 6a8.6 8.6 0 003.5-.7"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+          Tolak
+        </button>
+      </div>
+    </article>
+    <article class="q needs">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+          Fikri
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>4 menit lalu</span>
+      </p>
+      <p class="body">Bagaimana adab bertanya kepada guru ketika kita merasa jawabannya kurang tepat?</p>
+      <div class="acts">
+        <button class="btn sm" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></svg>
+          Tayangkan
+        </button>
+        <button class="btn sm ghost" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A9 9 0 0112 6c5 0 9 6 9 6a15 15 0 01-2.7 3.3M6.5 8.5C4 10.3 3 12 3 12s4 6 9 6a8.6 8.6 0 003.5-.7"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+          Tolak
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── on the page, waiting for an answer ── -->
+  <button class="shead" type="button" aria-expanded="true" data-fold="g2">
+    <svg class="mk plain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+    <span class="t">Belum dijawab</span>
+    <span class="n">7</span>
+    <span class="sp"></span>
+    <svg class="cx" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div class="group" id="g2">
+    <article class="q">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+          Fikri
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>11 menit lalu</span>
+      </p>
+      <p class="body">Apakah niat menuntut ilmu harus diulang setiap kali datang kajian, atau cukup sekali di awal?</p>
+
+      <div class="proposal">
+        <p class="lead">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>
+          Usulan dari rekaman
+          <span class="at">24:10</span>
+        </p>
+        <p class="draft">Niat itu tempatnya di hati dan ia diperbarui setiap amal. Tidak perlu dilafazkan, tapi hadirkan lagi setiap kali berangkat.</p>
+        <p class="quote">“…niat ini diperbarui, setiap kali kita berangkat ke majelis…”</p>
+        <div class="acts">
+          <button class="btn sm" type="button">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></svg>
+            Gunakan
+          </button>
+          <button class="btn sm quiet" type="button">Abaikan</button>
+        </div>
+      </div>
+
+      <p class="elabel">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10L5 14l4 4"/><path d="M5 14h9a5 5 0 005-5V6"/></svg>
+        Tulis jawaban
+      </p>
+      <textarea class="ta" placeholder="Ringkas jawaban pemateri…"></textarea>
+      <div class="acts">
+        <button class="btn sm" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></svg>
+          Terbitkan
+        </button>
+        <button class="btn sm quiet" type="button">Batal</button>
+      </div>
+    </article>
+
+    <article class="q">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>
+          Tanpa nama
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>19 menit lalu</span>
+      </p>
+      <p class="body">Bolehkah kita berguru kepada siapa saja, diambil baiknya dan ditinggalkan jeleknya?</p>
+      <div class="acts">
+        <button class="btn sm ghost" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Tulis jawaban
+        </button>
+        <button class="btn sm quiet" type="button" aria-label="Turunkan dari halaman">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A9 9 0 0112 6c5 0 9 6 9 6a15 15 0 01-2.7 3.3M6.5 8.5C4 10.3 3 12 3 12s4 6 9 6a8.6 8.6 0 003.5-.7"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── done: folded, because it needs nothing ── -->
+  <button class="shead" type="button" aria-expanded="false" data-fold="g3">
+    <svg class="mk ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg>
+    <span class="t">Sudah dijawab</span>
+    <span class="n">4</span>
+    <span class="sp"></span>
+    <svg class="cx" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div class="group" id="g3" hidden>
+    <article class="q">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+          Aisyah
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>26 menit lalu</span>
+      </p>
+      <p class="body">Apa hukum menuntut ilmu agama bagi yang sudah bekerja penuh waktu?</p>
+      <div class="answer">
+        <p>Menuntut ilmu yang menjadi kewajiban setiap muslim adalah ilmu yang menegakkan ibadahnya sehari-hari. Sesibuk apa pun, itu tetap wajib — sisanya sesuai kemampuan.</p>
+      </div>
+      <div class="acts">
+        <button class="btn sm ghost" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+          Revisi
+        </button>
+        <button class="btn sm danger" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 015 5v6"/></svg>
+          Tarik
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <button class="shead" type="button" aria-expanded="false" data-fold="g4">
+    <svg class="mk plain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.2A9 9 0 0112 6c5 0 9 6 9 6a15 15 0 01-2.7 3.3M6.5 8.5C4 10.3 3 12 3 12s4 6 9 6a8.6 8.6 0 003.5-.7"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+    <span class="t">Ditolak</span>
+    <span class="n">1</span>
+    <span class="sp"></span>
+    <svg class="cx" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div class="group last" id="g4" hidden>
+    <article class="q gone">
+      <p class="qtop">
+        <span class="who">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/><path d="M4 20L20 4"/></svg>
+          Tanpa nama
+        </span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>31 menit lalu</span>
+      </p>
+      <p class="body">Ustadz, nomor WhatsApp panitia berapa ya?</p>
+      <div class="acts">
+        <button class="btn sm ghost" type="button">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+          Tayangkan lagi
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- one button, naming what happens next -->
+  <div class="endzone">
+    <button class="btn ghost" type="button">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>
+      Selesaikan sesi
+    </button>
+    <p class="why">Pertanyaan ditutup, sesi masuk arsip.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 2. GANTI SESI ══════════════ -->
+<section class="screen" id="sesi">
+  <header class="bar">
+    <h1>Sesi Anda</h1>
+    <a class="ic" href="#" data-go="orang" aria-label="Orang">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3 2.9-5.5 6.5-5.5s6.5 2.5 6.5 5.5"/><path d="M16 5.2a3.5 3.5 0 010 6.6M17.5 14.8c2.4.7 4 2.6 4 5.2"/></svg>
+    </a>
+    <button class="ic" type="button" aria-label="Keluar">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M9 4H6a2 2 0 00-2 2v12a2 2 0 002 2h3"/></svg>
+    </button>
+  </header>
+
+  <p class="rule" style="padding-top:14px">Berlangsung</p>
+  <a class="row" href="#" data-go="kerja">
+    <div class="b">
+      <h2>Kajian Ahad Pagi: Adab Sebelum Ilmu</h2>
+      <p class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Masjid Al-Furqan, Depok</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>hari ini 08.00</span><span class="due"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>3 perlu review</span></p>
+    </div>
+    <span class="tag on"><span class="dot beat"></span>Live</span>
+  </a>
+
+  <p class="rule">Akan datang</p>
+  <a class="row" href="#" data-go="ubah">
+    <div class="b">
+      <h2>Fikih Muamalah: Jual Beli Online</h2>
+      <p class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Sabtu, 12 September</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>19.30</span></p>
+    </div>
+    <span class="tag none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>12 hari</span>
+  </a>
+  <a class="row" href="#" data-go="ubah">
+    <div class="b">
+      <h2>Kajian Tafsir Juz 30</h2>
+      <p class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Ahad, 20 September</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>09.00</span></p>
+    </div>
+    <span class="tag none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>20 hari</span>
+  </a>
+
+  <p class="rule">Arsip</p>
+  <a class="row" href="#" data-go="kerja">
+    <div class="b">
+      <h2>Tanya Jawab: Masalah-Masalah Penting</h2>
+      <p class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>12 Mei 2026</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Ustadz Yazid</span></p>
+    </div>
+    <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>2</span>
+  </a>
+  <a class="row" href="#" data-go="kerja">
+    <div class="b">
+      <h2>Talkshow Tanya Ustadz</h2>
+      <p class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>24 Juni 2026</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Khalid Basalamah</span></p>
+    </div>
+    <span class="tag none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg>Selesai</span>
+  </a>
+
+  <div style="flex:1"></div>
+  <div class="act">
+    <a class="btn ghost" href="#" data-go="buat">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Sesi baru
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════ 3. SESI BARU — four facts ══════════════ -->
+<section class="screen" id="buat" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="sesi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <h1>Sesi baru</h1>
+  </header>
+
+  <div class="form">
+    <label for="nm-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5V4.5A1.5 1.5 0 014.5 3h8l8.5 8.5a1.6 1.6 0 010 2.2l-6.3 6.3a1.6 1.6 0 01-2.2 0z"/><circle cx="7.8" cy="7.8" r="1.3"/></svg>Nama sesi</label>
+    <input class="inp" id="nm-new" placeholder="mis. Kajian Ahad Pagi: Adab Menuntut Ilmu">
+
+    <label for="wk-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Kapan <span class="soft">— WIB</span></label>
+    <input class="inp" id="wk-new" type="datetime-local">
+
+    <label for="tp-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Tempat</label>
+    <input class="inp" id="tp-new" placeholder="mis. Masjid Al-Ikhlas, Bandung">
+
+    <label for="pm-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Pemateri</label>
+    <input class="inp" id="pm-new" placeholder="mis. Ustadz Abdul Hakim">
+
+    <label for="po-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 16l5-4 4 3 3-2 6 4"/><circle cx="8.5" cy="9.5" r="1.4"/></svg>Poster <span class="soft">— boleh dikosongkan</span></label>
+    <div data-well>
+      <label class="drop">
+        <input type="file" id="po-new" accept="image/png,image/jpeg,image/webp">
+        <span>
+          <span class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v5a1.8 1.8 0 001.8 1.8h12.4A1.8 1.8 0 0020 19v-5"/><path d="M12 3v13M7.5 7.5L12 3l4.5 4.5"/></svg></span>
+          <b>Pilih gambar</b>
+          <small>Dipotong 16:9 · JPG, PNG atau WebP</small>
+        </span>
+      </label>
+      <div data-shot hidden>
+        <div class="shot"><img alt="Pratinjau poster"></div>
+        <div class="shotacts">
+          <button class="btn sm ghost" type="button" data-swap><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Ganti</button>
+          <button class="btn sm danger" type="button" data-kill><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="sect">Setelah majelis</p>
+
+    <label for="yt-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg>Rekaman YouTube</label>
+    <input class="inp" id="yt-new" placeholder="Tempel link atau ID video">
+    <p class="help">Sual membaca takarirnya dan mengusulkan jawaban.</p>
+
+    <p class="sect">Alamat halaman</p>
+    <div class="pre">
+      <span>sual.id/events/</span>
+      <input id="sl-new" placeholder="kajian-ahad-pagi" spellcheck="false" autocapitalize="off">
+    </div>
+    <p class="help">Terisi dari nama sesi — ubah sekarang kalau perlu. Setelah sesi dibuat alamat ini dikunci, karena QR yang sudah dicetak harus tetap hidup.</p>
+  </div>
+
+  <div class="act">
+    <button class="btn" type="button">Buat sesi</button>
+  </div>
+</section>
+
+<!-- ══════════════ 4. TAYANGKAN ══════════════ -->
+<section class="screen" id="tayang" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="kerja">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1>Tayangkan</h1>
+  </header>
+
+  <div class="share">
+    <div class="qr">
+      <svg viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="Kode QR halaman jamaah">
+        <rect width="29" height="29" fill="#fff"/>
+        <g fill="#1c1a17">
+          <path d="M1 1h7v7H1zM2 2v5h5V2z"/><rect x="3" y="3" width="3" height="3"/>
+          <path d="M21 1h7v7h-7zM22 2v5h5V2z"/><rect x="23" y="3" width="3" height="3"/>
+          <path d="M1 21h7v7H1zM2 22v5h5v-5z"/><rect x="3" y="23" width="3" height="3"/>
+          <rect x="10" y="1" width="1" height="1"/><rect x="12" y="1" width="2" height="1"/><rect x="16" y="1" width="1" height="1"/>
+          <rect x="11" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="17" y="2" width="2" height="1"/>
+          <rect x="10" y="3" width="2" height="1"/><rect x="13" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/>
+          <rect x="12" y="4" width="1" height="1"/><rect x="15" y="4" width="2" height="1"/><rect x="18" y="4" width="1" height="1"/>
+          <rect x="10" y="5" width="1" height="1"/><rect x="13" y="5" width="2" height="1"/><rect x="17" y="5" width="1" height="1"/>
+          <rect x="11" y="6" width="2" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/>
+          <rect x="10" y="7" width="1" height="1"/><rect x="12" y="7" width="1" height="1"/><rect x="16" y="7" width="2" height="1"/>
+          <rect x="1" y="10" width="2" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="8" y="10" width="2" height="1"/>
+          <rect x="11" y="10" width="1" height="1"/><rect x="14" y="10" width="2" height="1"/><rect x="18" y="10" width="1" height="1"/>
+          <rect x="21" y="10" width="1" height="1"/><rect x="24" y="10" width="2" height="1"/><rect x="27" y="10" width="1" height="1"/>
+          <rect x="2" y="11" width="1" height="1"/><rect x="4" y="11" width="2" height="1"/><rect x="7" y="11" width="1" height="1"/>
+          <rect x="10" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="16" y="11" width="2" height="1"/>
+          <rect x="20" y="11" width="2" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="26" y="11" width="1" height="1"/>
+          <rect x="1" y="12" width="1" height="1"/><rect x="3" y="12" width="1" height="1"/><rect x="6" y="12" width="2" height="1"/>
+          <rect x="12" y="12" width="2" height="1"/><rect x="15" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/>
+          <rect x="22" y="12" width="1" height="1"/><rect x="25" y="12" width="2" height="1"/>
+          <rect x="2" y="13" width="2" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/>
+          <rect x="11" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="17" y="13" width="2" height="1"/>
+          <rect x="21" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="27" y="13" width="1" height="1"/>
+          <rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="7" y="14" width="2" height="1"/>
+          <rect x="10" y="14" width="2" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/>
+          <rect x="20" y="14" width="1" height="1"/><rect x="23" y="14" width="2" height="1"/><rect x="26" y="14" width="1" height="1"/>
+          <rect x="3" y="15" width="2" height="1"/><rect x="6" y="15" width="1" height="1"/>
+          <rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="2" height="1"/><rect x="18" y="15" width="1" height="1"/>
+          <rect x="21" y="15" width="2" height="1"/><rect x="25" y="15" width="1" height="1"/><rect x="27" y="15" width="1" height="1"/>
+          <rect x="1" y="16" width="1" height="1"/><rect x="4" y="16" width="2" height="1"/><rect x="8" y="16" width="1" height="1"/>
+          <rect x="10" y="16" width="1" height="1"/><rect x="13" y="16" width="2" height="1"/><rect x="17" y="16" width="1" height="1"/>
+          <rect x="20" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="26" y="16" width="2" height="1"/>
+          <rect x="10" y="18" width="2" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="17" y="18" width="2" height="1"/>
+          <rect x="21" y="18" width="1" height="1"/><rect x="23" y="18" width="1" height="1"/><rect x="26" y="18" width="1" height="1"/>
+          <rect x="10" y="21" width="1" height="1"/><rect x="12" y="21" width="2" height="1"/><rect x="16" y="21" width="1" height="1"/>
+          <rect x="19" y="21" width="2" height="1"/><rect x="22" y="21" width="1" height="1"/><rect x="25" y="21" width="2" height="1"/>
+          <rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="2" height="1"/><rect x="18" y="22" width="1" height="1"/>
+          <rect x="21" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="27" y="22" width="1" height="1"/>
+          <rect x="10" y="23" width="2" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="16" y="23" width="2" height="1"/>
+          <rect x="20" y="23" width="2" height="1"/><rect x="23" y="23" width="2" height="1"/><rect x="26" y="23" width="1" height="1"/>
+          <rect x="12" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/>
+          <rect x="21" y="24" width="1" height="1"/><rect x="25" y="24" width="2" height="1"/>
+          <rect x="10" y="25" width="1" height="1"/><rect x="13" y="25" width="2" height="1"/><rect x="17" y="25" width="2" height="1"/>
+          <rect x="20" y="25" width="1" height="1"/><rect x="23" y="25" width="1" height="1"/><rect x="27" y="25" width="1" height="1"/>
+          <rect x="11" y="26" width="2" height="1"/><rect x="15" y="26" width="1" height="1"/><rect x="19" y="26" width="1" height="1"/>
+          <rect x="22" y="26" width="2" height="1"/><rect x="26" y="26" width="1" height="1"/>
+          <rect x="10" y="27" width="1" height="1"/><rect x="12" y="27" width="1" height="1"/><rect x="16" y="27" width="2" height="1"/>
+          <rect x="20" y="27" width="2" height="1"/><rect x="24" y="27" width="1" height="1"/><rect x="27" y="27" width="1" height="1"/>
+        </g>
+      </svg>
+    </div>
+    <p class="url">sual.id/events/<b>adab-sebelum-ilmu</b></p>
+
+    <button class="opt" type="button">
+      <span class="ring">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v11H3z"/><path d="M12 15v5M8 20h8"/></svg>
+      </span>
+      <span class="t">
+        <b>Layar pemateri</b>
+        <small>Untuk proyektor.</small>
+      </span>
+      <svg class="go" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+
+    <button class="opt" type="button">
+      <span class="ring">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1.8 1.8 0 001.8 1.8h12.4A1.8 1.8 0 0020 19v-7"/><path d="M12 3v13M8 7l4-4 4 4"/></svg>
+      </span>
+      <span class="t">
+        <b>Bagikan tautan</b>
+        <small>Untuk grup jamaah.</small>
+      </span>
+      <svg class="go" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</section>
+
+<!-- ══════════════ 5. UBAH SESI ══════════════ -->
+<section class="screen" id="ubah" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="kerja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <h1>Ubah sesi</h1>
+  </header>
+
+  <div class="form">
+    <label for="nm-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5V4.5A1.5 1.5 0 014.5 3h8l8.5 8.5a1.6 1.6 0 010 2.2l-6.3 6.3a1.6 1.6 0 01-2.2 0z"/><circle cx="7.8" cy="7.8" r="1.3"/></svg>Nama sesi</label>
+    <input class="inp" id="nm-edit" value="Kajian Ahad Pagi: Adab Sebelum Ilmu">
+
+    <label for="wk-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Kapan <span class="soft">— WIB</span></label>
+    <input class="inp" id="wk-edit" type="datetime-local" value="2026-09-06T08:00">
+
+    <label for="tp-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Tempat</label>
+    <input class="inp" id="tp-edit" value="Masjid Al-Furqan, Depok">
+
+    <label for="pm-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Pemateri</label>
+    <input class="inp" id="pm-edit" value="Ustadz Hafizh Ramadhan">
+
+    <label for="po-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 16l5-4 4 3 3-2 6 4"/><circle cx="8.5" cy="9.5" r="1.4"/></svg>Poster <span class="soft">— boleh dikosongkan</span></label>
+    <div data-well>
+      <label class="drop">
+        <input type="file" id="po-edit" accept="image/png,image/jpeg,image/webp">
+        <span>
+          <span class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v5a1.8 1.8 0 001.8 1.8h12.4A1.8 1.8 0 0020 19v-5"/><path d="M12 3v13M7.5 7.5L12 3l4.5 4.5"/></svg></span>
+          <b>Pilih gambar</b>
+          <small>Dipotong 16:9 · JPG, PNG atau WebP</small>
+        </span>
+      </label>
+      <div data-shot hidden>
+        <div class="shot"><img alt="Pratinjau poster"></div>
+        <div class="shotacts">
+          <button class="btn sm ghost" type="button" data-swap><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Ganti</button>
+          <button class="btn sm danger" type="button" data-kill><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="sect">Setelah majelis</p>
+
+    <label for="yt-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M10.5 9.8l4.5 2.2-4.5 2.2z"/></svg>Rekaman YouTube</label>
+    <input class="inp" id="yt-edit" placeholder="Tempel link atau ID video">
+    <p class="help">Sual membaca takarirnya dan mengusulkan jawaban.</p>
+
+    <p class="sect">Alamat halaman</p>
+    <p class="fixed">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 118 0v3"/></svg>
+      sual.id/events/<b>adab-sebelum-ilmu</b>
+    </p>
+    <p class="help">Dikunci. QR yang sudah dicetak mengarah ke sini.</p>
+
+    <div style="margin-top:26px;padding-top:20px;border-top:1px solid var(--line)">
+      <button class="btn wreck" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Hapus sesi ini</button>
+      <p class="help" style="text-align:center">14 pertanyaan ikut terhapus. Tidak bisa dibatalkan.</p>
+    </div>
+  </div>
+
+  <div class="act">
+    <button class="btn" type="button">Simpan</button>
+  </div>
+</section>
+
+<!-- ══════════════ 6. ORANG ══════════════ -->
+<section class="screen" id="orang" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="sesi">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1>Orang</h1>
+  </header>
+
+  <div class="alert">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+    <p>Admin hanya melihat sesi yang ditugaskan kepadanya.</p>
+  </div>
+
+  <div class="person">
+    <span class="av">H</span>
+    <span class="b">
+      <b>Hadi Aririn</b>
+      <small>hadiaririnpancawati@gmail.com</small>
+    </span>
+    <span class="role super" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3.2v5.3c0 4.8-3.3 8.6-8 9.5-4.7-.9-8-4.7-8-9.5V6.2z"/><path d="M9 12l2 2 4-4"/></svg>Superadmin</span>
+  </div>
+
+  <a class="person" href="#" data-go="siapa">
+    <span class="av">R</span>
+    <span class="b">
+      <b>Rani Wijaya</b>
+      <small>rani@example.com</small>
+    </span>
+    <span class="role"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 5h11l-2 3.5L16 12H5"/></svg>2</span>
+    <svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+  <a class="person" href="#" data-go="siapa">
+    <span class="av">D</span>
+    <span class="b">
+      <b>Danu Prasetyo</b>
+      <small>danu@example.com</small>
+    </span>
+    <span class="role"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 5h11l-2 3.5L16 12H5"/></svg>1</span>
+    <svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+  <a class="person off" href="#" data-go="siapa">
+    <span class="av">S</span>
+    <span class="b">
+      <b>Sari Utami</b>
+      <small>sari@example.com</small>
+    </span>
+    <span class="role dim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg>Nonaktif</span>
+    <svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+
+  <div style="flex:1"></div>
+  <div class="act">
+    <a class="btn ghost" href="#" data-go="undang">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Undang admin
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════ 7. AKUN — one person ══════════════ -->
+<section class="screen" id="siapa" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="orang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <h1>Rani Wijaya</h1>
+  </header>
+
+  <div class="form">
+    <label for="pn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Nama</label>
+    <input class="inp" id="pn" value="Rani Wijaya">
+
+    <label for="pe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5L12 13l8.5-6.5"/></svg>Email</label>
+    <input class="inp" id="pe" type="email" value="rani@example.com">
+
+    <p class="sect">Kata sandi</p>
+    <button class="btn ghost" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="14" r="4.5"/><path d="M11.5 11.5L20 3M17 6l2.5 2.5M14.5 8.5L17 11"/></svg>Kirim tautan atur ulang</button>
+    <p class="help">Rani memilih sendiri kata sandinya lewat tautan. Anda tidak pernah melihatnya.</p>
+
+    <p class="sect">Sesi yang ia jalankan</p>
+    <div class="assign">
+      <button class="arow" type="button" role="checkbox" aria-checked="true">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Adab Sebelum Ilmu <small>hari ini · live</small></span>
+      </button>
+      <button class="arow" type="button" role="checkbox" aria-checked="true">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Fikih Muamalah <small>Sabtu, 12 September</small></span>
+      </button>
+      <button class="arow" type="button" role="checkbox" aria-checked="false">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Kajian Tafsir Juz 30 <small>Ahad, 20 September</small></span>
+      </button>
+    </div>
+
+    <p class="sect">Akses</p>
+    <button class="btn ghost warnbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg>Nonaktifkan akun</button>
+    <p class="help">Tidak bisa masuk lagi. Sesi dan jawaban yang sudah ia terbitkan tetap ada. Bisa diaktifkan lagi kapan saja.</p>
+
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
+      <button class="btn wreck" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Hapus permanen</button>
+      <p class="help">Rani sudah menerbitkan 23 jawaban. Menghapus akunnya memutus jejak siapa yang menulisnya — nonaktifkan saja kecuali akun ini memang belum pernah dipakai.</p>
+    </div>
+  </div>
+
+  <div class="act">
+    <button class="btn" type="button">Simpan</button>
+  </div>
+</section>
+
+<!-- ══════════════ 8. UNDANG ADMIN ══════════════ -->
+<section class="screen" id="undang" hidden>
+  <header class="bar">
+    <a class="back" href="#" data-go="orang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Batal</a>
+  </header>
+
+  <div class="form">
+    <h2>Undang admin</h2>
+
+    <label for="in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>Nama</label>
+    <input class="inp" id="in" placeholder="mis. Rani Wijaya">
+
+    <label for="ie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5L12 13l8.5-6.5"/></svg>Email</label>
+    <input class="inp" id="ie" type="email" placeholder="nama@contoh.com">
+    <p class="help">Ia menerima tautan untuk memilih kata sandinya sendiri.</p>
+
+    <p class="sect">Sesi yang ia jalankan</p>
+    <div class="assign">
+      <button class="arow" type="button" role="checkbox" aria-checked="false">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Adab Sebelum Ilmu <small>hari ini · live</small></span>
+      </button>
+      <button class="arow" type="button" role="checkbox" aria-checked="false">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Fikih Muamalah <small>Sabtu, 12 September</small></span>
+      </button>
+      <button class="arow" type="button" role="checkbox" aria-checked="false">
+        <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg></span>
+        <span class="t">Kajian Tafsir Juz 30 <small>Ahad, 20 September</small></span>
+      </button>
+    </div>
+    <p class="help">Bisa diubah kapan saja. Admin tanpa sesi tidak melihat apa pun.</p>
+  </div>
+
+  <div class="act">
+    <button class="btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3L3 10l7 3 3 7z"/><path d="M21 3l-11 10"/></svg>Kirim undangan</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+const screens = [...document.querySelectorAll('.screen')];
+const tabs = [...document.querySelectorAll('.demo button')];
+function go(id){
+  screens.forEach(s => s.hidden = s.id !== id);
+  tabs.forEach(t => t.setAttribute('aria-pressed', String(t.dataset.go === id)));
+  window.scrollTo(0,0);
+}
+// the poster well, once per instance: pick, preview at 16:9, replace, clear
+document.querySelectorAll('[data-well]').forEach(well => {
+  const pick = well.querySelector('input[type=file]');
+  const drop = well.querySelector('.drop');
+  const shot = well.querySelector('[data-shot]');
+  const img  = shot.querySelector('img');
+  let url = null;
+  pick.addEventListener('change', () => {
+    const f = pick.files && pick.files[0];
+    if (!f) return;
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(f);
+    img.src = url;
+    drop.hidden = true;
+    shot.hidden = false;
+  });
+  well.querySelector('[data-swap]').addEventListener('click', () => pick.click());
+  well.querySelector('[data-kill]').addEventListener('click', () => {
+    if (url) URL.revokeObjectURL(url);
+    url = null;
+    pick.value = '';
+    shot.hidden = true;
+    drop.hidden = false;
+  });
+});
+
+// The address follows the session name until someone edits it themselves, and then
+// stops — it is locked forever after creation, so this is the only chance to set it.
+// Keeps a trailing hyphen while typing; without it "kajian-" collapses on every
+// keystroke and the second word can never be reached.
+const slugField = document.getElementById('sl-new');
+const nameField = document.getElementById('nm-new');
+let slugTouched = false;
+slugField.addEventListener('input', () => { slugTouched = true; });
+nameField.addEventListener('input', () => {
+  if (slugTouched) return;
+  slugField.value = nameField.value.toLowerCase().normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+/, '').slice(0, 48);
+});
+
+document.addEventListener('click', e => {
+  const fold = e.target.closest('[data-fold]');
+  if (fold){
+    const open = fold.getAttribute('aria-expanded') === 'true';
+    fold.setAttribute('aria-expanded', String(!open));
+    document.getElementById(fold.dataset.fold).hidden = open;
+    return;
+  }
+  const t = e.target.closest('.tog, [role=checkbox]');
+  if (t){
+    const attr = t.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked';
+    t.setAttribute(attr, t.getAttribute(attr) === 'true' ? 'false' : 'true');
+    return;
+  }
+  const el = e.target.closest('[data-go]');
+  if (!el) return;
+  e.preventDefault();
+  go(el.dataset.go);
+});
+</script>
+</body>
+</html>

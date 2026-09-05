@@ -141,7 +141,7 @@ export default function SpeakerDeck({ eventId }: { eventId: string }) {
             className="flex h-dvh w-dvw shrink-0 snap-center flex-col justify-center px-[max(1.5rem,env(safe-area-inset-left))] py-20"
           >
             <div className="mx-auto flex w-full max-w-5xl flex-col">
-              <p className={`${bodyClass(q.body.length)} font-serif leading-tight tracking-tight text-pretty`}>
+              <p className={`${bodyClass(q.body.length)} leading-tight tracking-tight text-pretty`}>
                 {q.body}
               </p>
               <p className="mt-6 text-[clamp(0.9rem,2vw,1.35rem)] text-[#a8a096]">
