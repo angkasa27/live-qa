@@ -23,12 +23,14 @@ let eventSeq = 0;
 async function seedEvent(patch: Partial<{
   status: string;
   acceptingQuestions: boolean | null;
+  /** Seconds from now; negative is a majelis whose clock has already passed. */
+  startsInSec: number;
 }> = {}) {
   const id = `t${++eventSeq}-${randomUUID().slice(0, 8)}`;
   await query(
     `insert into events (id, name, starts_at, venue, speaker, status, accepting_questions)
-     values ($1, 'test event', now(), 'test venue', 'test speaker', $2, $3)`,
-    [id, patch.status ?? "live", patch.acceptingQuestions ?? null],
+     values ($1, 'test event', now() + make_interval(secs => $4), 'test venue', 'test speaker', $2, $3)`,
+    [id, patch.status ?? "live", patch.acceptingQuestions ?? null, patch.startsInSec ?? 0],
   );
   return id;
 }
@@ -186,6 +188,26 @@ suite("queries (integration)", () => {
       expect((await getEvent(live))?.acceptingQuestions).toBe(true);
       expect((await getEvent(archived))?.acceptingQuestions).toBe(false);
       expect((await getEvent(pinned))?.acceptingQuestions).toBe(true);
+    });
+  });
+
+  describe("listEvents — what leads the public list", () => {
+    it("keeps a late majelis up top instead of filing it with the archive", async () => {
+      // The one the ordering used to get wrong: scheduled, and its start time has been and
+      // gone because nobody pressed start yet. It is exactly what a jamaah opened the page
+      // for, and it used to fall out of `lead` and sort down among the recordings.
+      const late = await seedEvent({ status: "scheduled", startsInSec: -600 });
+      const soon = await seedEvent({ status: "scheduled", startsInSec: 3600 });
+      const done = await seedEvent({ status: "archived", startsInSec: -60 });
+
+      const rows = await listEvents();
+      const at = (id: string) => rows.findIndex((e) => e.id === id);
+
+      expect(rows.find((e) => e.id === late)!.lead).toBe(true);
+      expect(rows.find((e) => e.id === done)!.lead).toBe(false);
+      // Soonest first among what is still to come, and both ahead of anything archived.
+      expect(at(late)).toBeLessThan(at(soon));
+      expect(at(soon)).toBeLessThan(at(done));
     });
   });
 

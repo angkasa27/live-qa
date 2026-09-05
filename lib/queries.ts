@@ -105,28 +105,30 @@ export async function getEvent(id: string, { includeHidden = false } = {}) {
  * The session list, with the count of what's publicly visible on each.
  *
  * Ordered so the row a jamaah came for is first: whatever is running, else the next session to
- * start, then everything else newest-first. `lead` marks that first row when it is one of those
- * two, so the page can single it out without doing date arithmetic during render — "now" is the
- * database's, evaluated once per request, and React's purity rule keeps it out of a component.
+ * start, then everything else newest-first. `lead` marks that first row, so the page can single
+ * it out without doing date arithmetic during render.
  *
  * The old `starts_at desc` alone led with the session furthest in the future, which is the one
  * nobody is looking for.
+ *
+ * Both used to be gated on `starts_at >= now()`, which quietly demoted a majelis the moment its
+ * clock passed — so a session running ten minutes late, the one the whole list exists to point
+ * at, dropped out of `lead` and sorted down among the archives. Only an operator moves a
+ * session out of `scheduled`, so scheduled means upcoming whatever the clock says.
  */
 export async function listEvents() {
   const rows = await query<EventRow & { question_count: string; lead: boolean }>(
     `select ${EVENT_COLS},
             (select count(*) from questions q
               where q.event_id = e.id and q.status = 'approved') as question_count,
-            (e.status = 'live'
-              or (e.status = 'scheduled' and e.starts_at >= now())) as lead
+            (e.status <> 'archived') as lead
        from events e
       where not e.hidden
       order by case when e.status = 'live' then 0
-                    when e.status = 'scheduled' and e.starts_at >= now() then 1
+                    when e.status = 'scheduled' then 1
                     else 2 end,
                -- Soonest first among sessions still to come; newest first in the archive.
-               case when e.status = 'scheduled' and e.starts_at >= now()
-                    then e.starts_at end asc,
+               case when e.status = 'scheduled' then e.starts_at end asc,
                e.starts_at desc`,
   );
   return rows.map((r) => ({

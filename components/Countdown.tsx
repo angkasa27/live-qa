@@ -16,15 +16,25 @@ function remaining(iso: string) {
 }
 
 /**
- * How long until questions open on a session that has not started.
+ * How long until questions open on a session that has not started, and what to say once
+ * that moment arrives and nobody has pressed start.
  *
  * Client-only on purpose: a countdown rendered on the server is stale before it is painted,
  * and hydration would have to reconcile two different numbers. It renders nothing at all on
  * the first pass, then ticks every second — the last minute before a majelis starts is the
  * one anyone is actually watching, and a clock that sits still through it reads as broken.
+ *
+ * Past the moment it used to return null, which left the page with an empty middle: a majelis
+ * only goes live when an operator presses start, so a session running late had nothing on it
+ * at all, at exactly the time the room was looking. It now says so instead. That the wait and
+ * its ending live in the same component is the point — this ticks, so the page changes over in
+ * front of the reader rather than waiting for a refresh nobody performs.
  */
 export default function Countdown({ iso }: { iso: string }) {
-  const [left, setLeft] = useState<ReturnType<typeof remaining>>(null);
+  // Three states, not two: `undefined` is "not measured yet" (the server pass and the first
+  // render), `null` is "measured, and the moment is behind us". Collapsing them would flash
+  // the note onto every scheduled majelis before the first tick corrected it.
+  const [left, setLeft] = useState<ReturnType<typeof remaining> | undefined>(undefined);
 
   useEffect(() => {
     const tick = () => setLeft(remaining(iso));
@@ -33,7 +43,18 @@ export default function Countdown({ iso }: { iso: string }) {
     return () => clearInterval(id);
   }, [iso]);
 
-  if (!left) return null;
+  if (left === undefined) return null;
+
+  if (left === null) {
+    return (
+      <div className="mx-5 my-4 rounded-md border border-border-soft px-4 py-4.5 text-center">
+        <h3 className="text-md font-semibold text-muted-foreground">Akan segera dimulai</h3>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Pertanyaan dibuka begitu majelis berlangsung.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-5 my-4 rounded-md border border-border-soft px-4 pt-4.5 pb-5 text-center">
