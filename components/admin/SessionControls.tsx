@@ -97,6 +97,11 @@ export function SessionActions({ event, canEdit }: { event: Event; canEdit: bool
   const next = nextMove(event.status);
   const Icon = next.icon;
 
+  // A scheduled majelis has no override to offer: pinning it open sent jamaah to the ask form
+  // days early, past the countdown the page shows instead. Archived keeps the switch, because
+  // reopening an archive for questions is the exception the column exists for.
+  const notStarted = event.status === "scheduled";
+
   return (
     <>
       <div className="flex items-center gap-2.5">
@@ -132,9 +137,13 @@ export function SessionActions({ event, canEdit }: { event: Event; canEdit: bool
             <div className="flex flex-col gap-1 px-4 pb-2">
               <SettingRow
                 title="Terima pertanyaan"
-                description="Jamaah bisa mengirim pertanyaan baru. Terbuka sendiri selama sesi berlangsung."
+                description={
+                  notStarted
+                    ? "Sesi belum dimulai. Mulai sesi dulu agar jamaah bisa mengirim pertanyaan."
+                    : "Jamaah bisa mengirim pertanyaan baru. Terbuka sendiri selama sesi berlangsung."
+                }
                 checked={accepting}
-                disabled={pending}
+                disabled={pending || notStarted}
                 onChange={(v) => {
                   setAccepting(v);
                   push({ acceptingQuestions: v }, () => setAccepting(!v));
