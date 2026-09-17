@@ -210,6 +210,7 @@ export async function draftAnswers(eventId: string): Promise<Result<Record<strin
   const event = await getEvent(eventId, { includeHidden: true });
   if (!event) return fail("Majelis tidak ditemukan.");
   if (!event.youtubeId) return fail("Majelis ini belum punya rekaman YouTube.");
+  if (event.status !== "archived") return fail("Majelis belum selesai.");
 
   const pending = (await listAllQuestions(eventId)).filter(
     (q) => !q.answer && q.status !== "hidden",

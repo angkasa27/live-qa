@@ -183,6 +183,16 @@ suite("actions (integration)", () => {
     });
   });
 
+  describe("draftAnswers", () => {
+    it("refuses to read a recording before the majelis has ended", async () => {
+      const eventId = await seedEvent({ status: "live" });
+      await query(`update events set youtube_id = 'dQw4w9WgXcQ' where id = $1`, [eventId]);
+      const res = await draftAnswers(eventId);
+      expect(res.ok).toBe(false);
+      expect(!res.ok && res.error).toMatch(/belum selesai/);
+    });
+  });
+
   describe("updateEvent", () => {
     it("rejects an unknown status without touching the row", async () => {
       const eventId = await seedEvent();

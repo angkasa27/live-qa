@@ -398,10 +398,13 @@ function QuestionCard({
 export default function AdminBoard({
   eventId,
   youtubeId,
+  ended,
   canAnswer,
 }: {
   eventId: string;
   youtubeId?: string;
+  /** Archived. Until then the recording may still be running, so there is nothing whole to read. */
+  ended: boolean;
   /** Superadmin. A granted admin gets the queue and the moderation calls, not the answers. */
   canAnswer: boolean;
 }) {
@@ -489,10 +492,13 @@ export default function AdminBoard({
           majelis, not about one question in it. */}
       {youtubeId && canAnswer && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4">
-          <Button size="sm" variant="outline" disabled={drafting} onClick={draft}>
+          <Button size="sm" variant="outline" disabled={drafting || !ended} onClick={draft}>
             {drafting ? <Spinner /> : <Sparkles aria-hidden />}
             {drafting ? "Membaca rekaman…" : "Ambil jawaban dari rekaman"}
           </Button>
+          {!ended && !draftNote && (
+            <span className="text-sm text-muted-foreground">Bisa dipakai setelah majelis selesai.</span>
+          )}
           {draftNote && (
             <span
               className={cn(

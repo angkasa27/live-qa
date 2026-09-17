@@ -124,7 +124,12 @@ export default async function AdminEventPage({ params }: PageProps<"/admin/event
         </div>
 
         <PageShell padded={false} action={<SessionActions event={event} canEdit={canEdit} />}>
-          <AdminBoard eventId={event.id} youtubeId={event.youtubeId} canAnswer={canEdit} />
+          <AdminBoard
+            eventId={event.id}
+            youtubeId={event.youtubeId}
+            ended={event.status === "archived"}
+            canAnswer={canEdit}
+          />
         </PageShell>
       </MaybePlayer>
     </>
