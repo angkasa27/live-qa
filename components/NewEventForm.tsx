@@ -15,7 +15,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createEvent } from "@/lib/actions";
 import { eventUrlPrefix, useSiteOrigin } from "@/lib/site";
-import { isoToLocal, localToIso, parseVideoId, slugDraft } from "@/lib/types";
+import { isoToLocal, localToIso, parseVideoId, slugDraft, ytCover } from "@/lib/types";
 
 /**
  * Four facts and a name. Everything else about a session is set later, from the session
@@ -128,6 +128,16 @@ export default function NewEventForm() {
         </Field>
 
         <Field className="mt-4 gap-2">
+          <FieldLabel htmlFor="video">
+            <Video aria-hidden />
+            Rekaman YouTube{" "}
+            <span className="font-normal text-muted-foreground">— boleh diisi setelah majelis</span>
+          </FieldLabel>
+          <VideoField value={video} onChange={setVideo} />
+          <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
+        </Field>
+
+        <Field className="mt-4 gap-2">
           <FieldLabel>
             <ImageIcon aria-hidden />
             Poster <span className="font-normal text-muted-foreground">— boleh dikosongkan</span>
@@ -135,21 +145,8 @@ export default function NewEventForm() {
           <CoverField
             value={image}
             onChange={setImage}
-            fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
+            fallback={videoId ? ytCover(videoId) : null}
           />
-        </Field>
-
-        <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
-          Setelah majelis
-        </p>
-
-        <Field className="mt-3 gap-2">
-          <FieldLabel htmlFor="video">
-            <Video aria-hidden />
-            Rekaman YouTube
-          </FieldLabel>
-          <VideoField value={video} onChange={setVideo} />
-          <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
         </Field>
 
         <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">

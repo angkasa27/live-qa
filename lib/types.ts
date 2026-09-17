@@ -75,8 +75,10 @@ export type Proposal = {
 };
 
 /** List thumbnail: explicit cover wins, otherwise YouTube's own still, otherwise nothing. */
+export const ytCover = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+
 export function coverFor(e: Event) {
-  return e.image ?? (e.youtubeId ? `https://i.ytimg.com/vi/${e.youtubeId}/hqdefault.jpg` : null);
+  return e.image ?? (e.youtubeId ? ytCover(e.youtubeId) : null);
 }
 
 /** 2760 → "46:00". Hours only appear when the recording is long enough to need them. */

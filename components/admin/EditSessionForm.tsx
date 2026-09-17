@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { deleteEvent, updateEvent } from "@/lib/actions";
 import { eventUrlPrefix, useSiteOrigin } from "@/lib/site";
-import { isoToLocal, localToIso, parseVideoId, type Event } from "@/lib/types";
+import { isoToLocal, localToIso, parseVideoId, ytCover, type Event } from "@/lib/types";
 
 /**
  * What a session *is*, as opposed to what it is doing.
@@ -168,6 +168,16 @@ export default function EditSessionForm({
       </Field>
 
       <Field className="mt-4 gap-2">
+        <FieldLabel htmlFor="video">
+          <Video aria-hidden />
+          Rekaman YouTube{" "}
+          <span className="font-normal text-muted-foreground">— boleh diisi setelah majelis</span>
+        </FieldLabel>
+        <VideoField value={draft.video} onChange={(video) => set({ video })} />
+        <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
+      </Field>
+
+      <Field className="mt-4 gap-2">
         <FieldLabel>
           <ImageIcon aria-hidden />
           Poster <span className="font-normal text-muted-foreground">— boleh dikosongkan</span>
@@ -175,21 +185,8 @@ export default function EditSessionForm({
         <CoverField
           value={draft.image}
           onChange={(image) => set({ image })}
-          fallback={videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null}
+          fallback={videoId ? ytCover(videoId) : null}
         />
-      </Field>
-
-      <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
-        Setelah majelis
-      </p>
-
-      <Field className="mt-3 gap-2">
-        <FieldLabel htmlFor="video">
-          <Video aria-hidden />
-          Rekaman YouTube
-        </FieldLabel>
-        <VideoField value={draft.video} onChange={(video) => set({ video })} />
-        <FieldDescription>Sual membaca takarirnya dan mengusulkan jawaban.</FieldDescription>
       </Field>
 
       <p className="mt-6 border-t border-border-soft pt-4.5 text-sm font-bold text-muted-foreground">
